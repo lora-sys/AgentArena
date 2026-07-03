@@ -1,1 +1,18 @@
 .DS_Store
+node_modules/
+.next/
+out/
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+
+# Local verification evidence.
+artifacts/
+test-results/
+playwright-report/
+
+# Package manager noise.
+*.log
+.pnpm-store/
