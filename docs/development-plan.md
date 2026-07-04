@@ -63,6 +63,7 @@ Exit gate:
 - One seeded battle can be generated entirely from deterministic fixtures.
 - Score totals are calculated by code, not model prose.
 - Replay and Passport are derived from events.
+- Defense records include `attackId`, so Passport accepted/rejected claims are evidence-linked.
 
 ## Phase 3: Mock Eve Agent Layer
 
@@ -84,6 +85,8 @@ Exit gate:
 ## Phase 4: Live Battle MVP
 
 Goal: run one real battle with safe fallbacks.
+
+Current status on 2026-07-04: deterministic create/start/read/event/export APIs exist and use the Battle Engine fixture path. Real Eve invocation, persistence, and Live page event consumption are still pending.
 
 Deliverables:
 

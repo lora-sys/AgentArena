@@ -53,6 +53,15 @@ done
 
 if [[ -f package.json ]]; then
   echo "ok app scaffold: package.json"
+  check_dir app
+  check_dir components
+  check_dir lib
+  check_dir arena
+  check_dir agents
+  check_file app/layout.tsx
+  check_file app/page.tsx
+  check_file app/battle/new/page.tsx
+  check_file arena/index.ts
   if node -e "const p=require('./package.json'); process.exit(p.scripts && p.scripts.dev ? 0 : 1)" >/dev/null 2>&1; then
     echo "ok npm script: dev"
   else

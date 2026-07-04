@@ -13,7 +13,13 @@ if [[ ! -f package.json ]]; then
   exit 0
 fi
 
-if command -v pnpm >/dev/null 2>&1; then
+if [[ -f pnpm-lock.yaml ]]; then
+  PM="pnpm"
+elif [[ -f package-lock.json ]]; then
+  PM="npm"
+elif [[ -f yarn.lock ]]; then
+  PM="yarn"
+elif command -v pnpm >/dev/null 2>&1; then
   PM="pnpm"
 elif command -v npm >/dev/null 2>&1; then
   PM="npm"

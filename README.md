@@ -8,12 +8,13 @@ Short version:
 
 ## Current Status
 
-This repository is currently in product-design and planning stage. The durable source docs are:
+This repository is now in MVP implementation. The durable source docs are:
 
 - [PRD](docs/prd.md): product vision, MVP scope, long-term roadmap.
 - [MVP Spec](docs/mvp-spec.md): implementation-facing MVP behavior.
 - [Eve Agents](docs/eve-agents.md): agent directory and instruction design.
 - [Development Plan](docs/development-plan.md): phased build order.
+- [Project Status](docs/project-status.md): current phase, completed work, incomplete work, unresolved files, and verification evidence.
 - [Validation Goals](docs/validation-goals.md): measurable gates for MVP.
 - [UI React Bits Guide](docs/ui-react-bits.md): UI direction based on `ui/` screenshots and React Bits.
 - [Coverage Map](docs/coverage-map.md): what is covered, what is not, and where to look.
@@ -36,7 +37,7 @@ The Battle Engine controls the round order, event log, score calculation, champi
 ./scripts/start.sh
 ```
 
-Today this script is intentionally conservative. If an app scaffold exists, it installs dependencies and starts the dev server. If the repo is still docs-only, it prints the next setup step instead of inventing a framework layout.
+The script installs dependencies when needed and starts the Next.js dev server. It chooses the package manager from the lockfile when one exists.
 
 Run diagnostics with:
 
@@ -47,9 +48,11 @@ Run diagnostics with:
 ## Read Order For Agents
 
 1. Read this README.
-2. Read [docs/prd.md](docs/prd.md).
-3. Read [docs/mvp-spec.md](docs/mvp-spec.md).
-4. Read [docs/eve-agents.md](docs/eve-agents.md).
-5. Read the task-specific sibling doc in [docs](docs/).
+2. Read [AGENTS.md](AGENTS.md).
+3. Read [docs/project-status.md](docs/project-status.md).
+4. Read [docs/prd.md](docs/prd.md).
+5. Read [docs/mvp-spec.md](docs/mvp-spec.md).
+6. Read [docs/eve-agents.md](docs/eve-agents.md).
+7. Read the task-specific sibling doc in [docs](docs/).
 
 Do not use this README as a substitute for the deeper docs. It is a router, not the source of every contract.

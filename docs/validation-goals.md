@@ -40,6 +40,7 @@ Can Agent Arena make a messy idea feel battle-tested, more credible, and more me
 - At least four artifacts are generated.
 - At least five screenshot moments are visible.
 - No route shows broken placeholders during the judged demo path.
+- Browser automation screenshots are retained with a manifest under `artifacts/e2e/`.
 
 ## Failure Thresholds
 

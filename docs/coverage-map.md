@@ -14,6 +14,7 @@ Do not use it as a substitute for any source doc. Do not use it for acceptance d
 | MVP behavior | [mvp-spec.md](mvp-spec.md) | Covered | Schemas, routes, rounds, acceptance basics. |
 | Eve agent design | [eve-agents.md](eve-agents.md) | Covered | Agent directories, instructions, skills, tools. |
 | Build order | [development-plan.md](development-plan.md) | Covered | Phase gates from docs-first to live battle. |
+| Current phase tracking | [project-status.md](project-status.md) | Covered | Completed work, incomplete work, unresolved files, and verification evidence. |
 | Validation goals | [validation-goals.md](validation-goals.md) | Covered | Product, technical, and demo validation. |
 | UI direction | [ui-react-bits.md](ui-react-bits.md) | Covered | Screenshot targets and React Bits boundaries. |
 | Architecture invariants | [architecture-contracts.md](architecture-contracts.md) | Covered | Runtime rules and data ownership. |

@@ -79,6 +79,14 @@ UI must render battle state, events, scores, artifacts, and passports from produ
 
 Seeded fixtures are allowed for Phase 1, but they should match the runtime data shape.
 
+Current MVP rule: UI-facing demo data must be adapted from `runDemoBattle()` or an API bundle. Do not reintroduce a second hand-written battle universe in presentation code.
+
 ## Contract 7: Safety First
 
 MVP agents do not execute shell commands, write to user GitHub repos, or call dangerous external tools. Future sandbox/tool execution requires explicit approval gates and separate contracts.
+
+
+## Contract 8: Frontend Renderer Architecture
+
+Use server components for route composition and client components for interactive islands such as login, share, setup controls, replay controls, filters, and local state.
+ 

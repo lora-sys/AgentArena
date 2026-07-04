@@ -113,7 +113,7 @@ type BattleSettings = {
   battleType: 'hackathon' | 'startup' | 'research' | 'coding'
   timeLimit: '24h' | '48h' | '7d'
   preference: 'balanced' | 'viral' | 'technical' | 'safe'
-  outputTargets: Array<'prd' | 'architecture' | 'demo_script' | 'pitch' | 'todo'>
+  outputTargets: Array<'product_brief' | 'prd' | 'architecture' | 'demo_script' | 'pitch_outline' | 'todo'>
 }
 ```
 
@@ -124,7 +124,7 @@ const defaultBattleSettings = {
   battleType: 'hackathon',
   timeLimit: '48h',
   preference: 'balanced',
-  outputTargets: ['prd', 'architecture', 'demo_script', 'pitch', 'todo']
+  outputTargets: ['product_brief', 'prd', 'architecture', 'demo_script', 'pitch_outline', 'todo']
 }
 ```
 
@@ -277,6 +277,7 @@ Each Team attacks the other two Teams.
 
 ```ts
 type Attack = {
+  id: string
   attackerTeamId: string
   targetTeamId: string
   attackType:
@@ -310,12 +311,17 @@ Each Team responds to attacks.
 
 ```ts
 type Defense = {
+  id: string
+  attackId: string
   teamId: string
+  targetTeamId: string
   responseToAttack: string
   acceptedAttack: boolean
   revision: string
 }
 ```
+
+`attackId` is required for evidence traceability. Passport accepted/rejected claims must link back to a specific attack and defense, not only to matching text.
 
 Events:
 
@@ -587,11 +593,20 @@ type AgentPassport = {
   role: string
   directoryPath: string
   contributionSummary: string
-  acceptedClaims: string[]
-  rejectedClaims: string[]
+  acceptedClaims: PassportClaimEvidence[]
+  rejectedClaims: PassportClaimEvidence[]
   strengths: string[]
   weaknesses: string[]
   contributionScore: number
+}
+
+type PassportClaimEvidence = {
+  claim: string
+  attackId: string
+  defenseId: string
+  acceptedAttack: boolean
+  attackerTeamId: string
+  defenderTeamId: string
 }
 ```
 
@@ -613,7 +628,7 @@ Request:
   "battleType": "hackathon",
   "timeLimit": "48h",
   "preference": "balanced",
-  "outputTargets": ["prd", "architecture", "demo_script", "pitch", "todo"]
+  "outputTargets": ["product_brief", "prd", "architecture", "demo_script", "pitch_outline", "todo"]
 }
 ```
 
@@ -622,9 +637,13 @@ Response:
 ```json
 {
   "battleId": "battle_001",
-  "status": "briefing"
+  "status": "completed",
+  "battle": {},
+  "bundle": {}
 }
 ```
+
+MVP note: the current deterministic API returns a completed seeded bundle so the demo is reliable before real Eve invocation and persistence are added.
 
 ---
 
@@ -639,7 +658,7 @@ Behavior:
 * starts Battle Engine
 * invokes Eve Agents
 * writes event log
-* returns status
+* returns `battleId`, `status`, battle summary, and completed bundle
 
 ---
 
@@ -653,6 +672,14 @@ Behavior:
 
 * streams battle events
 * used by Arena Live page
+
+The deterministic MVP also exposes:
+
+```http
+GET /api/battles/:id/events
+```
+
+This returns the event array as JSON for polling or debugging.
 
 ---
 
@@ -1047,11 +1074,11 @@ agent-arena/
 * Artifact Generation
 * Event Log
 * Replay Page
+* Agent Passport Snapshot
 * Export Markdown
 
 ### P1
 
-* Agent Passport
 * Streaming events
 * Example battle
 * Battle share page

@@ -29,12 +29,15 @@ The MVP is accepted only if all P0 gates pass.
 - Every round writes an event.
 - Event log can reconstruct the replay.
 - Passport facts are traceable to the battle.
+- Accepted and rejected Passport claims link to specific attack/defense records.
 - Judge comments do not override calculated scores.
+- Browser automation evidence is retained under `artifacts/e2e/` for the judged MVP path.
 
 ## P0 UI Gates
 
 - Home shows the product difference immediately.
 - Battle Setup is usable without reading docs.
+- Header share, account/login, primary navigation, setup actions, replay controls, and battle filters are interactive.
 - Live page shows current round, teams, attacks, and judge progress.
 - Result page shows champion, scoreboard, artifacts, and export.
 - Replay page shows event sequence and share surface.
@@ -47,6 +50,7 @@ The MVP is accepted only if all P0 gates pass.
 - Seeded battle works without model calls.
 - Live battle has fallback.
 - Three consecutive demo runs do not crash.
+- `rtk npm run typecheck`, `rtk npm run build`, and `rtk ./scripts/doctor.sh` pass before handoff.
 
 ## P1 Acceptance
 

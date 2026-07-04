@@ -4,12 +4,15 @@ node_modules/
 out/
 dist/
 coverage/
+tsconfig.tsbuildinfo
 .env
 .env.*
 !.env.example
 
 # Local verification evidence.
-artifacts/
+artifacts/*
+!artifacts/e2e/
+!artifacts/e2e/**
 test-results/
 playwright-report/
 
