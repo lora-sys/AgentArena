@@ -19,3 +19,11 @@ playwright-report/
 # Package manager noise.
 *.log
 .pnpm-store/
+# Agent session working files
+docs/sessions/
+docs/qa/
+artifacts/e2e/
+coverage/
+playwright-report/
+.env.local
+.env.*.local
