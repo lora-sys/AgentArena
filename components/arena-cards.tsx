@@ -11,12 +11,53 @@ import {
   Swords,
   Trophy
 } from "lucide-react";
-import { defenses, demoBattle, formatScore, getTeam, proposals, teams, winner } from "@/lib/demo-data";
-import type { Attack, BattleEvent, ScoreBreakdown, Team, TeamId } from "@/lib/types";
+import {
+  defenses,
+  demoBattle,
+  formatScore,
+  getTeam,
+  proposals,
+  teams,
+  winner
+} from "@/lib/demo-data";
+import type {
+  Attack,
+  BattleEvent,
+  ScoreBreakdown,
+  Team,
+  TeamId
+} from "@/lib/types";
+
+/* Team color → token mapping for design system direction B */
+const teamColorMap: Record<Team["color"], string> = {
+  blue: "text-team-safe",
+  purple: "text-team-viral",
+  green: "text-team-infra",
+  orange: "text-champion"
+};
+
+const teamBorderMap: Record<Team["color"], string> = {
+  blue: "border-team-safe",
+  purple: "border-team-viral",
+  green: "border-team-infra",
+  orange: "border-champion"
+};
+
+const severityTokenMap: Record<string, string> = {
+  High: "bg-sev-high/10 text-sev-high",
+  Medium: "bg-sev-med/10 text-sev-med",
+  Low: "bg-sev-low/10 text-sev-low"
+};
 
 export function TeamAvatar({ team, size = "md" }: { team: Team; size?: "sm" | "md" | "lg" }) {
+  const sizeClass =
+    size === "sm" ? "h-8 w-8 text-xs" : size === "lg" ? "h-16 w-16" : "h-12 w-12";
   return (
-    <span className={`team-avatar ${team.color} ${size}`} aria-hidden="true">
+    <span
+      className={`inline-grid place-items-center rounded-full font-bold ${teamColorMap[team.color]} bg-bg-elev border ${teamBorderMap[team.color]}`}
+      style={{ width: size === "sm" ? 34 : size === "lg" ? 68 : 48, height: size === "sm" ? 34 : size === "lg" ? 68 : 48 }}
+      aria-hidden="true"
+    >
       {team.avatar}
     </span>
   );
@@ -34,7 +75,12 @@ export function Sparkline({ values, color }: { values: number[]; color: Team["co
     .join(" ");
 
   return (
-    <svg className={`sparkline ${color}`} viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+    <svg
+      className={`sparkline ${color}`}
+      viewBox="0 0 100 100"
+      preserveAspectRatio="none"
+      aria-hidden="true"
+    >
       <polyline points={points} />
     </svg>
   );
@@ -42,17 +88,19 @@ export function Sparkline({ values, color }: { values: number[]; color: Team["co
 
 export function TeamScoreCard({ team, featured = false }: { team: Team; featured?: boolean }) {
   return (
-    <article className={`team-score-card ${team.color} ${featured ? "featured" : ""}`}>
-      <div className="team-score-head">
+    <article
+      className={`rounded-r-md border ${teamBorderMap[team.color]} bg-bg-elev p-s-6 shadow-shadow-1 ${featured ? "shadow-shadow-2" : ""}`}
+    >
+      <div className="flex items-center gap-s-4">
         <TeamAvatar team={team} size="lg" />
         <div>
-          <h3>{team.name}</h3>
-          <p>{team.subtitle}</p>
+          <h3 className="m-0 font-bold text-fg">{team.name}</h3>
+          <p className="m-0 text-sm text-fg-muted">{team.subtitle}</p>
         </div>
       </div>
-      <div className="score-row">
-        <strong>{formatScore(team.score)}</strong>
-        <span>/100</span>
+      <div className="mt-s-8 flex items-center gap-s-2">
+        <strong className="text-3xl font-bold text-fg">{formatScore(team.score)}</strong>
+        <span className="text-fg-muted">/100</span>
         <Sparkline values={team.spark} color={team.color} />
       </div>
     </article>
@@ -61,21 +109,27 @@ export function TeamScoreCard({ team, featured = false }: { team: Team; featured
 
 export function TeamProfileCard({ team }: { team: Team }) {
   return (
-    <article className={`team-profile-card ${team.color}`}>
+    <article className={`rounded-r-md border ${teamBorderMap[team.color]} bg-bg-elev p-s-6 shadow-shadow-1`}>
       <TeamAvatar team={team} size="lg" />
       <div>
-        <h3>{team.name}</h3>
-        <p className="muted">{team.subtitle}</p>
-        <p>{team.strategy}</p>
+        <h3 className="m-0 font-bold text-fg">{team.name}</h3>
+        <p className="text-sm text-fg-muted">{team.subtitle}</p>
+        <p className="mt-s-2 text-fg">{team.strategy}</p>
       </div>
-      <div className="pill-row">
+      <div className="flex flex-wrap gap-s-2">
         {team.skills.map((skill) => (
-          <span key={skill} className={`soft-pill ${team.color}`}>
+          <span
+            key={skill}
+            className={`rounded-full px-s-3 py-s-1 text-xs font-bold ${teamColorMap[team.color]} bg-bg-sunken`}
+          >
             {skill}
           </span>
         ))}
       </div>
-      <Link href={`/agent/${team.id}/passport` as Route} className="line-button">
+      <Link
+        href={`/agent/${team.id}/passport` as Route}
+        className="inline-flex items-center gap-s-2 font-bold text-team-safe"
+      >
         View Details <ArrowRight size={16} />
       </Link>
     </article>
@@ -94,10 +148,10 @@ export function SectionCard({
   className?: string;
 }) {
   return (
-    <section className={`section-card ${className}`}>
+    <section className={`rounded-r-md border border-border bg-bg-elev p-s-6 shadow-shadow-1 ${className}`}>
       {title || action ? (
-        <div className="section-head">
-          {title ? <h2>{title}</h2> : <span />}
+        <div className="mb-s-4 flex items-center justify-between gap-s-4">
+          {title ? <h2 className="m-0 font-bold text-fg">{title}</h2> : <span />}
           {action}
         </div>
       ) : null}
@@ -106,30 +160,53 @@ export function SectionCard({
   );
 }
 
-export function StatusPill({ label, tone = "neutral" }: { label: string; tone?: "live" | "done" | "neutral" | "purple" }) {
-  return <span className={`status-pill ${tone}`}>{label}</span>;
+export function StatusPill({
+  label,
+  tone = "neutral"
+}: {
+  label: string;
+  tone?: "live" | "done" | "neutral" | "purple";
+}) {
+  const toneClass =
+    tone === "live"
+      ? "bg-status-ok/10 text-status-ok"
+      : tone === "done"
+        ? "bg-team-infra/10 text-team-infra"
+        : tone === "purple"
+          ? "bg-team-viral/10 text-team-viral"
+          : "bg-bg-sunken text-fg-muted";
+  return (
+    <span className={`inline-flex items-center rounded-full px-s-3 py-s-1 text-xs font-bold ${toneClass}`}>
+      {label}
+    </span>
+  );
 }
 
 export function AttackList({ attacks = demoBattle.attacks }: { attacks?: Attack[] }) {
   return (
-    <div className="attack-list">
+    <div className="overflow-hidden rounded-r-md border border-border bg-bg-elev">
       {attacks.map((attack) => {
         const from = getTeam(attack.from);
         const to = getTeam(attack.to);
         if (!from || !to) return null;
 
         return (
-          <article key={`${attack.from}-${attack.to}-${attack.claim}`} className="attack-row">
-            <div className="attack-route">
+          <article
+            key={`${attack.from}-${attack.to}-${attack.claim}`}
+            className="grid grid-cols-[1fr_90px_1.3fr_90px] items-center gap-s-4 border-b border-border p-s-3 last:border-b-0"
+          >
+            <div className="flex items-center gap-s-2">
               <TeamAvatar team={from} size="sm" />
-              <strong>{from.name}</strong>
+              <strong className="text-sm">{from.name}</strong>
               <ArrowRight size={16} />
               <TeamAvatar team={to} size="sm" />
-              <strong>{to.name}</strong>
+              <strong className="text-sm">{to.name}</strong>
             </div>
-            <span className={`severity ${attack.severity.toLowerCase()}`}>{attack.severity}</span>
-            <p>{attack.claim}</p>
-            <small>{attack.createdAt}</small>
+            <span className={`rounded-full px-s-3 py-s-1 text-xs font-bold ${severityTokenMap[attack.severity] ?? severityTokenMap.Low}`}>
+              {attack.severity}
+            </span>
+            <p className="m-0 text-sm text-fg">{attack.claim}</p>
+            <small className="text-right text-xs text-fg-muted">{attack.createdAt}</small>
           </article>
         );
       })}
@@ -139,32 +216,37 @@ export function AttackList({ attacks = demoBattle.attacks }: { attacks?: Attack[
 
 export function ProposalComparison() {
   return (
-    <div className="proposal-grid">
+    <div className="grid grid-cols-3 gap-s-4">
       {proposals.map((proposal) => {
         const team = getTeam(proposal.teamId);
         if (!team) return null;
 
         return (
-          <article key={proposal.teamId} className={`proposal-card ${team.color}`}>
-            <div className="team-score-head">
+          <article
+            key={proposal.teamId}
+            className={`grid gap-s-3 rounded-r-md border ${teamBorderMap[team.color]} bg-bg-elev p-s-4`}
+          >
+            <div className="flex items-center gap-s-4">
               <TeamAvatar team={team} size="md" />
               <div>
-                <h3>{proposal.productName}</h3>
-                <p>{team.name}</p>
+                <h3 className="m-0 font-bold text-fg">{proposal.productName}</h3>
+                <p className="m-0 text-sm text-fg-muted">{team.name}</p>
               </div>
             </div>
-            <p>{proposal.oneLiner}</p>
-            <dl>
+            <p className="m-0 text-sm text-fg">{proposal.oneLiner}</p>
+            <dl className="m-0 grid gap-s-2">
               <div>
-                <dt>Demo Plan</dt>
-                <dd>{proposal.demoPlan}</dd>
+                <dt className="text-xs font-bold uppercase text-fg-muted">Demo Plan</dt>
+                <dd className="mt-s-1 text-sm text-fg">{proposal.demoPlan}</dd>
               </div>
               <div>
-                <dt>Technical Hook</dt>
-                <dd>{proposal.technicalHighlight}</dd>
+                <dt className="text-xs font-bold uppercase text-fg-muted">Technical Hook</dt>
+                <dd className="mt-s-1 text-sm text-fg">{proposal.technicalHighlight}</dd>
               </div>
             </dl>
-            <span className={`soft-pill ${team.color}`}>{proposal.whyThisCanWin}</span>
+            <span className={`w-fit rounded-full px-s-3 py-s-1 text-xs font-bold ${teamColorMap[team.color]} bg-bg-sunken`}>
+              {proposal.whyThisCanWin}
+            </span>
           </article>
         );
       })}
@@ -174,26 +256,33 @@ export function ProposalComparison() {
 
 export function DefenseList() {
   return (
-    <div className="defense-list">
+    <div className="grid gap-s-3">
       {defenses.map((defense) => {
         const team = getTeam(defense.teamId);
         const attacker = getTeam(defense.targetTeamId);
         if (!team || !attacker) return null;
 
         return (
-          <article key={defense.id} className="defense-row">
-            <div className="attack-route">
+          <article
+            key={defense.id}
+            className="grid grid-cols-[1fr_auto] items-center gap-s-4 rounded-r-md border border-border bg-bg-elev p-s-4"
+          >
+            <div className="flex items-center gap-s-2">
               <TeamAvatar team={team} size="sm" />
-              <strong>{team.name}</strong>
+              <strong className="text-sm">{team.name}</strong>
               <ArrowRight size={16} />
               <TeamAvatar team={attacker} size="sm" />
-              <strong>{attacker.name}</strong>
+              <strong className="text-sm">{attacker.name}</strong>
             </div>
-            <span className={defense.acceptedAttack ? "soft-pill red" : "soft-pill green"}>
+            <span
+              className={`rounded-full px-s-3 py-s-1 text-xs font-bold ${defense.acceptedAttack ? "bg-sev-high/10 text-sev-high" : "bg-team-infra/10 text-team-infra"}`}
+            >
               {defense.acceptedAttack ? "Accepted critique" : "Rejected critique"}
             </span>
-            <p>{defense.revision}</p>
-            <small>Evidence: {defense.attackId} / {defense.id}</small>
+            <p className="col-span-full m-0 text-sm text-fg">{defense.revision}</p>
+            <small className="col-span-full text-xs text-fg-muted">
+              Evidence: {defense.attackId} / {defense.id}
+            </small>
           </article>
         );
       })}
@@ -203,16 +292,27 @@ export function DefenseList() {
 
 export function JudgeProgress() {
   return (
-    <SectionCard title="Judge Panel (AI)" action={<Link href="/battle/demo/result">View all judges</Link>}>
-      <div className="judge-progress-grid">
+    <SectionCard
+      title="Judge Panel (AI)"
+      action={<Link href="/battle/demo/result">View all judges</Link>}
+    >
+      <div className="grid grid-cols-3 gap-s-4">
         {["Judge-Product", "Judge-Tech", "Judge-Market"].map((judge, index) => (
-          <article key={judge} className="judge-card">
-            <span className="judge-avatar">J{index + 1}</span>
+          <article
+            key={judge}
+            className="grid grid-cols-[52px_1fr] items-center gap-s-3 rounded-r-md border border-border bg-bg-elev p-s-4"
+          >
+            <span className="grid h-[52px] w-[52px] place-items-center rounded-full font-bold text-fg bg-bg-sunken">
+              J{index + 1}
+            </span>
             <div>
-              <strong>{judge}</strong>
-              <p>Analyzing...</p>
-              <span className="progress-track">
-                <span style={{ width: `${58 + index * 12}%` }} />
+              <strong className="text-sm">{judge}</strong>
+              <p className="m-0 text-sm text-fg-muted">Analyzing...</p>
+              <span className="block h-2 overflow-hidden rounded-full bg-bg-sunken">
+                <span
+                  className="block h-full rounded-full bg-team-safe"
+                  style={{ width: `${58 + index * 12}%` }}
+                />
               </span>
             </div>
           </article>
@@ -234,26 +334,36 @@ export function Scoreboard({ compact = false }: { compact?: boolean }) {
   ];
 
   return (
-    <div className={`scoreboard ${compact ? "compact" : ""}`}>
-      <div className="scoreboard-header">
+    <div className={`overflow-x-auto ${compact ? "compact" : ""}`}>
+      <div className="grid min-w-[980px] grid-cols-[60px_1fr_120px_repeat(6,1fr)] items-center gap-s-3 p-s-3 text-sm font-bold text-fg-muted">
         <span>Rank</span>
         <span>Team</span>
         <span>Total Score</span>
         {!compact ? columns.map(([, label]) => <span key={label}>{label}</span>) : null}
       </div>
       {ordered.map((team, index) => (
-        <div key={team.id} className={`scoreboard-row ${team.id === demoBattle.winnerId ? "winner" : ""}`}>
-          <span className="rank-badge">{index + 1}</span>
-          <span className="team-name-cell">
+        <div
+          key={team.id}
+          className={`grid min-w-[980px] grid-cols-[60px_1fr_120px_repeat(6,1fr)] items-center gap-s-3 border-t border-border p-s-3 ${team.id === demoBattle.winnerId ? "bg-team-viral/5" : ""}`}
+        >
+          <span className="grid h-7 w-7 place-items-center rounded-full bg-bg-sunken text-xs font-bold text-fg">
+            {index + 1}
+          </span>
+          <span className="flex items-center gap-s-2">
             <TeamAvatar team={team} size="sm" />
             <strong>{team.name}</strong>
           </span>
-          <span className={`score-number ${team.color}`}>{formatScore(team.score)}</span>
+          <span className={`text-xl font-bold ${teamColorMap[team.color]}`}>
+            {formatScore(team.score)}
+          </span>
           {!compact
             ? columns.map(([key]) => (
-                <span key={key} className="score-meter">
+                <span key={key} className="grid gap-s-1">
                   {demoBattle.scores[team.id][key]}
-                  <i style={{ width: `${demoBattle.scores[team.id][key]}%` }} />
+                  <i
+                    className={`block h-1 rounded-full ${teamColorMap[team.color].replace("text-", "bg-")}`}
+                    style={{ width: `${demoBattle.scores[team.id][key]}%` }}
+                  />
                 </span>
               ))
             : null}
@@ -265,14 +375,25 @@ export function Scoreboard({ compact = false }: { compact?: boolean }) {
 
 export function EventLog({ events = demoBattle.events }: { events?: BattleEvent[] }) {
   return (
-    <div className="event-log">
+    <div className="overflow-hidden rounded-r-md border border-border bg-bg-elev">
       {events.map((event) => (
-        <article key={event.id} className="event-row">
-          <span>{event.time}</span>
-          <span className="event-type">{event.type}</span>
-          <strong>{event.actor}</strong>
-          <p>{event.summary}</p>
-          {event.impact ? <span className={`severity ${event.impact.toLowerCase()}`}>{event.impact}</span> : null}
+        <article
+          key={event.id}
+          className="grid grid-cols-[80px_86px_140px_1fr_80px] items-center gap-s-3 border-b border-border p-s-3 last:border-b-0"
+        >
+          <span className="font-mono text-xs text-fg-muted">{event.time}</span>
+          <span className="inline-flex items-center justify-center rounded-full bg-team-viral/10 px-s-3 py-s-1 text-xs font-bold text-team-viral">
+            {event.type}
+          </span>
+          <strong className="text-sm">{event.actor}</strong>
+          <p className="m-0 text-sm text-fg">{event.summary}</p>
+          {event.impact ? (
+            <span
+              className={`rounded-full px-s-3 py-s-1 text-xs font-bold ${severityTokenMap[event.impact] ?? ""}`}
+            >
+              {event.impact}
+            </span>
+          ) : null}
         </article>
       ))}
     </div>
@@ -280,32 +401,40 @@ export function EventLog({ events = demoBattle.events }: { events?: BattleEvent[
 }
 
 export function ChampionHero() {
+  if (!winner) return null;
   return (
-    <section className="champion-hero">
-      <div className="trophy-burst">
+    <section className="grid grid-cols-[240px_1fr_1fr] items-center gap-s-12 rounded-r-md border border-champion bg-bg-elev p-s-12 shadow-shadow-2">
+      <div className="grid place-items-center text-champion">
         <Trophy size={92} />
       </div>
       <div>
-        <p className="eyebrow">
+        <p className="flex items-center gap-s-2 font-bold text-team-viral">
           <Trophy size={18} /> Champion Plan
         </p>
-        <h1>{winner.name}</h1>
-        <p>
-          <strong>{formatScore(winner.score)}</strong> /100 <StatusPill label="Winner" tone="purple" />
+        <h1 className="m-0 text-t-2xl font-bold text-fg">{winner.name}</h1>
+        <p className="mt-s-2 flex items-center gap-s-2 text-fg-muted">
+          <strong className="text-2xl text-fg">{formatScore(winner.score)}</strong> /100
+          <StatusPill label="Winner" tone="purple" />
         </p>
       </div>
-      <div className="champion-reason">
-        <h2>Why it won</h2>
-        <p>
-          Viral Designer delivered the most compelling, differentiated, and technically credible plan with a strong demo
-          story and a clear long-term reputation path.
+      <div className="border-l border-border pl-s-12">
+        <h2 className="m-0 font-bold text-fg">Why it won</h2>
+        <p className="mt-s-2 text-fg-muted">
+          Viral Designer delivered the most compelling, differentiated, and technically credible plan with a strong
+          demo story and a clear long-term reputation path.
         </p>
-        <div className="button-row">
-          <Link href="/battle/demo/replay" className="primary-action small">
+        <div className="mt-s-4 flex items-center gap-s-3">
+          <Link
+            href="/battle/demo/replay"
+            className="inline-flex items-center gap-s-2 rounded-r-md bg-team-safe px-s-6 py-s-2 font-bold text-white"
+          >
             <Play size={16} fill="currentColor" />
             View Replay
           </Link>
-          <a href="/api/battles/demo/export" className="ghost-button">
+          <a
+            href="/api/battles/demo/export"
+            className="inline-flex items-center gap-s-2 rounded-r-md border border-border px-s-6 py-s-2 font-bold text-fg bg-bg-elev"
+          >
             <Download size={16} />
             Export Markdown
           </a>
@@ -318,7 +447,7 @@ export function ChampionHero() {
 export function PassportMetrics() {
   const passport = demoBattle.passport;
   return (
-    <div className="metric-grid">
+    <div className="grid grid-cols-2 gap-s-6">
       {[
         ["Rating", `${passport.rating}/100`],
         ["Global Rank", `#${passport.globalRank}`],
@@ -327,9 +456,12 @@ export function PassportMetrics() {
         ["Contribution", passport.contributionScore.toLocaleString()],
         ["Consistency", `${passport.consistency}/10`]
       ].map(([label, value]) => (
-        <article key={label} className="metric-card">
-          <span>{label}</span>
-          <strong>{value}</strong>
+        <article
+          key={label}
+          className="min-h-[96px] rounded-r-md border border-border bg-bg-elev p-s-4"
+        >
+          <span className="block text-sm text-fg-muted">{label}</span>
+          <strong className="block text-2xl font-bold text-fg">{value}</strong>
         </article>
       ))}
     </div>
@@ -341,17 +473,22 @@ export function ClaimList({ type }: { type: "accepted" | "rejected" }) {
   const Icon = type === "accepted" ? CheckCircle2 : CircleAlert;
 
   return (
-    <div className="claim-list">
+    <div className="grid gap-s-2">
       {claims.map((claim) => (
-        <article key={`${claim.attackId}-${claim.defenseId}`}>
+        <article
+          key={`${claim.attackId}-${claim.defenseId}`}
+          className="grid grid-cols-[24px_1fr_auto] items-center gap-s-2 border-b border-border py-s-2 last:border-b-0"
+        >
           <Icon size={18} />
-          <p>
+          <p className="m-0">
             {claim.claim}
-            <small>
+            <small className="mt-s-1 block text-xs text-fg-muted">
               Evidence: {claim.attackId} / {claim.defenseId}
             </small>
           </p>
-          <span className={type === "accepted" ? "soft-pill green" : "soft-pill red"}>
+          <span
+            className={`rounded-full px-s-3 py-s-1 text-xs font-bold ${type === "accepted" ? "bg-team-infra/10 text-team-infra" : "bg-sev-high/10 text-sev-high"}`}
+          >
             {type === "accepted" ? "Accepted" : "Rejected"}
           </span>
         </article>
@@ -363,15 +500,17 @@ export function ClaimList({ type }: { type: "accepted" | "rejected" }) {
 export function ReplayShareCard() {
   return (
     <SectionCard className="share-card">
-      <div className="share-thumb">
-        <TeamAvatar team={teams[0]} size="lg" />
-        <span>VS</span>
-        <TeamAvatar team={teams[1]} size="lg" />
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center justify-items-center gap-s-3">
+        {teams[0] && <TeamAvatar team={teams[0]} size="lg" />}
+        <span className="font-bold text-fg-muted">VS</span>
+        {teams[1] && <TeamAvatar team={teams[1]} size="lg" />}
       </div>
       <div>
-        <h2>Share this battle</h2>
-        <p>Anyone with the link can watch this replay.</p>
-        <div className="copy-row">https://agentarena.ai/battles/agent-metaverse-hackathon/replay</div>
+        <h2 className="m-0 font-bold text-fg">Share this battle</h2>
+        <p className="mt-s-2 text-fg-muted">Anyone with the link can watch this replay.</p>
+        <div className="mt-s-3 overflow-hidden truncate whitespace-nowrap rounded-r-md border border-border p-s-3 text-fg-muted">
+          https://agentarena.ai/battles/agent-metaverse-hackathon/replay
+        </div>
       </div>
     </SectionCard>
   );
@@ -379,21 +518,33 @@ export function ReplayShareCard() {
 
 export function QuoteBand({ children }: { children: React.ReactNode }) {
   return (
-    <div className="quote-band">
+    <div className="flex items-center gap-s-4 rounded-r-md bg-team-viral/5 p-s-4 text-team-viral">
       <Quote size={24} />
       <span>{children}</span>
     </div>
   );
 }
 
-export function MiniStat({ icon, label, value, note }: { icon: React.ReactNode; label: string; value: string; note: string }) {
+export function MiniStat({
+  icon,
+  label,
+  value,
+  note
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  note: string;
+}) {
   return (
-    <article className="mini-stat">
-      <span>{icon}</span>
+    <article className="flex min-h-[104px] items-center gap-s-4 rounded-r-md border border-border bg-bg-elev p-s-4 shadow-shadow-1">
+      <span className="grid h-14 w-14 place-items-center rounded-full bg-team-safe/10 text-team-safe">
+        {icon}
+      </span>
       <div>
-        <p>{label}</p>
-        <strong>{value}</strong>
-        <small>{note}</small>
+        <p className="m-0 text-sm text-fg-muted">{label}</p>
+        <strong className="my-s-1 block text-2xl font-bold text-fg">{value}</strong>
+        <small className="text-fg-muted">{note}</small>
       </div>
     </article>
   );
@@ -402,14 +553,16 @@ export function MiniStat({ icon, label, value, note }: { icon: React.ReactNode; 
 export function FlowStrip() {
   const steps = ["Briefing", "Proposal", "Cross Attack", "Judging", "Champion"];
   return (
-    <section className="flow-strip">
-      <strong>How it works</strong>
+    <section className="grid grid-cols-[170px_repeat(5,1fr)] items-center gap-s-4 rounded-r-md border border-border bg-bg-elev p-s-6">
+      <strong className="font-bold text-fg">How it works</strong>
       {steps.map((step, index) => (
-        <div key={step} className={index === 2 ? "active" : ""}>
-          <span>
+        <div key={step} className={`flex items-center gap-s-3 ${index === 2 ? "text-team-safe" : "text-fg"}`}>
+          <span
+            className={`grid h-[42px] w-[42px] place-items-center rounded-full bg-bg-sunken text-white ${index === 2 ? "bg-team-safe" : ""}`}
+          >
             {index === 2 ? <Swords size={18} /> : <FlagIcon />}
           </span>
-          <p>{step}</p>
+          <p className="m-0 font-bold">{step}</p>
         </div>
       ))}
     </section>

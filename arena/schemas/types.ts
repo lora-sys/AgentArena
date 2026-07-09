@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 export const battleStatuses = [
   "idle",
   "briefing",
@@ -276,3 +278,63 @@ export type CompletedBattleBundle = {
   events: BattleEvent[];
   exportMarkdown: string;
 };
+
+export const ProposalSchema = z.object({
+  teamId: z.string().min(1),
+  productName: z.string().min(1),
+  oneLiner: z.string().min(1),
+  targetUser: z.string().min(1),
+  problem: z.string().min(1),
+  solution: z.string().min(1),
+  mvpFeatures: z.array(z.string().min(1)),
+  demoPlan: z.string().min(1),
+  technicalHighlight: z.string().min(1),
+  risks: z.array(z.string().min(1)),
+  whyThisCanWin: z.string().min(1),
+});
+
+export const AttackSchema = z.object({
+  id: z.string().min(1),
+  attackerTeamId: z.string().min(1),
+  targetTeamId: z.string().min(1),
+  attackType: z.enum(attackTypes),
+  claim: z.string().min(1),
+  evidence: z.string().min(1),
+  severity: z.enum(severities),
+  suggestedFix: z.string().min(1),
+});
+
+export const DefenseSchema = z.object({
+  id: z.string().min(1),
+  attackId: z.string().min(1),
+  teamId: z.string().min(1),
+  targetTeamId: z.string().min(1),
+  responseToAttack: z.string().min(1),
+  acceptedAttack: z.boolean(),
+  revision: z.string().min(1),
+});
+
+export const ScoreBreakdownSchema = z.object({
+  novelty: z.number().min(0).max(10),
+  feasibility: z.number().min(0).max(10),
+  demoWow: z.number().min(0).max(10),
+  technicalDepth: z.number().min(0).max(10),
+  userValue: z.number().min(0).max(10),
+  longTermPotential: z.number().min(0).max(10),
+});
+
+export const ScoreSchema = z.object({
+  teamId: z.string().min(1),
+  scores: ScoreBreakdownSchema,
+  judgeComments: z.array(z.string().min(1)),
+  winningReason: z.string().min(1).optional(),
+  losingReason: z.string().min(1).optional(),
+});
+
+export const ArtifactSchema = z.object({
+  id: z.string().min(1),
+  battleId: z.string().min(1),
+  type: z.enum(artifactTypes),
+  title: z.string().min(1),
+  content: z.string().min(1),
+});

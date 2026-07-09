@@ -65,44 +65,68 @@ export function HeaderActions() {
   };
 
   return (
-    <div className="top-actions">
-      <button className="ghost-button" type="button" onClick={() => setShareOpen(true)}>
+    <div className="flex items-center justify-end gap-s-3">
+      <button
+        className="inline-flex items-center gap-s-2 rounded-r-md border border-border bg-bg-elev px-s-6 py-s-2 font-bold text-fg transition-colors duration-fast ease-ease-out hover:bg-bg-sunken"
+        type="button"
+        onClick={() => setShareOpen(true)}
+      >
         <Share2 size={18} />
         Share
       </button>
-      <div className="account-wrap">
+      <div className="relative">
         <button
-          className="avatar-button"
+          className="inline-flex items-center gap-s-2 rounded-r-md border border-border bg-bg-elev px-s-2 py-s-2 font-bold text-fg"
           type="button"
           aria-label="Account menu"
           aria-expanded={accountOpen}
           onClick={() => setAccountOpen((open) => !open)}
         >
-          <span className="user-avatar">{initials ?? <UserRound size={18} />}</span>
+          <span className="grid h-[34px] w-[34px] place-items-center rounded-full bg-bg-sunken font-bold text-fg">
+            {initials ?? <UserRound size={18} />}
+          </span>
           <ChevronDown size={16} />
         </button>
         {accountOpen ? (
-          <div className="account-menu">
+          <div className="absolute right-0 top-[calc(100%+10px)] z-50 grid w-[250px] gap-s-2 rounded-r-md border border-border bg-bg-elev p-s-3 shadow-shadow-2">
             {user ? (
               <>
-                <div className="account-card">
-                  <strong>{user.name}</strong>
-                  <span>{user.email}</span>
+                <div className="grid gap-s-1 rounded-r-md bg-bg-sunken p-s-2">
+                  <strong className="text-sm">{user.name}</strong>
+                  <span className="text-xs text-fg-muted">{user.email}</span>
                 </div>
-                <a href="/agent/viral-designer/passport">Open Passport</a>
-                <a href="/battles">Battle History</a>
-                <button type="button" onClick={logout}>
+                <a
+                  href="/agent/viral-designer/passport"
+                  className="flex min-h-[38px] items-center gap-s-2 rounded-r-md px-s-2 font-bold hover:bg-bg-sunken"
+                >
+                  Open Passport
+                </a>
+                <a
+                  href="/battles"
+                  className="flex min-h-[38px] items-center gap-s-2 rounded-r-md px-s-2 font-bold hover:bg-bg-sunken"
+                >
+                  Battle History
+                </a>
+                <button
+                  type="button"
+                  className="flex min-h-[38px] items-center gap-s-2 rounded-r-md px-s-2 font-bold hover:bg-bg-sunken"
+                  onClick={logout}
+                >
                   <LogOut size={16} />
                   Log out
                 </button>
               </>
             ) : (
               <>
-                <div className="account-card">
-                  <strong>Guest Builder</strong>
-                  <span>Login stores a local MVP session.</span>
+                <div className="grid gap-s-1 rounded-r-md bg-bg-sunken p-s-2">
+                  <strong className="text-sm">Guest Builder</strong>
+                  <span className="text-xs text-fg-muted">Login stores a local MVP session.</span>
                 </div>
-                <button type="button" onClick={() => setLoginOpen(true)}>
+                <button
+                  type="button"
+                  className="flex min-h-[38px] items-center gap-s-2 rounded-r-md px-s-2 font-bold hover:bg-bg-sunken"
+                  onClick={() => setLoginOpen(true)}
+                >
                   <LogIn size={16} />
                   Log in
                 </button>
@@ -113,16 +137,39 @@ export function HeaderActions() {
       </div>
 
       {shareOpen ? (
-        <div className="modal-backdrop" role="presentation" onMouseDown={() => setShareOpen(false)}>
-          <div className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="share-title" onMouseDown={(event) => event.stopPropagation()}>
-            <button className="modal-close" type="button" aria-label="Close share dialog" onClick={() => setShareOpen(false)}>
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-fg/40 p-s-6 backdrop-blur"
+          role="presentation"
+          onMouseDown={() => setShareOpen(false)}
+        >
+          <div
+            className="relative grid w-full max-w-[560px] gap-s-3 rounded-r-md border border-border bg-bg-elev p-s-8 shadow-shadow-3"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="share-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <button
+              className="absolute right-s-3 top-s-3 grid h-[34px] w-[34px] place-items-center rounded-r-md border border-border bg-bg-elev"
+              type="button"
+              aria-label="Close share dialog"
+              onClick={() => setShareOpen(false)}
+            >
               <X size={18} />
             </button>
-            <h2 id="share-title">Share this arena view</h2>
-            <p>Copy the current route and send it to a teammate or judge.</p>
-            <div className="copy-box">
-              <span>{shareUrl}</span>
-              <button type="button" onClick={copyShareLink}>
+            <h2 id="share-title" className="m-0 font-bold text-fg">
+              Share this arena view
+            </h2>
+            <p className="m-0 text-fg-muted">
+              Copy the current route and send it to a teammate or judge.
+            </p>
+            <div className="grid grid-cols-[1fr_auto] items-center gap-s-2 rounded-r-md border border-border bg-bg-sunken p-s-2">
+              <span className="truncate text-fg-muted">{shareUrl}</span>
+              <button
+                type="button"
+                className="inline-flex items-center gap-s-2 rounded-r-md border border-border bg-bg-elev px-s-3 py-s-2 font-bold"
+                onClick={copyShareLink}
+              >
                 {copied ? <Check size={16} /> : <Copy size={16} />}
                 {copied ? "Copied" : "Copy"}
               </button>
@@ -132,22 +179,54 @@ export function HeaderActions() {
       ) : null}
 
       {loginOpen ? (
-        <div className="modal-backdrop" role="presentation" onMouseDown={() => setLoginOpen(false)}>
-          <form className="modal-panel login-panel" action={login} role="dialog" aria-modal="true" aria-labelledby="login-title" onMouseDown={(event) => event.stopPropagation()}>
-            <button className="modal-close" type="button" aria-label="Close login dialog" onClick={() => setLoginOpen(false)}>
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-fg/40 p-s-6 backdrop-blur"
+          role="presentation"
+          onMouseDown={() => setLoginOpen(false)}
+        >
+          <form
+            className="relative grid w-full max-w-[560px] gap-s-3 rounded-r-md border border-border bg-bg-elev p-s-8 shadow-shadow-3"
+            action={login}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="login-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <button
+              className="absolute right-s-3 top-s-3 grid h-[34px] w-[34px] place-items-center rounded-r-md border border-border bg-bg-elev"
+              type="button"
+              aria-label="Close login dialog"
+              onClick={() => setLoginOpen(false)}
+            >
               <X size={18} />
             </button>
-            <h2 id="login-title">Log in locally</h2>
-            <p>This MVP stores a mock user in your browser so account UI can be exercised before real auth.</p>
-            <label>
+            <h2 id="login-title" className="m-0 font-bold text-fg">
+              Log in locally
+            </h2>
+            <p className="m-0 text-fg-muted">
+              This MVP stores a mock user in your browser so account UI can be exercised before real auth.
+            </p>
+            <label className="grid gap-s-1 font-bold text-fg">
               Name
-              <input name="name" defaultValue="Agent Builder" />
+              <input
+                name="name"
+                defaultValue="Agent Builder"
+                className="min-h-[44px] rounded-r-md border border-border px-s-3 outline-none focus:border-team-safe"
+              />
             </label>
-            <label>
+            <label className="grid gap-s-1 font-bold text-fg">
               Email
-              <input name="email" type="email" defaultValue="builder@agentarena.local" />
+              <input
+                name="email"
+                type="email"
+                defaultValue="builder@agentarena.local"
+                className="min-h-[44px] rounded-r-md border border-border px-s-3 outline-none focus:border-team-safe"
+              />
             </label>
-            <button className="primary-action button-reset" type="submit">
+            <button
+              className="inline-flex items-center justify-center gap-s-2 rounded-r-md bg-team-safe px-s-6 py-s-3 font-bold text-white"
+              type="submit"
+            >
               <LogIn size={16} />
               Continue
             </button>
