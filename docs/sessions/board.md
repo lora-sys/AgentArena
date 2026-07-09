@@ -41,11 +41,15 @@ Last update: 2026-07-09 (start of orchestrator session)
 - ✅ be-db-schema (issue #3) — `lib/db/schema.ts` (12 tables) + 4 tests
 - ✅ ui-tokens (issue #10) — `app/globals.css` + tailwind.config + 2 components migrated + screenshot
 
-### Wave 2 (Sprint 0 — RUNNING)
-- ⏳ be-mastra-adapter (issue #2) — Mastra/OpenAI adapter
-- ⏳ be-event-store (issue #4) — event store wire to Postgres
-- ⏳ be-repair-loop (issue #5) — schema repair retry module
-- ⏳ be-mock-runtime (issue #18) — deterministic mock for tests
+### Wave 2 (Sprint 0 — DONE)
+- ✅ be-mastra-adapter (issue #2) — OpenAI-backed ArenaAgentRuntime + 10 tests
+- ✅ be-event-store (issue #4) — Postgres-backed BattleEventStore + 15 tests
+- ✅ be-repair-loop (issue #5) — pure retry module + 10 tests
+- ✅ be-mock-runtime (issue #18) — deterministic mock + 9 tests
+
+### Wave 3 (Sprint 0 — RUNNING)
+- ✅ be-ci-workflow (issue #14) — PM-direct (original agent stalled, YAML valid)
+- ⏳ be-example-fixture (issue #16) — respawning with tighter scope
 
 ## Wave plan
 
