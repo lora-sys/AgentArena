@@ -1,29 +1,22 @@
-.DS_Store
-node_modules/
+# Next.js
 .next/
 out/
-dist/
-coverage/
-tsconfig.tsbuildinfo
-.env
-.env.*
-!.env.example
+build/
 
-# Local verification evidence.
-artifacts/*
-!artifacts/e2e/
-!artifacts/e2e/**
-test-results/
-playwright-report/
+# Dependencies
+node_modules/
 
-# Package manager noise.
-*.log
-.pnpm-store/
-# Agent session working files
-docs/sessions/
-docs/qa/
-artifacts/e2e/
-coverage/
-playwright-report/
+# Env
 .env.local
 .env.*.local
+!.env.example
+
+# Test artifacts
+coverage/
+playwright-report/
+test-results/
+
+# Agent runtime state (not coordination docs)
+docs/sessions/agents/*/status.md
+docs/qa/daily/
+artifacts/e2e/
