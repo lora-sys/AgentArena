@@ -1,0 +1,1 @@
+ALTER TABLE "battle" ADD COLUMN "mode" varchar(20) DEFAULT 'full' NOT NULL;

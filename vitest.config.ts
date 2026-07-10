@@ -30,6 +30,8 @@ export default defineConfig({
       "examples/**/*.test.ts",
       "components/**/*.test.tsx",
       "agents/**/*.test.ts",
+      "app/**/*.test.ts",
+      "app/**/*.test.tsx",
     ],
     environment: "node",
     pool: "forks",

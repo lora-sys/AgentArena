@@ -1,11 +1,20 @@
 import { runBattleFromPayload } from "@/lib/battle-api";
+import { withRateLimit, validateBattleId, badRequest } from "@/lib/api/guards";
 
 type BattleEventStreamRouteContext = {
   params: Promise<{ id: string }>;
 };
 
-export async function GET(_request: Request, { params }: BattleEventStreamRouteContext) {
+async function streamHandler(
+  _request: Request,
+  { params }: BattleEventStreamRouteContext,
+): Promise<Response> {
   const { id } = await params;
+
+  if (!validateBattleId(id)) {
+    return badRequest("Invalid battle ID format");
+  }
+
   const bundle = runBattleFromPayload({}, id);
   const body = bundle.events
     .map((event) => `event: ${event.eventType}\ndata: ${JSON.stringify(event)}\n`)
@@ -19,3 +28,5 @@ export async function GET(_request: Request, { params }: BattleEventStreamRouteC
     },
   });
 }
+
+export const GET = withRateLimit(streamHandler);

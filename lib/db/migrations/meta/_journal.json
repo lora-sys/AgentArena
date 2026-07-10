@@ -15,6 +15,13 @@
       "when": 1783648080263,
       "tag": "0001_gigantic_exiles",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1720656000000,
+      "tag": "0002_lethal_omega_red",
+      "breakpoints": true
     }
   ]
 }

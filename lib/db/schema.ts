@@ -155,6 +155,7 @@ export const battle = pgTable(
     status: battleStatusEnum("status").notNull().default("idle"),
     originalInput: jsonb("original_input").notNull(),
     settingsJson: jsonb("settings_json").notNull(),
+    mode: varchar("mode", { length: 20 }).notNull().default("full"),
     championAgentId: uuid("champion_agent_id"),
     championTeamName: varchar("champion_team_name", { length: 200 }),
     createdAt: timestamp("created_at", { withTimezone: true })
