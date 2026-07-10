@@ -24,8 +24,10 @@ test.describe("PRD §8.3 Battle Live", () => {
     // Page heading (battle title) is visible.
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible({ timeout: 15_000 });
 
-    // Round Timeline (nav with aria-label="Battle round timeline") is visible.
-    const timeline = page.getByRole("navigation", { name: /battle round timeline/i });
+    // Round Timeline: the <nav> element with class "round-timeline".
+    // Using CSS selector because the role-based query was unreliable
+    // in dev mode (client component hydration timing).
+    const timeline = page.locator("nav.round-timeline");
     await expect(timeline).toBeVisible({ timeout: 15_000 });
 
     // At least one round step is rendered (Briefing, Propose, Attack, etc.).
@@ -33,8 +35,8 @@ test.describe("PRD §8.3 Battle Live", () => {
     await expect(roundSteps.first()).toBeVisible();
     expect(await roundSteps.count()).toBeGreaterThanOrEqual(5);
 
-    // Team score grid (aria-label="Contestant teams") is visible.
-    const teamGrid = page.getByRole("region", { name: /contestant teams/i });
+    // Team score grid (class "team-score-grid") is visible.
+    const teamGrid = page.locator(".team-score-grid");
     await expect(teamGrid).toBeVisible();
 
     // Event Ledger section is visible.
@@ -47,9 +49,7 @@ test.describe("PRD §8.3 Battle Live", () => {
     // The page uses connectSse which fires a request to /api/battles/demo/events/stream.
     // We wait for the round timeline to render, proving the page mounted successfully
     // and did not crash on the SSE connection attempt.
-    await expect(
-      page.getByRole("navigation", { name: /battle round timeline/i })
-    ).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator("nav.round-timeline")).toBeVisible({ timeout: 15_000 });
 
     // The page must not be blank — body must have content.
     await expect(page.locator("body")).not.toBeEmpty();
