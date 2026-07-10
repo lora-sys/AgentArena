@@ -121,6 +121,33 @@ describe("EventDrawer", () => {
     expect(screen.getByLabelText("Close event drawer")).toBeDefined();
   });
 
+  it("restores focus to the previously focused element when drawer closes (F2-1)", () => {
+    const triggerButton = document.createElement("button");
+    triggerButton.textContent = "Trigger";
+    document.body.appendChild(triggerButton);
+    triggerButton.focus();
+
+    expect(document.activeElement).toBe(triggerButton);
+
+    const event = makeEvent();
+    const { rerender } = render(
+      <EventDrawer event={event} open onClose={() => {}} allEvents={mockAllEvents} />,
+    );
+
+    // When drawer opens, focus moves to the dialog
+    const dialog = screen.getByRole("dialog");
+    expect(document.activeElement).toBe(dialog);
+
+    // Close the drawer — focus should restore to the trigger button
+    rerender(
+      <EventDrawer event={null} open={false} onClose={() => {}} allEvents={mockAllEvents} />,
+    );
+
+    expect(document.activeElement).toBe(triggerButton);
+
+    document.body.removeChild(triggerButton);
+  });
+
   afterEach(() => {
     cleanup();
   });

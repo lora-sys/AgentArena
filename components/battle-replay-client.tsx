@@ -45,6 +45,7 @@ export function BattleReplayClient({ battleId }: BattleReplayClientProps) {
   const [scrollTop, setScrollTop] = useState(0);
   const [viewportHeight, setViewportHeight] = useState(DEFAULT_VIEWPORT_HEIGHT);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -75,7 +76,7 @@ export function BattleReplayClient({ battleId }: BattleReplayClientProps) {
   }, [battleId]);
 
   useEffect(() => {
-    const el = scrollContainerRef.current;
+    const el = scrollContainerRef.current ?? containerRef.current;
     if (!el) return;
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0];
@@ -110,17 +111,19 @@ export function BattleReplayClient({ battleId }: BattleReplayClientProps) {
   if (status === "loading") {
     return (
       <AppShell active="battle" showRail currentRound="cross_attack">
-        <div className="replay-header">
-          <h1>Battle Replay</h1>
-          <p>Loading events for {battleId}...</p>
+        <div ref={containerRef}>
+          <div className="replay-header">
+            <h1>Battle Replay</h1>
+            <p>Loading events for {battleId}...</p>
+          </div>
+          <div
+            className="replay-timeline"
+            role="list"
+            aria-label="Battle event timeline"
+            data-testid="replay-timeline"
+            style={{ height: `${DEFAULT_VIEWPORT_HEIGHT}px`, overflowY: "auto" }}
+          />
         </div>
-        <div
-          className="replay-timeline"
-          role="list"
-          aria-label="Battle event timeline"
-          data-testid="replay-timeline"
-          style={{ height: `${DEFAULT_VIEWPORT_HEIGHT}px`, overflowY: "auto" }}
-        />
       </AppShell>
     );
   }
@@ -128,40 +131,43 @@ export function BattleReplayClient({ battleId }: BattleReplayClientProps) {
   if (status === "error") {
     return (
       <AppShell active="battle" showRail currentRound="cross_attack">
-        <div className="replay-header">
-          <h1>Battle Replay</h1>
-          <p role="alert">Error: {error}</p>
+        <div ref={containerRef}>
+          <div className="replay-header">
+            <h1>Battle Replay</h1>
+            <p role="alert">Error: {error}</p>
+          </div>
+          <div
+            className="replay-timeline"
+            role="list"
+            aria-label="Battle event timeline"
+            data-testid="replay-timeline"
+            style={{ height: `${DEFAULT_VIEWPORT_HEIGHT}px`, overflowY: "auto" }}
+          />
         </div>
-        <div
-          className="replay-timeline"
-          role="list"
-          aria-label="Battle event timeline"
-          data-testid="replay-timeline"
-          style={{ height: `${DEFAULT_VIEWPORT_HEIGHT}px`, overflowY: "auto" }}
-        />
       </AppShell>
     );
   }
 
   return (
     <AppShell active="battle" showRail currentRound="cross_attack">
-      <div className="replay-header">
-        <div>
-          <h1>Battle Replay</h1>
-          <p className="replay-subtitle">
-            {events.length} events from {battleId}
-          </p>
+      <div ref={containerRef}>
+        <div className="replay-header">
+          <div>
+            <h1>Battle Replay</h1>
+            <p className="replay-subtitle">
+              {events.length} events from {battleId}
+            </p>
+          </div>
         </div>
-      </div>
 
-      <div
-        ref={scrollContainerRef}
-        className="replay-timeline"
-        role="list"
-        aria-label="Battle event timeline"
-        onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
-        style={{ height: `${DEFAULT_VIEWPORT_HEIGHT}px`, overflowY: "auto" }}
-      >
+        <div
+          ref={scrollContainerRef}
+          className="replay-timeline"
+          role="list"
+          aria-label="Battle event timeline"
+          onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
+          style={{ height: `${DEFAULT_VIEWPORT_HEIGHT}px`, overflowY: "auto" }}
+        >
         <div style={{ height: `${totalHeight}px`, position: "relative" }}>
           {visibleEvents.map((event, index) => {
             const rowTop = (startIndex + index) * ROW_HEIGHT;
@@ -202,6 +208,7 @@ export function BattleReplayClient({ battleId }: BattleReplayClientProps) {
         onClose={handleClose}
         allEvents={events}
       />
+      </div>
     </AppShell>
   );
 }

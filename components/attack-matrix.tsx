@@ -24,7 +24,9 @@ const ATTACKER_TEAMS = [
 
 const cellAttacksFor = (attacks: AttackEventLike[], from: string, to: string): AttackEventLike[] =>
   attacks.filter(
-    (e) => e.actorId === from && e.targetId === to,
+    (e) =>
+      e.actorId === from.replace(/_/g, "-") &&
+      e.targetId === to.replace(/_/g, "-"),
   );
 
 const cellKey = (from: string, to: string): string => `${from}->${to}`;

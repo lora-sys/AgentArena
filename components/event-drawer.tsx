@@ -96,9 +96,10 @@ export function EventDrawer({ event, open, onClose, allEvents }: EventDrawerProp
   );
 
   useEffect(() => {
-    if (!open) return;
     previousFocusRef.current = document.activeElement as HTMLElement | null;
-    drawerRef.current?.focus();
+    if (open) {
+      drawerRef.current?.focus();
+    }
     return () => {
       previousFocusRef.current?.focus();
     };
