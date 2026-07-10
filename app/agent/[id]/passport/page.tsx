@@ -1,3 +1,5 @@
+"use client";
+
 import "../../../print.css";
 import { AppShell } from "@/components/app-shell";
 import { PassportActions } from "@/components/passport-actions";
