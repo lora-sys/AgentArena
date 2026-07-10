@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { MastraRuntime, SchemaRepairExhaustedError } from "./mastra";
+import { MastraRuntime } from "./mastra";
 import type { AgentSpec } from "./contract";
 import {
   ProposalSchema,
