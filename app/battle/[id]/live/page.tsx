@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import type { BattleEvent } from "@/arena";
 import { AppShell } from "@/components/app-shell";
+import { AttackMatrix } from "@/components/attack-matrix";
 import { connectSse, type SseClientHandle } from "@/lib/sse-client";
 import type { Team } from "@/lib/types";
 
@@ -285,37 +286,6 @@ const ProposalCards = ({ proposals, teams }: {
           </article>
         );
       })}
-    </div>
-  );
-};
-
-const AttackCards = ({ attacks }: { attacks: BattleEvent[] }) => {
-  if (attacks.length === 0) {
-    return <p className="muted">Awaiting attacks...</p>;
-  }
-  return (
-    <div className="overflow-hidden rounded-r-md border border-border bg-bg-elev">
-      {attacks.map((event) => (
-        <article
-          key={event.id}
-          className="grid grid-cols-[1fr_90px_1.3fr_90px] items-center gap-s-4 border-b border-border p-s-3 last:border-b-0"
-        >
-          <div className="flex items-center gap-s-2">
-            <strong className="text-sm">
-              {teamNameMap[event.actorId ?? ""] ?? event.actorId ?? "unknown"}
-            </strong>
-            <ArrowRight size={16} aria-hidden="true" />
-            <strong className="text-sm">
-              {teamNameMap[event.targetId ?? ""] ?? event.targetId ?? "unknown"}
-            </strong>
-          </div>
-          <span className="rounded-full bg-sev-high/10 px-s-3 py-s-1 text-xs font-bold text-sev-high">
-            Attack
-          </span>
-          <p className="m-0 text-sm text-fg">{event.content}</p>
-          <small className="text-right text-xs text-fg-muted">{event.id}</small>
-        </article>
-      ))}
     </div>
   );
 };
@@ -645,7 +615,7 @@ export default function LiveBattlePage({ params }: LivePageProps) {
             <span className="event-count">{attacks.length}</span>
           </h2>
           <p>Teams attack each other&apos;s proposals.</p>
-          <AttackCards attacks={attacks} />
+          <AttackMatrix attacks={attacks} />
         </section>
       ) : null}
 

@@ -81,7 +81,8 @@ export default defineConfig({
 
   // Spin up the Next.js dev server if none is running. In CI the
   // e2e job starts the server externally (see .github/workflows/ci.yml)
-  // so we skip the webServer step there.
+  // CI: server is started by the workflow (after `pnpm build`).
+  // Local: Playwright spawns `pnpm dev` for us.
   webServer: process.env.CI
     ? undefined
     : {

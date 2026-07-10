@@ -1015,6 +1015,274 @@ a {
 }
 
 /* =============================================================
+   Passport layout (design.md §4.6 / §5.6)
+   Screen-mode definitions for classes consumed by
+   app/agent/[id]/passport/page.tsx. Print rules live in print.css.
+   ============================================================= */
+.passport-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.passport-left,
+.passport-right {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+.passport-hero {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 20px;
+  align-items: center;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-elev);
+  box-shadow: var(--shadow-1);
+}
+
+.passport-seal-wrap {
+  display: grid;
+  place-items: center;
+  width: 80px;
+  height: 80px;
+}
+
+.passport-seal-ring {
+  fill: none;
+  stroke: var(--champion);
+  stroke-width: 3;
+}
+
+.passport-seal-fill {
+  fill: var(--champion);
+  opacity: 0.15;
+}
+
+.passport-seal-initials {
+  font-weight: 700;
+  font-size: 24px;
+  fill: var(--champion);
+  font-family: var(--font-display);
+}
+
+.passport-identity h1 {
+  margin: 0 0 4px;
+  font-size: var(--t-xl);
+  font-weight: var(--w-bold);
+  color: var(--fg);
+}
+
+.passport-role {
+  margin: 0 0 10px;
+  font-size: var(--t-sm);
+  color: var(--fg-muted);
+}
+
+.passport-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.path-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--bg-sunken);
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  font-weight: 500;
+}
+
+.path-pill.passport-version {
+  color: var(--champion);
+  background: rgba(212, 175, 55, 0.1);
+}
+
+.status-pill.champion {
+  color: var(--champion);
+  background: rgba(212, 175, 55, 0.12);
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.metric-grid.compact {
+  gap: 8px;
+}
+
+.metric-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+}
+
+.metric-card span {
+  font-size: var(--t-xs);
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 500;
+}
+
+.metric-card strong {
+  font-size: var(--t-lg);
+  font-weight: var(--w-bold);
+  color: var(--fg);
+  font-family: var(--font-mono);
+}
+
+.evidence-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.evidence-row {
+  display: grid;
+  grid-template-columns: 80px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.evidence-row:last-child {
+  border-bottom: 0;
+}
+
+.evidence-type {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-height: 22px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: var(--t-xs);
+  font-weight: 600;
+}
+
+.evidence-type.accepted {
+  color: var(--status-ok);
+  background: rgba(5, 150, 105, 0.1);
+}
+
+.evidence-type.rejected {
+  color: var(--sev-high);
+  background: rgba(220, 38, 38, 0.1);
+}
+
+.evidence-row p {
+  margin: 0;
+  font-size: var(--t-sm);
+  color: var(--fg);
+  line-height: 1.45;
+}
+
+.evidence-link {
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  color: var(--team-safe);
+  text-decoration: none;
+}
+
+.evidence-link:hover {
+  text-decoration: underline;
+}
+
+.pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.passport-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-elev);
+  box-shadow: var(--shadow-1);
+}
+
+.passport-two-col-heading {
+  margin: 0 0 10px;
+  font-size: var(--t-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg-muted);
+}
+
+.passport-two-col .pill-row .soft-pill {
+  font-size: var(--t-sm);
+  line-height: 1.45;
+  white-space: normal;
+  text-align: left;
+}
+
+.passport-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.share-url {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-sunken);
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  color: var(--fg-muted);
+  word-break: break-all;
+}
+
+@media (max-width: 860px) {
+  .passport-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .passport-two-col {
+    grid-template-columns: 1fr;
+  }
+
+  .passport-hero {
+    grid-template-columns: 64px 1fr;
+    gap: 14px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .metric-card {
+    background: var(--bg-sunken);
+  }
+}
+
+/* =============================================================
    Replay timeline + event drawer (issue #8)
    ============================================================= */
 .replay-header {
@@ -1229,5 +1497,361 @@ a {
 @media (prefers-color-scheme: dark) {
   .drawer-backdrop {
     background: rgba(0, 0, 0, 0.6);
+  }
+}
+
+/* =============================================================
+   Result page — scoreboard evidence (design.md §4.5)
+   Every score shows its evidenceEventId in mono on hover/focus.
+   ============================================================= */
+.scoreboard {
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--bg-elev);
+  overflow: hidden;
+}
+
+.scoreboard-header {
+  display: grid;
+  grid-template-columns: 60px 1fr 90px repeat(6, minmax(0, 1fr));
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-body);
+  font-size: var(--t-xs);
+  font-weight: var(--w-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fg-muted);
+}
+
+.scoreboard-row {
+  display: grid;
+  grid-template-columns: 60px 1fr 90px repeat(6, minmax(0, 1fr));
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.scoreboard-row:last-child {
+  border-bottom: 0;
+}
+
+.scoreboard-row.rank-first {
+  background: var(--team-viral-08);
+}
+
+.rank-cell {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: var(--bg-sunken);
+  font-family: var(--font-mono);
+  font-size: var(--t-sm);
+  font-weight: var(--w-bold);
+  color: var(--fg);
+}
+
+.rank-cell.rank-first {
+  background: var(--champion);
+  color: #fff;
+}
+
+.team-cell strong {
+  font-size: var(--t-sm);
+  font-weight: var(--w-bold);
+  color: var(--fg);
+}
+
+.total-cell strong {
+  font-family: var(--font-mono);
+  font-size: var(--t-lg);
+  font-weight: var(--w-bold);
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+}
+
+.score-cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 4px 6px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  outline: none;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+
+.score-cell:hover {
+  background: var(--bg-sunken);
+}
+
+.score-cell:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+
+.score-value {
+  font-family: var(--font-mono);
+  font-size: var(--t-sm);
+  font-weight: var(--w-medium);
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+}
+
+.score-bar {
+  display: block;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--fg-subtle);
+  opacity: 0.5;
+}
+
+.scoreboard-row.rank-first .score-bar {
+  background: var(--team-viral);
+  opacity: 1;
+}
+
+.score-tooltip {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: none;
+  white-space: nowrap;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--bg-elev);
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  color: var(--fg);
+  box-shadow: var(--shadow-2);
+  pointer-events: none;
+}
+
+.score-cell:hover .score-tooltip,
+.score-cell:focus-visible .score-tooltip {
+  display: block;
+}
+
+/* =============================================================
+   Attack matrix (design.md §4.3)
+   Bipartite matrix: rows = attacker, columns = target.
+   Cells show attack count badge; click expands AttackCard below.
+   ============================================================= */
+.attack-matrix-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.attack-matrix {
+  display: grid;
+  grid-template-columns: 140px repeat(3, minmax(120px, 1fr));
+  min-width: 520px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--bg-elev);
+  overflow: hidden;
+}
+
+.attack-matrix-corner {
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  background: var(--bg-sunken);
+}
+
+.attack-matrix-col-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  font-family: var(--font-body);
+  font-size: var(--t-sm);
+  font-weight: var(--w-bold);
+  background: var(--bg-sunken);
+}
+
+.attack-matrix-col-header:last-child {
+  border-right: 0;
+}
+
+.attack-matrix-col-header span {
+  font-size: var(--t-xs);
+  opacity: 0.6;
+}
+
+.attack-matrix-row-header {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  font-family: var(--font-body);
+  font-size: var(--t-sm);
+  font-weight: var(--w-bold);
+  background: var(--bg-sunken);
+}
+
+.attack-matrix-cell-wrap {
+  display: contents;
+}
+
+.attack-matrix-cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 72px;
+  padding: 8px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  border-left: 3px solid transparent;
+  background: var(--bg-elev);
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
+}
+
+.attack-matrix-cell:last-child {
+  border-right: 0;
+}
+
+.attack-matrix-cell:hover:not(.attack-matrix-cell-self) {
+  background: var(--bg-sunken);
+}
+
+.attack-matrix-cell:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+  z-index: 1;
+}
+
+.attack-matrix-cell.has-attacks {
+  border-left-color: var(--team-viral);
+}
+
+.attack-matrix-cell.expanded {
+  background: var(--bg-sunken);
+}
+
+.attack-matrix-cell-self {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--bg-elev),
+    var(--bg-elev) 4px,
+    var(--bg-sunken) 4px,
+    var(--bg-sunken) 8px
+  );
+  cursor: default;
+}
+
+.attack-matrix-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: var(--r-full);
+  font-family: var(--font-mono);
+  font-size: var(--t-sm);
+  font-weight: var(--w-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.attack-matrix-empty {
+  font-size: var(--t-lg);
+  color: var(--fg-subtle);
+  opacity: 0.5;
+}
+
+.attack-matrix-expanded {
+  grid-column: 1 / -1;
+  padding: 12px 16px 16px;
+  background: var(--bg-sunken);
+  border-bottom: 1px solid var(--border);
+}
+
+.attack-matrix-card {
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--bg-elev);
+  margin-bottom: 8px;
+}
+
+.attack-matrix-card:last-child {
+  margin-bottom: 0;
+}
+
+.attack-matrix-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.attack-matrix-card-id {
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  color: var(--fg-subtle);
+}
+
+.attack-matrix-card-severity {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--r-full);
+  font-family: var(--font-body);
+  font-size: var(--t-xs);
+  font-weight: var(--w-bold);
+  color: var(--sev-high);
+  background: rgba(220, 38, 38, 0.08);
+}
+
+.attack-matrix-card-claim {
+  margin: 0 0 8px;
+  font-size: var(--t-sm);
+  line-height: 1.5;
+  color: var(--fg);
+}
+
+.attack-matrix-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.attack-matrix-card-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--t-xs);
+  color: var(--fg-muted);
+}
+
+.attack-matrix-card-time {
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  color: var(--fg-subtle);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .attack-matrix-cell {
+    transition: none;
   }
 }

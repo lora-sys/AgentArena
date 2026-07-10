@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { Clock3, Play } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { AttackMatrix } from "@/components/attack-matrix";
 import {
-  AttackList,
   DefenseList,
   JudgeProgress,
   ProposalComparison,
@@ -11,6 +11,20 @@ import {
   TeamScoreCard
 } from "@/components/arena-cards";
 import { demoBattle, teams } from "@/lib/demo-data";
+
+const uiToEngine: Record<string, string> = {
+  "safe-builder": "safe_builder",
+  "viral-designer": "viral_designer",
+  "infra-hacker": "infra_hacker",
+};
+
+const demoAttackEvents = demoBattle.attacks.map((attack, index) => ({
+  id: `demo_attack_${index + 1}`,
+  actorId: uiToEngine[attack.from] ?? attack.from,
+  targetId: uiToEngine[attack.to] ?? attack.to,
+  content: attack.claim,
+  round: "cross_attack",
+}));
 
 export default function LiveBattlePage() {
   return (
@@ -44,7 +58,7 @@ export default function LiveBattlePage() {
       <section className="round-section">
         <h2>Round 2: Cross Attack</h2>
         <p>Teams attack each other's proposals.</p>
-        <AttackList />
+        <AttackMatrix attacks={demoAttackEvents} />
       </section>
 
       <section className="round-section">

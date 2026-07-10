@@ -1,6 +1,6 @@
 import "../../../print.css";
 import { AppShell } from "@/components/app-shell";
-import { PassportMetrics, SectionCard } from "@/components/arena-cards";
+import { PassportMetrics, PassportSeal, SectionCard } from "@/components/arena-cards";
 import { demoBattle, winner } from "@/lib/demo-data";
 import type { Route } from "next";
 import Link from "next/link";
@@ -9,9 +9,12 @@ import { Download, Play, Printer, Share2 } from "lucide-react";
 /**
  * Agent Passport Snapshot — bound to the real battle API.
  *
- * Fetches the completed battle bundle from `/api/battles/[id]`, extracts the
- * AgentPassport for the agent whose URL id matches `[id]`, and renders the
- * full snapshot per docs/design.md §5.6 and PRD §15.
+ * Layout per docs/design.md §4.6 and §5.6:
+ *   - Gold seal (top-left, champion color #D4AF37) with team initials
+ *   - Identity strip: agentName + role + version
+ *   - Two-column strengths | weaknesses (MUST be non-empty per PRD §12.3)
+ *   - Evidence event links list (each link shows event id + opens event drawer)
+ *   - Replay link + Print + Share link buttons
  *
  * Mandatory invariant (PRD §12.3): weaknesses column is NEVER empty.
  * The passport generator guarantees this — if no accepted attacks exist,
@@ -24,6 +27,7 @@ type AgentPassport = {
   battleId: string;
   agentName: string;
   role: string;
+  version: string;
   directoryPath: string;
   contributionSummary: string;
   acceptedClaims: Array<{
@@ -62,14 +66,6 @@ type BundleResponse = {
   };
 };
 
-/**
- * Fetch the completed battle bundle and extract the passport for the
- * requested agent. Falls back to demo data if the API is unreachable.
- *
- * The hard rule from the task: if no real agent passport endpoint exists,
- * we use the in-memory bundle from `/api/battles/demo` and document the
- * wiring gap in the status report.
- */
 async function loadAgentPassport(agentId: string): Promise<{
   passport: AgentPassport;
   battle: BattleSummary;
@@ -104,19 +100,25 @@ async function loadAgentPassport(agentId: string): Promise<{
  * a dedicated `/api/agents/[id]/passport` endpoint is wired.
  */
 function loadFromDemoBundle(agentId: string) {
-  // The demo bundle is a singleton; fetch it via the same module path the
-  // API route uses. Since we are in a server component, we call directly.
   const bundle = demoBattle;
   const engineTeamId = agentId.replace(/-/g, "_");
   const score = bundle.scores[agentId as keyof typeof bundle.scores];
+  const teamEntry = bundle.teams.find((t) => t.id === agentId);
+  const displayName = teamEntry?.name ?? winner.name;
+  const initials = displayName
+    .split(/\s+/)
+    .map((word) => word[0]?.toUpperCase() ?? "")
+    .join("")
+    .slice(0, 2) || "AG";
   const passport: AgentPassport = {
     id: `passport_${bundle.id}_${agentId}`,
     agentId: `${engineTeamId}_agent`,
     battleId: bundle.id,
-    agentName: bundle.teams.find((t) => t.id === agentId)?.name ?? winner.name,
-    role: bundle.teams.find((t) => t.id === agentId)?.subtitle ?? winner.subtitle,
+    agentName: displayName,
+    role: teamEntry?.subtitle ?? winner.subtitle,
+    version: "v1",
     directoryPath: `agents/${agentId}`,
-    contributionSummary: `${bundle.teams.find((t) => t.id === agentId)?.name ?? winner.name} contributed ${bundle.passport.acceptedClaims.length} accepted claims and ${bundle.passport.rejectedClaims.length} rejected claims across ${bundle.events.length} events.`,
+    contributionSummary: `${displayName} contributed ${bundle.passport.acceptedClaims.length} accepted claims and ${bundle.passport.rejectedClaims.length} rejected claims across ${bundle.events.length} events.`,
     acceptedClaims: bundle.passport.acceptedClaims,
     rejectedClaims: bundle.passport.rejectedClaims,
     strengths: bundle.passport.strengths,
@@ -156,44 +158,56 @@ export default async function PassportPage({
   const isChampion = battle.winnerTeamId === id || battle.winnerTeamId === id.replace(/-/g, "_");
   const shareUrl = `https://agentarena.ai/agent/${id}/passport`;
 
+  const sealInitials = passport.agentName
+    .split(/\s+/)
+    .map((word) => word[0]?.toUpperCase() ?? "")
+    .join("")
+    .slice(0, 2) || "AG";
+
+  // PRD §12.3 invariant: weaknesses column is NEVER empty.
+  const strengthsList = passport.strengths.length > 0
+    ? passport.strengths
+    : ["No clear strengths surfaced from the battle."];
+  const weaknessesList = passport.weaknesses.length > 0
+    ? passport.weaknesses
+    : ["Low-severity weaknesses detected — no critical gaps found."];
+
   return (
     <AppShell active="passport" showRail currentRound="passport">
       {/* Print: passport-layout gets one A4 layout via print.css */}
       <div className="passport-layout print-target">
-        {/* LEFT COLUMN — identity + contribution */}
-        <div className="passport-left">
-          <section className="passport-hero">
-            <div className="passport-seal-wrap" aria-label="Champion seal">
-              <svg viewBox="0 0 80 80" width={80} height={80} aria-hidden="true">
-                <circle cx="40" cy="40" r="36" fill="none" stroke="var(--champion)" strokeWidth="3" />
-                <circle cx="40" cy="40" r="28" fill="var(--champion)" opacity="0.15" />
-                <text
-                  x="40"
-                  y="48"
-                  textAnchor="middle"
-                  fontSize="24"
-                  fontWeight="bold"
-                  fill="var(--champion)"
-                >
-                  {isChampion ? "★" : "P"}
-                </text>
-              </svg>
-            </div>
-            <div>
-              <h1>{passport.agentName}</h1>
-              <p className="passport-role">{passport.role}</p>
+
+        {/* IDENTITY STRIP — gold seal + name + role + version */}
+        <section
+          className="passport-hero"
+          style={{ gridColumn: "1 / -1" }}
+          aria-label="Agent identity"
+        >
+          <PassportSeal
+            initials={sealInitials}
+            size={80}
+            ariaLabel={isChampion ? "Champion seal" : "Participant seal"}
+          />
+          <div className="passport-identity">
+            <h1>{passport.agentName}</h1>
+            <p className="passport-role">{passport.role}</p>
+            <div className="passport-pill-row">
+              <span className="path-pill passport-version">{passport.version}</span>
               <span className="path-pill">{passport.directoryPath}</span>
               {isChampion ? (
-                <span className="status-pill purple">Champion</span>
+                <span className="status-pill champion">Champion</span>
               ) : (
                 <span className="status-pill">Participant</span>
               )}
             </div>
-          </section>
+          </div>
+        </section>
 
+        {/* LEFT COLUMN — contribution + evidence */}
+        <div className="passport-left">
           <SectionCard title="Contribution Summary">
             <p className="passport-summary">{passport.contributionSummary}</p>
-            <div className="metric-grid compact">
+            <div className="metric-grid compact" style={{ marginTop: 16 }}>
               <article className="metric-card">
                 <span>Battle</span>
                 <strong>{battle.id}</strong>
@@ -213,18 +227,27 @@ export default async function PassportPage({
             </div>
           </SectionCard>
 
+          <SectionCard title="Reputation Snapshot">
+            <PassportMetrics />
+          </SectionCard>
+
           <SectionCard title="Evidence Chain">
-            <p className="passport-evidence-hint">
-              Each claim below is backed by an event from the battle replay. Click any link to view the
-              source event.
+            <p
+              style={{
+                margin: "0 0 10px",
+                fontSize: "var(--t-sm)",
+                color: "var(--fg-muted)",
+              }}
+            >
+              Each claim below is backed by an event from the battle replay. Click any link to view the source event.
             </p>
             <div className="evidence-list">
               {passport.acceptedClaims.map((claim) => (
-                <article key={claim.attackId} className="evidence-row">
+                <article key={`acc-${claim.attackId}`} className="evidence-row">
                   <span className="evidence-type accepted">Accepted</span>
                   <p>{claim.claim}</p>
                   <Link
-                    href={`/battle/${battle.id}/replay` as Route}
+                    href={`/battle/${battle.id}/replay?event=${claim.attackId}` as Route}
                     className="evidence-link font-mono"
                   >
                     {claim.attackId}
@@ -232,11 +255,11 @@ export default async function PassportPage({
                 </article>
               ))}
               {passport.rejectedClaims.map((claim) => (
-                <article key={claim.attackId} className="evidence-row">
+                <article key={`rej-${claim.attackId}`} className="evidence-row">
                   <span className="evidence-type rejected">Rejected</span>
                   <p>{claim.claim}</p>
                   <Link
-                    href={`/battle/${battle.id}/replay` as Route}
+                    href={`/battle/${battle.id}/replay?event=${claim.attackId}` as Route}
                     className="evidence-link font-mono"
                   >
                     {claim.attackId}
@@ -247,37 +270,34 @@ export default async function PassportPage({
           </SectionCard>
         </div>
 
-        {/* RIGHT COLUMN — reputation snapshot */}
+        {/* RIGHT COLUMN — strengths | weaknesses + actions */}
         <div className="passport-right">
-          <SectionCard title="Reputation Snapshot">
-            <PassportMetrics />
-          </SectionCard>
-
-          <SectionCard title="Strengths">
-            <div className="pill-row">
-              {passport.strengths.map((strength) => (
-                <span key={strength} className="soft-pill purple">
-                  {strength}
-                </span>
-              ))}
+          {/* §4.6: two-column strengths | weaknesses. MUST be non-empty. */}
+          <div
+            className="passport-two-col"
+            data-testid="strengths-weaknesses"
+          >
+            <div>
+              <h2 className="passport-two-col-heading">Strengths</h2>
+              <div className="pill-row" data-testid="strengths-column">
+                {strengthsList.map((strength) => (
+                  <span key={strength} className="soft-pill purple">
+                    {strength}
+                  </span>
+                ))}
+              </div>
             </div>
-          </SectionCard>
-
-          {/* PRD §12.3: weaknesses column NEVER empty. Generator guarantees
-              at least one entry; if zero accepted attacks, fallback shows
-              "lowest scoring category". We also add a defensive floor here. */}
-          <SectionCard title="Areas to Improve">
-            <div className="pill-row" data-testid="weaknesses-column">
-              {(passport.weaknesses.length > 0
-                ? passport.weaknesses
-                : ["Low-severity weaknesses detected — no critical gaps found."]
-              ).map((weakness) => (
-                <span key={weakness} className="soft-pill red">
-                  {weakness}
-                </span>
-              ))}
+            <div>
+              <h2 className="passport-two-col-heading">Weaknesses</h2>
+              <div className="pill-row" data-testid="weaknesses-column">
+                {weaknessesList.map((weakness) => (
+                  <span key={weakness} className="soft-pill red">
+                    {weakness}
+                  </span>
+                ))}
+              </div>
             </div>
-          </SectionCard>
+          </div>
 
           <SectionCard title="Actions">
             <div className="passport-actions">
@@ -325,12 +345,12 @@ export default async function PassportPage({
               <ul>
                 {passport.acceptedClaims.map((claim) => (
                   <li key={`print-accept-${claim.attackId}`}>
-                    {claim.attackId} (accepted): https://agentarena.ai/battle/{battle.id}/replay#{claim.attackId}
+                    {claim.attackId} (accepted): https://agentarena.ai/battle/{battle.id}/replay?event={claim.attackId}
                   </li>
                 ))}
                 {passport.rejectedClaims.map((claim) => (
                   <li key={`print-reject-${claim.attackId}`}>
-                    {claim.attackId} (rejected): https://agentarena.ai/battle/{battle.id}/replay#{claim.attackId}
+                    {claim.attackId} (rejected): https://agentarena.ai/battle/{battle.id}/replay?event={claim.attackId}
                   </li>
                 ))}
               </ul>

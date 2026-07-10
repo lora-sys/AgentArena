@@ -444,6 +444,56 @@ export function ChampionHero() {
   );
 }
 
+/**
+ * PassportSeal — gold seal per design.md §4.6 / §2.1.
+ * Circular, champion-gold ring, team initials centered.
+ *
+ * The seal is the only place champion gold appears in the passport
+ * (besides the winner pill and the exported report cover). It must
+ * NOT be used on buttons or in body copy.
+ */
+export function PassportSeal({
+  initials,
+  size = 80,
+  ariaLabel = "Champion seal",
+}: {
+  initials: string;
+  size?: number;
+  ariaLabel?: string;
+}) {
+  const stroke = 3;
+  const radius = (size - stroke) / 2;
+  const center = size / 2;
+  const innerRadius = radius - 6;
+  return (
+    <div className="passport-seal-wrap" aria-label={ariaLabel}>
+      <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} aria-hidden="true">
+        <circle
+          className="passport-seal-ring"
+          cx={center}
+          cy={center}
+          r={radius}
+          strokeWidth={stroke}
+        />
+        <circle
+          className="passport-seal-fill"
+          cx={center}
+          cy={center}
+          r={innerRadius}
+        />
+        <text
+          className="passport-seal-initials"
+          x={center}
+          y={center + size * 0.08}
+          textAnchor="middle"
+        >
+          {initials}
+        </text>
+      </svg>
+    </div>
+  );
+}
+
 export function PassportMetrics() {
   const passport = demoBattle.passport;
   return (

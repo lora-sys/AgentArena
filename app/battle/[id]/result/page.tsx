@@ -98,6 +98,7 @@ const scoreDimensions: Array<{ key: keyof BattleScoreRow["scores"]; label: strin
 
 function Scoreboard({ scores }: { scores: BattleScoreRow[] }) {
   const ranked = [...scores].sort((a, b) => b.totalScore - a.totalScore);
+  const rankLabels: Record<number, string> = { 1: "1st", 2: "2nd", 3: "3rd" };
 
   return (
     <div className="scoreboard" role="table" aria-label="Judge scoreboard">
@@ -111,43 +112,48 @@ function Scoreboard({ scores }: { scores: BattleScoreRow[] }) {
           </span>
         ))}
       </div>
-      {ranked.map((score, index) => (
-        <div
-          key={score.teamId}
-          className={`scoreboard-row ${score.teamId === ranked[0]?.teamId ? "rank-first" : ""}`}
-          role="row"
-        >
-          <span className="rank-cell" role="cell">
-            {index + 1}
-          </span>
-          <span className="team-cell" role="cell">
-            <strong>{score.teamName}</strong>
-          </span>
-          <span className="total-cell" role="cell">
-            <strong>{score.totalScore.toFixed(1)}</strong>
-          </span>
-          {scoreDimensions.map((dim) => (
-            <span
-              key={dim.key}
-              className="score-cell"
-              role="cell"
-              tabIndex={0}
-              title={`Evidence: ${score.evidenceEventId}`}
-              aria-label={`${dim.label}: ${score.scores[dim.key].toFixed(1)}, evidence ${score.evidenceEventId}`}
-            >
-              <span className="score-value">{score.scores[dim.key].toFixed(1)}</span>
-              <i
-                className="score-bar"
-                style={{ width: `${(score.scores[dim.key] / 10) * 100}%` }}
-                aria-hidden="true"
-              />
-              <span className="score-tooltip" role="tooltip">
-                ev: {score.evidenceEventId}
-              </span>
+      {ranked.map((score, index) => {
+        const rank = index + 1;
+        const isFirst = rank === 1;
+        const rankLabel = rankLabels[rank] ?? `${rank}th`;
+        return (
+          <div
+            key={score.teamId}
+            className={`scoreboard-row ${isFirst ? "rank-first" : ""}`}
+            role="row"
+          >
+            <span className="rank-cell" role="cell">
+              <span aria-label={rankLabel}>{rank}</span>
             </span>
-          ))}
-        </div>
-      ))}
+            <span className="team-cell" role="cell">
+              <strong>{score.teamName}</strong>
+            </span>
+            <span className="total-cell" role="cell">
+              <strong>{score.totalScore.toFixed(1)}</strong>
+            </span>
+            {scoreDimensions.map((dim) => (
+              <span
+                key={dim.key}
+                className="score-cell"
+                role="cell"
+                tabIndex={0}
+                title={`Evidence: ${score.evidenceEventId}`}
+                aria-label={`${dim.label}: ${score.scores[dim.key].toFixed(1)}, evidence ${score.evidenceEventId}`}
+              >
+                <span className="score-value">{score.scores[dim.key].toFixed(1)}</span>
+                <i
+                  className="score-bar"
+                  style={{ width: `${(score.scores[dim.key] / 10) * 100}%` }}
+                  aria-hidden="true"
+                />
+                <span className="score-tooltip" role="tooltip">
+                  ev: {score.evidenceEventId}
+                </span>
+              </span>
+            ))}
+          </div>
+        );
+      })}
     </div>
   );
 }

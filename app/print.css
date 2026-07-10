@@ -206,7 +206,27 @@
     text-decoration: underline !important;
   }
 
-  /* Strengths / Weaknesses — flat list */
+  /* Strengths / Weaknesses — two-column container collapses to flat list */
+  .passport-two-col {
+    display: block !important;
+    grid-template-columns: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 0 4mm 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    page-break-inside: avoid !important;
+  }
+
+  .passport-two-col-heading {
+    font-size: 11pt !important;
+    font-weight: 700 !important;
+    margin: 3mm 0 1mm 0 !important;
+    padding-bottom: 0.5mm !important;
+    border-bottom: 0.5pt solid #000 !important;
+    page-break-after: avoid !important;
+  }
+
   .pill-row {
     display: block !important;
   }
