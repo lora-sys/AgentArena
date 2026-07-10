@@ -1,31 +1,75 @@
-# Agent Arena Agent Instructions
+# AGENTS.md
 
-## Read First
+> Root routing file for all agents (human or AI) working on this repository. If you are an AI agent, read this first, then follow the links in the order below.
 
-Every agent working in this repository must start here, then read the task-specific source docs.
+## What this is
 
-Required order:
+Agent Arena is a reputation arena for AI agent teams. Three teams enter a structured Battle, generate proposals, attack each other, defend, get scored, and produce replayable evidence plus an Agent Passport Snapshot.
 
-1. [README.md](README.md)
-2. [docs/project-status.md](docs/project-status.md)
-3. [docs/development-plan.md](docs/development-plan.md)
-4. [docs/acceptance-standards.md](docs/acceptance-standards.md)
-5. The source doc for the area you are touching:
-   - Product behavior: [docs/mvp-spec.md](docs/mvp-spec.md)
-   - Runtime boundaries: [docs/architecture-contracts.md](docs/architecture-contracts.md)
-   - Eve agents: [docs/eve-agents.md](docs/eve-agents.md)
-   - UI direction: [docs/ui-react-bits.md](docs/ui-react-bits.md)
+Product source of truth: [`Agent_Arena_PRD_v0.4_Reputation_Arena_Product_Manual.md`](Agent_Arena_PRD_v0.4_Reputation_Arena_Product_Manual.md) (PRD v0.4).
 
-## Current Build Phase
+## Current Status
 
-The project is in Phase 4 entry:
+v0.4 (Mastra OSS, Postgres-backed). Sprint 0 in progress. Eve framework is retired — see [`docs/adr/0001-eve-to-mastra.md`](docs/adr/0001-eve-to-mastra.md).
 
-- Phase 1 static MVP shell is implemented.
-- Phase 2 deterministic Battle Engine is implemented and drives the seeded UI view model.
-- Phase 3 Eve directory skeleton is implemented and still needs a runtime adapter.
-- Phase 4 deterministic API paths exist; the Live page still needs real polling/SSE binding and durable persistence later.
+## Read Order (v0.4)
 
-For authoritative status, use [docs/project-status.md](docs/project-status.md). Update that file whenever you finish a meaningful step.
+1. **This file** (`AGENTS.md`) — you are here.
+2. **Project fact sheet** — [`docs/CLAUDE.md`](docs/CLAUDE.md). Workspace layout, tech stack, package boundary rules, core invariants.
+3. **Role orchestration** — [`docs/agents.md`](docs/agents.md). Who owns what, handoff protocol, sprint plan.
+4. **Visual language** — [`docs/design.md`](docs/design.md). Tokens, components, six screenshot points (visual direction B — Linear x sports data viz).
+5. **Test guidelines** — [`docs/test-guidelines.md`](docs/test-guidelines.md). Test pyramid, evidence format, coverage bars.
+6. **Migration context** — [`docs/migration-v0.4.md`](docs/migration-v0.4.md). Why v0.3 was abandoned, what survived, what was replaced.
+7. **Architecture decisions** — [`docs/adr/`](docs/adr/). Why each structural choice was made. Start with `0001-eve-to-mastra.md`.
+8. **PRD section** — read the specific PRD section linked from your ticket. PRD v0.4 is the source of truth for product behavior.
+
+## Do NOT read (archived)
+
+The following docs pre-date the v0.4 Mastra direction and are kept for archaeology only. Do not link to them, do not follow their guidance:
+
+- `docs/archive/eve-v0.3/prd.md` — v0.3 Eve-first PRD
+- `docs/archive/eve-v0.3/eve-agents.md` — v0.3 Eve agent directory patterns
+- `docs/archive/eve-v0.3/ui-react-bits.md` — v0.3 UI guide
+
+See [`docs/archive/eve-v0.3/README.md`](docs/archive/eve-v0.3/README.md) for the full archive index and what replaced each doc.
+
+## Core invariants (must not violate)
+
+From `docs/CLAUDE.md` §7:
+
+- **Battle Engine owns flow.** Model never decides round order, who attacks whom, or champion selection.
+- **Every Score binds to ≥1 `evidenceEventId`.** No free-floating scores.
+- **Passport Snapshot must show weaknesses**, not just strengths.
+- **All event payloads pass Zod validation before persistence.** `schema_validation_failed` is itself an event.
+- **Replay and Passport only read from event store.** Never from in-memory state. Page refresh must rebuild everything.
+- **Artifact Writer may not invent facts.** Cross-check at generation time; cite source event IDs.
+
+Any PR violating these is rejected.
+
+## How to work in this repo
+
+1. Pull a ticket from the sprint board. Read the linked PRD section.
+2. Read `docs/CLAUDE.md` §11 "Where to look first" to find the file you need to touch.
+3. If you touch a public API, write the contract first in `docs/adr/NNNN-<topic>.md` and request review.
+4. Write failing tests first (TDD). Coverage bar: ≥80% lines / ≥70% branches for engine, runtime, schemas, store.
+5. Run `pnpm typecheck && pnpm lint && pnpm test` before committing.
+6. Append a learning note to your role file in `docs/learnings/` (backend/frontend/ui/qa).
+7. Hand off via PR description with evidence block (per `docs/agents.md` §3).
+
+## Quick reference
+
+| What | Where |
+|---|---|
+| Battle round logic | `packages/battle-engine/src/rounds/` |
+| Agent output schemas | `packages/schemas/src/` |
+| Database schema | `packages/event-store/src/schema.ts` |
+| Pages and SSE | `apps/web/app/` |
+| Agent spec/prompt | `agents/<team>/spec.yaml` + `agents/<team>/prompt.md` |
+| Design tokens | `packages/ui-kit/src/tokens.css` |
+| Example battle data | `examples/fixtures/` |
+| Why a decision was made | `docs/adr/NNNN-*.md` |
+| Sprint plan | `docs/agents.md` §4 |
+| Cross-role handoff | `docs/agents.md` §3 |
 
 ## Command Rules
 
@@ -35,63 +79,14 @@ For authoritative status, use [docs/project-status.md](docs/project-status.md). 
 - Do not delete or revert user or parallel-agent changes.
 - Do not run destructive git commands.
 
-## Development Rules
-
-- The Battle Engine owns rules: state transitions, score calculation, champion selection, replay generation, passport generation.
-- Agents generate content only. They do not decide round order or winners.
-- UI must read from product data or local interactive state. Do not hardcode business rules inside presentation components.
-- Seeded demo data is allowed, but it should match the eventual runtime shape.
-- Every visible button/control should either work, navigate, open a modal/menu, update state, or be clearly removed.
-- Use React Bits only as copied local source or as inspiration for local components. Do not import remote runtime code.
-
-## Documentation Sync Protocol
-
-After every meaningful phase step, update docs in the same change:
-
-1. Update [docs/project-status.md](docs/project-status.md):
-   - Current phase.
-   - Completed work.
-   - Incomplete work.
-   - Unresolved files or areas.
-   - Proposed resolution.
-   - Verification evidence.
-2. If product behavior changed, update [docs/mvp-spec.md](docs/mvp-spec.md).
-3. If runtime contracts changed, update [docs/architecture-contracts.md](docs/architecture-contracts.md).
-4. If UI behavior or visual direction changed, update [docs/ui-react-bits.md](docs/ui-react-bits.md) and [docs/acceptance-standards.md](docs/acceptance-standards.md) if gates changed.
-5. If commands or diagnostics changed, update [README.md](README.md), [docs/diagnostic-tools.md](docs/diagnostic-tools.md), or scripts as appropriate.
-
-No phase should be considered complete unless the tracker names the verification command or runtime evidence.
-
 ## Subagent Workflow
 
 Prefer subagents for bounded parallel work, especially:
 
 - Engine/runtime slice.
-- Eve agent directory slice.
+- Mastra agent slice.
 - UI activation review.
 - Documentation consistency review.
 - Final audit.
 
 Keep write scopes disjoint. Tell subagents they are not alone in the codebase and must not revert others' work. The main agent owns integration, final review, and docs/status synchronization.
-
-## Verification Baseline
-
-Before handoff, run the relevant subset:
-
-```bash
-rtk npm run typecheck
-rtk npm run build
-rtk ./scripts/doctor.sh
-```
-
-For UI work, also open the app at `http://localhost:3000` and verify the touched routes in browser screenshots or snapshots.
-
-When the user requests `@浏览器` / Browser plugin verification, use the bundled in-app Browser plugin and save evidence under `artifacts/e2e/<date>-browser/`.
-
-## Known Product Priorities
-
-1. Bind dynamic battle pages to `/api/battles/[id]` instead of rendering demo aliases.
-2. Add Live page event polling/SSE consumption.
-3. Add the Eve adapter boundary and deterministic mock adapter.
-4. Replace local mock auth and battle rows after persistence exists.
-5. Add CI and repeatable browser QA once the browser runner is selected for non-interactive automation.
