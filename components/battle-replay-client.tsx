@@ -81,8 +81,17 @@ export function BattleReplayClient({ battleId }: BattleReplayClientProps) {
 
   // Resolve ?attack= or ?event= query params to a real BattleEvent.id and
   // auto-open the drawer. Runs after events load.
+  const lastResolvedParamsRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (status !== "ready" || events.length === 0) return;
+    if (!attackIdParam && !eventIdParam) return;
+
+    // Only re-run when URL params actually change — not on every events re-fetch
+    // or selectedEventId update. This prevents the feedback loop where the effect
+    // sets selectedEventId, triggers a re-render, and re-executes scroll logic.
+    const paramsKey = `${attackIdParam ?? ""}|${eventIdParam ?? ""}`;
+    if (paramsKey === lastResolvedParamsRef.current) return;
 
     let resolvedId: string | null = null;
 
@@ -103,16 +112,21 @@ export function BattleReplayClient({ battleId }: BattleReplayClientProps) {
       if (matched) resolvedId = matched.id;
     }
 
-    if (resolvedId && resolvedId !== selectedEventId) {
+    if (resolvedId) {
+      lastResolvedParamsRef.current = paramsKey;
       setSelectedEventId(resolvedId);
-      // Scroll to the matching event
+      // Scroll to the matching event — center it in the measured viewport
       const eventIndex = events.findIndex((e) => e.id === resolvedId);
       if (eventIndex >= 0 && scrollContainerRef.current) {
-        const targetTop = eventIndex * ROW_HEIGHT - DEFAULT_VIEWPORT_HEIGHT / 2 + ROW_HEIGHT / 2;
+        const targetTop = eventIndex * ROW_HEIGHT - viewportHeight / 2 + ROW_HEIGHT / 2;
         scrollContainerRef.current.scrollTop = Math.max(0, targetTop);
       }
+    } else {
+      // Params present but no match — still mark as processed to avoid
+      // re-scanning on every render.
+      lastResolvedParamsRef.current = paramsKey;
     }
-  }, [status, events, attackIdParam, eventIdParam, selectedEventId]);
+  }, [status, events, attackIdParam, eventIdParam, viewportHeight]);
 
   useEffect(() => {
     const el = scrollContainerRef.current;

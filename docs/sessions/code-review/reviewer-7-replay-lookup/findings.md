@@ -1,0 +1,35 @@
+# Adversarial Review — Replay Client Event Lookup
+
+Date: 2026-07-10
+Reviewer: reviewer-7-replay-lookup
+
+## CRITICAL
+
+1. **components/battle-replay-client.tsx:84-115** — The query-param resolution effect re-fires on every render where `selectedEventId` changes, creating a feedback loop. The effect depends on `selectedEventId` in its dependency array. When the effect sets `selectedEventId` (line 107), the effect re-triggers, but the guard `resolvedId !== selectedEventId` (line 106) prevents repeated state updates — however, this means **if a user manually clicks a different event (setting `selectedEventId` to some other id), and the URL query params change back to the same value, the effect will re-trigger and scroll the timeline, potentially overriding the user's selection** without any URL change to justify it. More importantly, the guard does **not** prevent re-running the scroll logic when `selectedEventId` is part of the dependency array. If the `events` array reference changes (e.g., re-fetch with same data), the effect re-fires and the scroll-to-event logic re-executes even though the user did not change the URL or selection, snapping scroll position away from where the user scrolled to.
+
+2. **components/battle-replay-client.tsx:111** — Scroll target uses `DEFAULT_VIEWPORT_HEIGHT` (constant 600) rather than the actual measured `viewportHeight` from the ResizeObserver. The CSS `height` on the scroll container is hardcoded to `${DEFAULT_VIEWPORT_HEIGHT}px` (line 189), but the ResizeObserver on lines 117-126 tracks `viewportHeight` for the virtual list calculation. The scroll target offset `DEFAULT_VIEWPORT_HEIGHT / 2` on line 111 is correct only when the container is exactly 600px tall. If the container height is ever overridden by CSS (e.g., responsive design changes height to 400px or 800px on mobile/desktop), the scroll will be misaligned — the target row will not be centered.
+
+## HIGH
+
+1. **components/battle-replay-client.tsx:89-93** — `?event=` lookup is **never used in practice** because the auto-resolve effect (line 84) only runs once when status becomes "ready" and `selectedEventId` is null. After the initial run, if the user navigates to a new `?event=` value (e.g., via browser history or a deep link), the effect will re-run because `eventIdParam` changes in the dependency array. But the guard at line 106 (`resolvedId !== selectedEventId`) means: if the user **manually** selected event A (so `selectedEventId` = A), and the URL has `?event=B`, the effect finds B, sees `B !== A`, and **overwrites the user's selection with B and scrolls the timeline**. This means query params in the URL always override user clicks, with no mechanism to sync URL back to the user-selected event.
+
+2. **components/battle-replay-client.tsx:93-103** — `?attack=` lookup scans only `attack_created` events and only matches `rawPayload.id`. This is a domain ID, not an event ID. If two `attack_created` events have the same `rawPayload.id` (which could happen if the domain `Attack` object is referenced from multiple event records — e.g., a `defense_created` event whose payload also contains the attack ID), **only the first match is used** (line 95 uses `find`, not `filter`). The user is silently shown the wrong event with no indication. Additionally, if the `attackIdParam` does not exist in any `attack_created` event, the drawer simply doesn't open — there is no feedback to the user (no "event not found" message, no URL cleanup).
+
+3. **components/battle-replay-client.tsx:54-80** — The fetch effect re-fetches when `battleId` changes but does **not** handle the case where `useSearchParams()` changes (e.g., user navigates from `?attack=A` to `?attack=B` on the same page). The events are already loaded, so no re-fetch occurs, but the resolve effect (line 84) does re-run. This is actually the intended behavior — but the problem is that `searchParams` from `useSearchParams()` returns a new object reference on every render in some Next.js versions, potentially causing the fetch effect's dependency to change. The current fetch effect only depends on `battleId` (line 80), so this is not triggered — **but if someone later adds `searchParams` to that dependency array, infinite re-fetching would occur**.
+
+4. **components/battle-replay-client.tsx:46-47, 106-113** — No mechanism to update the URL when the user manually selects an event. The `selectedEventId` is only set to query param values, never written back to the URL. This means browser back/forward buttons do not navigate between event selections — the URL stays static while the drawer changes. If a user clicks event A, then event B, then presses "Back", the page navigates to the previous **page** (not the previous event selection). The query param mechanism is one-directional: URL → drawer, never drawer → URL.
+
+## MEDIUM
+
+1. **components/battle-replay-client.tsx:84-115** — The effect runs on the very first render where `status === "ready"` even if there are no query params. While it returns early (line 85 guard for empty events), it does not guard against `!attackIdParam && !eventIdParam` — it computes `resolvedId` as null, and then the `if (resolvedId && ...)` guard (line 106) correctly prevents any state update. This is fine functionally, but the effect still runs the `events.find()` and `findIndex()` calls on every re-render where `events` changes, which is wasteful for long battle event lists.
+
+2. **components/battle-replay-client.tsx:117-126** — The ResizeObserver depends on `[status]` (line 126). If the component re-renders due to a status change (e.g., from "loading" to "ready"), the observer is torn down and recreated. During the brief gap between disconnect and re-observation, `viewportHeight` may reset to `DEFAULT_VIEWPORT_HEIGHT` (line 47 initial value), causing a visible layout jump. This is a minor visual bug but contributes to perceived jank.
+
+3. **components/battle-replay-client.tsx:142-148** — `handleSelect` and `handleClose` do not clear the query params from the URL. When the user opens a drawer by clicking a row and then closes it, the URL still contains `?attack=X` or `?event=Y`, which means a page refresh would re-open the drawer. There is no `router.replace()` or `window.history.replaceState()` to sync URL state with user actions.
+
+4. **components/battle-replay-client.tsx:132-135** — `visibleEvents` is memoized on `[events, startIndex, endIndex]`, but `startIndex` and `endIndex` are recomputed on every render (lines 129-131), so the memo will invalidate on every render where scroll position changes (line 188). This defeats the purpose of `useMemo` and could cause performance issues with very long event lists, as `.slice()` is called on the full events array on every scroll event.
+
+5. **components/battle-replay-client.tsx:50-52** — `useSearchParams()` is called unconditionally. If the component is ever rendered outside a `<Suspense>` boundary (the page wraps it in `<Suspense fallback={null}`, line 11 of page.tsx), this will throw at build time. Currently the page does wrap it, but this coupling is implicit and fragile.
+
+## Summary
+- Critical: 2, High: 4, Medium: 5
