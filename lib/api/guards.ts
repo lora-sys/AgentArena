@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { ZodSchema } from "zod";
+import PQueue from "p-queue";
 
 /**
  * API guards — rate limiting, input validation, and path-param format checks.
@@ -199,8 +200,47 @@ export function withRateLimit<Args extends unknown[]>(
 }
 
 /* ------------------------------------------------------------------ */
-/* Input validation — Zod schema wrapper                               */
+/* Global concurrency limit — p-queue                                 */
 /* ------------------------------------------------------------------ */
+
+/**
+ * Module-level p-queue shared across all routes that opt in to global
+ * concurrency limiting. This caps the total number of in-flight
+ * long-running battle operations (OpenAI calls, event-store writes) to
+ * prevent resource exhaustion when many battles run simultaneously.
+ *
+ * Default maxConcurrent is 6 per PM recommendation.
+ */
+const globalQueue = new PQueue({ concurrency: 6 });
+
+export type ConcurrencyOptions = {
+  /** Max concurrent in-flight requests across all routes using the global queue. Default 6. */
+  maxConcurrent?: number;
+};
+
+/**
+ * Wraps a route handler with global concurrency limiting via p-queue.
+ * When the queue is full, excess requests are queued (FIFO) and resolved
+ * when a slot frees up. This protects downstream resources (OpenAI
+ * API, Postgres) from simultaneous overload.
+ *
+ * Pattern mirrors `withRateLimit`: the handler signature is unchanged,
+ * so existing route handlers can opt in by wrapping the exported method.
+ */
+export function withGlobalConcurrency<Args extends unknown[]>(
+  handler: (request: Request, ...args: Args) => Promise<Response> | Response,
+  options: ConcurrencyOptions = {},
+): (request: Request, ...args: Args) => Promise<Response> {
+  const concurrency = options.maxConcurrent ?? 6;
+
+  // If a different concurrency is requested, create a dedicated queue
+  // so per-call overrides don't disturb the module-level default.
+  const queue = concurrency === 6 ? globalQueue : new PQueue({ concurrency });
+
+  return async (request: Request, ...args: Args): Promise<Response> => {
+    return queue.add(() => handler(request, ...args)) as Promise<Response>;
+  };
+}
 
 /**
  * Wraps a route handler with Zod-based body validation.
@@ -237,6 +277,61 @@ export function withInputValidation<T, Args extends unknown[]>(
 }
 
 /* ------------------------------------------------------------------ */
+/* Battle cancellation — AbortController registry                      */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Module-level map of AbortControllers keyed by battle ID.
+ * The cancel route posts to this registry to signal an in-flight
+ * OpenAI request to abort. After the request finishes (success or
+ * error), the controller is cleaned up via clearAbortController().
+ *
+ * Cancel works by aborting the in-flight OpenAI request + falling back
+ * to mock for remaining rounds. See lib/runtime/mastra.ts for the
+ * AbortSignal threading.
+ */
+const abortControllers = new Map<string, AbortController>();
+
+/**
+ * Register an AbortController for a battle ID. The runtime calls this
+ * when a battle starts so the cancel endpoint has a target to signal.
+ * Returns the controller so the runtime can pass its signal to OpenAI.
+ */
+export function registerAbortController(battleId: string): AbortController {
+  const existing = abortControllers.get(battleId);
+  if (existing) {
+    // Replace any stale controller from a previous run.
+    existing.abort();
+  }
+  const controller = new AbortController();
+  abortControllers.set(battleId, controller);
+  return controller;
+}
+
+/**
+ * Signal cancel for a battle. Triggers the AbortController so any
+ * in-flight OpenAI request is cancelled. Returns true if a controller
+ * was found, false if no battle is currently running for that ID.
+ */
+export function cancelCurrentBattle(battleId: string): boolean {
+  const controller = abortControllers.get(battleId);
+  if (!controller) {
+    return false;
+  }
+  controller.abort();
+  return true;
+}
+
+/**
+ * Remove a battle's AbortController from the registry. Call this when
+ * a battle finishes (success, failure, or already-cancelled) to prevent
+ * unbounded memory growth.
+ */
+export function clearAbortController(battleId: string): void {
+  abortControllers.delete(battleId);
+}
+
+/* ------------------------------------------------------------------ */
 /* Test helpers                                                        */
 /* ------------------------------------------------------------------ */
 
@@ -248,6 +343,17 @@ export function withInputValidation<T, Args extends unknown[]>(
 export function __resetRateLimit(): void {
   buckets.clear();
   lastCleanup = Date.now();
+}
+
+/**
+ * Test-only: clear the abort-controller registry.
+ * Used by e2e test setup to reset state between tests.
+ */
+export function __resetAbortControllers(): void {
+  for (const controller of abortControllers.values()) {
+    controller.abort();
+  }
+  abortControllers.clear();
 }
 
 /* ------------------------------------------------------------------ */

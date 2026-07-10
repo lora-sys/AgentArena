@@ -443,9 +443,117 @@ describe("withInputValidation", () => {
 });
 
 /* ------------------------------------------------------------------ */
-/* badRequest helper                                                   */
+/* withGlobalConcurrency                                               */
 /* ------------------------------------------------------------------ */
 
+describe("withGlobalConcurrency", () => {
+  beforeEach(() => {
+    // p-queue uses real timers internally. The withRateLimit block
+    // above activates vi.useFakeTimers() in its beforeEach, which
+    // persists across describes unless explicitly reverted. Without
+    // vi.useRealTimers(), p-queue's setTimeout(0) never fires and
+    // queued tasks hang until the test timeout.
+    vi.useRealTimers();
+  });
+
+  it("caps concurrent in-flight requests to maxConcurrent (FIFO queue)", async () => {
+    const { withGlobalConcurrency } = await import("@/lib/api/guards");
+
+    let active = 0;
+    let maxObserved = 0;
+    const handler = vi.fn(async (_request: Request) => {
+      active += 1;
+      maxObserved = Math.max(maxObserved, active);
+      // Simulate a slow async operation (OpenAI call latency).
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      active -= 1;
+      return new Response("ok");
+    });
+
+    const wrapped = withGlobalConcurrency(handler, { maxConcurrent: 2 });
+
+    // Fire 5 requests simultaneously. With concurrency=2, at most 2
+    // should be in-flight at any time.
+    const requests = Array.from({ length: 5 }, () =>
+      new Request("http://localhost/test", {
+        headers: { "x-forwarded-for": "10.1.0.1" },
+      }),
+    );
+
+    const responses = await Promise.all(requests.map((req) => wrapped(req)));
+
+    // All requests should ultimately succeed.
+    for (const r of responses) {
+      expect(r.status).toBe(200);
+    }
+
+    // No more than maxConcurrent handlers should have been active simultaneously.
+    expect(maxObserved).toBeLessThanOrEqual(2);
+    // All 5 handlers should have been called (none dropped).
+    expect(handler).toHaveBeenCalledTimes(5);
+  });
+
+  it("uses default concurrency of 6 when no options provided", async () => {
+    const { withGlobalConcurrency } = await import("@/lib/api/guards");
+
+    let active = 0;
+    let maxObserved = 0;
+    const handler = vi.fn(async () => {
+      active += 1;
+      maxObserved = Math.max(maxObserved, active);
+      await new Promise((resolve) => setTimeout(resolve, 15));
+      active -= 1;
+      return new Response("ok");
+    });
+
+    const wrapped = withGlobalConcurrency(handler);
+
+    const requests = Array.from({ length: 4 }, () =>
+      new Request("http://localhost/test", {
+        headers: { "x-forwarded-for": "10.1.0.2" },
+      }),
+    );
+
+    const responses = await Promise.all(requests.map((req) => wrapped(req)));
+
+    for (const r of responses) {
+      expect(r.status).toBe(200);
+    }
+
+    // 4 < 6 default, so all should run concurrently.
+    expect(maxObserved).toBe(4);
+    expect(handler).toHaveBeenCalledTimes(4);
+  });
+
+  it("resolves queued requests as slots free up (does not reject)", async () => {
+    const { withGlobalConcurrency } = await import("@/lib/api/guards");
+
+    const handler = vi.fn(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      return new Response("ok");
+    });
+
+    const wrapped = withGlobalConcurrency(handler, { maxConcurrent: 1 });
+
+    // 3 requests with concurrency=1 → they run sequentially, all succeed.
+    const results = await Promise.all(
+      Array.from({ length: 3 }, () =>
+        wrapped(
+          new Request("http://localhost/test", {
+            headers: { "x-forwarded-for": "10.1.0.3" },
+          }),
+        ),
+      ),
+    );
+
+    expect(results.every((r) => r.status === 200)).toBe(true);
+    expect(handler).toHaveBeenCalledTimes(3);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* badRequest helper                                                   */
+/* ------------------------------------------------------------------ */
 describe("badRequest", () => {
   it("returns a 400 response with the given message", async () => {
     const res = badRequest("Invalid battle ID");

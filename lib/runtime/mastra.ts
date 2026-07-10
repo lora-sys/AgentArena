@@ -29,7 +29,8 @@ import {
   buildArtifactMessages,
 } from "./agent-prompts";
 
-const DEFAULT_MODEL = "gpt-5";
+const DEFAULT_MODEL = process.env.OPENAI_MODEL ?? "gpt-4";
+const DEFAULT_BASE_URL = process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1";
 const DEFAULT_MAX_RETRIES = 3;
 
 export type SchemaRepairEvent = {
@@ -49,6 +50,8 @@ export type MastraRuntimeOptions = {
   model?: string;
   maxRetries?: number;
   onEvent?: (event: SchemaRepairEvent) => void;
+  /** AbortSignal for cancelling in-flight OpenAI requests (e.g. user pressed cancel). */
+  signal?: AbortSignal;
 };
 
 type ChatMessage = { role: "system" | "user"; content: string };
@@ -77,12 +80,15 @@ export class MastraRuntime implements ArenaAgentRuntime {
   private readonly model: string;
   private readonly maxRetries: number;
   private readonly onEvent?: (event: SchemaRepairEvent) => void;
+  private readonly signal?: AbortSignal;
 
   constructor(options: MastraRuntimeOptions = {}) {
-    this.client = options.client ?? new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    this.client =
+      options.client ?? new OpenAI({ apiKey: process.env.OPENAI_API_KEY, baseURL: DEFAULT_BASE_URL });
     this.model = options.model ?? DEFAULT_MODEL;
     this.maxRetries = options.maxRetries ?? DEFAULT_MAX_RETRIES;
     this.onEvent = options.onEvent;
+    this.signal = options.signal;
   }
 
   async runProposal(spec: AgentSpec, input: ProposalInput): Promise<ProposalOutput> {
@@ -199,11 +205,14 @@ export class MastraRuntime implements ArenaAgentRuntime {
   }
 
   private async callOpenAI(_spec: AgentSpec, messages: ChatMessage[]): Promise<string> {
-    const response = await this.client.chat.completions.create({
-      model: this.model,
-      messages,
-      response_format: { type: "json_object" },
-    });
+    const response = await this.client.chat.completions.create(
+      {
+        model: this.model,
+        messages,
+        response_format: { type: "json_object" },
+      },
+      { signal: this.signal },
+    );
     const content = response.choices[0]?.message?.content;
     if (!content) {
       throw new Error("OpenAI returned empty content");
