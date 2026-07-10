@@ -1,4 +1,4 @@
-import { test, expect } from "../_fixtures/test";
+import { test, expect } from "./_fixtures/test";
 
 /**
  * PRD §8.3 — Home page smoke journey.
