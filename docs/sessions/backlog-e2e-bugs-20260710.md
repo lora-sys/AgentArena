@@ -30,6 +30,6 @@ From `docs/sessions/agents/qa-e2e-journeys/status.md`. These are pre-existing ap
 - **Severity**: INFO (resolved)
 
 ## Notes
-- B1 and B2 are blocking issues that should be fixed before next CI run.
-- B3 is a Sprint 1 backlog item (real battle creation flow).
+- B1 and B2 were transient state — already fixed by attack-matrix and visual-review agents before this backlog was filed. See `docs/sessions/agents/fix-e2e-blockers/status.md` for verification.
+- B3 is a real Sprint 1 deliverable (POST /api/battles endpoint).
 - B4 is already addressed.
