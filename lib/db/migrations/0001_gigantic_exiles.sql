@@ -1,0 +1,1 @@
+ALTER TABLE "score" ADD CONSTRAINT "score_evidence_event_ids_non_empty" CHECK (jsonb_array_length("score"."evidence_event_ids_json") >= 1);

@@ -13,7 +13,7 @@
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { newDb, DataType, type IMemoryDb } from "pg-mem";
-import { BattleEventStore } from "./event-store";
+import { BattleEventStore } from "./event-store-postgres";
 import { SchemaValidationError, type BattleEvent } from "../schemas";
 
 const { pgMem, repoMock } = vi.hoisted(() => {

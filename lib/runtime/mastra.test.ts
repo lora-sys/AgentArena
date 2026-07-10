@@ -172,7 +172,7 @@ describe("MastraRuntime", () => {
     const started = events.filter((e) => e.type === "schema_repair_started");
     expect(started).toHaveLength(1);
     expect(started[0].method).toBe("runProposal");
-    expect(started[0].attempt).toBe(0);
+    expect(started[0].attempt).toBe(1);
   });
 
   it("repair loop emits schema_repair_completed when retry succeeds", async () => {
@@ -190,10 +190,9 @@ describe("MastraRuntime", () => {
     expect(completed[0].method).toBe("runProposal");
   });
 
-  it("repair loop retries up to 3 times then throws SchemaRepairExhaustedError", async () => {
+  it("repair loop retries up to maxRetries total attempts then throws SchemaRepairExhaustedError", async () => {
     const invalid = { ...validProposal, productName: "" };
     const fakeClient = makeFakeClient([
-      { content: JSON.stringify(invalid) },
       { content: JSON.stringify(invalid) },
       { content: JSON.stringify(invalid) },
       { content: JSON.stringify(invalid) },
@@ -203,13 +202,33 @@ describe("MastraRuntime", () => {
     await expect(runtime.runProposal(sampleSpec, validProposal)).rejects.toThrow(
       SchemaRepairExhaustedError,
     );
-    expect(fakeClient.chat.completions.create).toHaveBeenCalledTimes(4);
+    expect(fakeClient.chat.completions.create).toHaveBeenCalledTimes(3);
+  });
+
+  it("repair loop with budget=3 emits 2 schema_repair_started events when all fail", async () => {
+    const invalid = { ...validProposal, productName: "" };
+    const fakeClient = makeFakeClient([
+      { content: JSON.stringify(invalid) },
+      { content: JSON.stringify(invalid) },
+      { content: JSON.stringify(invalid) },
+    ]);
+    const runtime = makeRuntime(fakeClient);
+
+    try {
+      await runtime.runProposal(sampleSpec, validProposal);
+    } catch {
+      // expected
+    }
+
+    const started = events.filter((e) => e.type === "schema_repair_started");
+    expect(started).toHaveLength(2);
+    expect(started[0].attempt).toBe(1);
+    expect(started[1].attempt).toBe(2);
   });
 
   it("exhausted repair emits low_confidence_judging event", async () => {
     const invalid = { ...validProposal, productName: "" };
     const fakeClient = makeFakeClient([
-      { content: JSON.stringify(invalid) },
       { content: JSON.stringify(invalid) },
       { content: JSON.stringify(invalid) },
       { content: JSON.stringify(invalid) },
@@ -225,6 +244,48 @@ describe("MastraRuntime", () => {
     const lc = events.filter((e) => e.type === "low_confidence_judging");
     expect(lc).toHaveLength(1);
     expect(lc[0].method).toBe("runProposal");
+  });
+
+  it("exhausted repair emits battle_failed event after low_confidence_judging", async () => {
+    const invalid = { ...validProposal, productName: "" };
+    const fakeClient = makeFakeClient([
+      { content: JSON.stringify(invalid) },
+      { content: JSON.stringify(invalid) },
+      { content: JSON.stringify(invalid) },
+    ]);
+    const runtime = makeRuntime(fakeClient);
+
+    try {
+      await runtime.runProposal(sampleSpec, validProposal);
+    } catch {
+      // expected
+    }
+
+    const failed = events.filter((e) => e.type === "battle_failed");
+    expect(failed).toHaveLength(1);
+    expect(failed[0].method).toBe("runProposal");
+  });
+
+  it("battle_failed event fires after low_confidence_judging in event order", async () => {
+    const invalid = { ...validProposal, productName: "" };
+    const fakeClient = makeFakeClient([
+      { content: JSON.stringify(invalid) },
+      { content: JSON.stringify(invalid) },
+      { content: JSON.stringify(invalid) },
+    ]);
+    const runtime = makeRuntime(fakeClient);
+
+    try {
+      await runtime.runProposal(sampleSpec, validProposal);
+    } catch {
+      // expected
+    }
+
+    const lcIndex = events.findIndex((e) => e.type === "low_confidence_judging");
+    const failedIndex = events.findIndex((e) => e.type === "battle_failed");
+    expect(lcIndex).toBeGreaterThanOrEqual(0);
+    expect(failedIndex).toBeGreaterThanOrEqual(0);
+    expect(failedIndex).toBeGreaterThan(lcIndex);
   });
 
   it("repair prompt is stricter on retry (includes repair suffix)", async () => {
@@ -245,5 +306,39 @@ describe("MastraRuntime", () => {
     const secondSystem = secondArgs.messages[0]!.content;
     expect(firstSystem).not.toContain("previous response failed validation");
     expect(secondSystem).toContain("previous response failed validation");
+  });
+
+  it("runAttack accepts AttackInput parameter (not AttackOutput)", async () => {
+    const fakeClient = makeFakeClient([{ content: JSON.stringify(validAttack) }]);
+    const runtime = makeRuntime(fakeClient);
+
+    // This should compile and run without type errors.
+    // If runAttack incorrectly typed its param as AttackOutput,
+    // passing validAttack (which is AttackInput) would fail at compile time
+    // once the types diverge. For now both are equal so we verify runtime
+    // behavior: the second arg is consumed correctly as input data.
+    const result = await runtime.runAttack(sampleSpec, validAttack);
+    expect(result.id).toBe("atk_001");
+    expect(result.attackerTeamId).toBe("team_viral_designer");
+    AttackSchema.parse(result);
+  });
+
+  it("tryParseJson recovers JSON wrapped in markdown fences", async () => {
+    const fakeClient = makeFakeClient([
+      { content: "```json\n" + JSON.stringify(validProposal) + "\n```" },
+    ]);
+    const runtime = makeRuntime(fakeClient);
+
+    const result = await runtime.runProposal(sampleSpec, validProposal);
+    expect(result.productName).toBe("SafePost");
+  });
+
+  it("tryParseJson throws clear error on completely invalid output", async () => {
+    const fakeClient = makeFakeClient([{ content: "this is not json at all" }]);
+    const runtime = makeRuntime(fakeClient);
+
+    await expect(runtime.runProposal(sampleSpec, validProposal)).rejects.toThrow(
+      /not valid JSON|Invalid JSON/,
+    );
   });
 });

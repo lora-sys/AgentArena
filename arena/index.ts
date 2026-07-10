@@ -1,5 +1,6 @@
 export * from "./schemas";
 export * from "./events/event-store";
+export * from "./events/event-store-postgres";
 export * from "./events/event-types";
 export * from "./engine/artifacts";
 export * from "./engine/battle-state";

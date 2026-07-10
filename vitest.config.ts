@@ -7,6 +7,7 @@ export default defineConfig({
       "arena/**/*.test.ts",
       "examples/**/*.test.ts",
       "components/**/*.test.tsx",
+      "agents/**/*.test.ts",
     ],
     environment: "node",
     pool: "forks",

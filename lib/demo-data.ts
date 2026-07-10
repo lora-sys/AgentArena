@@ -1,4 +1,5 @@
-import { runDemoBattle, type CompletedBattleBundle, type ScoreCategory } from "@/arena";
+import { runDemoBattle } from "@/arena/engine/demo-battle";
+import type { CompletedBattleBundle, ScoreCategory } from "@/arena/schemas";
 import type {
   Artifact,
   Attack,

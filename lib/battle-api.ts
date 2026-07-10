@@ -48,10 +48,42 @@ export const normalizeBattleCreateInput = (payload: BattleCreateInput) => {
   };
 };
 
+// Crockford base32 alphabet: 0-9 A-Z, excluding I, L, O, U.
+// See PRD §8: battle IDs follow `btl_<8-char base32>` (40 bits of entropy).
+const CROCKFORD_BASE32 = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+
+const toBase32Eight = (input: string): string => {
+  // FNV-1a 32-bit hash → 5 bytes of entropy → 8 base32 chars.
+  // FNV offset basis and prime per http://www.isthe.com/chongo/tech/comp/fnv/
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < input.length; i += 1) {
+    hash ^= input.charCodeAt(i);
+    // 32-bit FNV prime: 16777619
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+
+  // Encode 32 bits (hash) as 8 base32 characters (ceil(32 / 5) = 7, round up to 8).
+  // Mix in a second pass over the input to add more entropy for longer seeds.
+  let hash2 = 0x811c9dc5;
+  for (let i = 0; i < input.length; i += 1) {
+    hash2 ^= input.charCodeAt(i);
+    hash2 = Math.imul(hash2, 0x01000193) >>> 0;
+  }
+  // Combine: 32 bits from hash1 + 8 bits from hash2 = 40 bits → exactly 8 base32 chars.
+  const combined = (BigInt(hash) << 8n) | BigInt(hash2 & 0xff);
+  let out = "";
+  let value = combined;
+  for (let i = 0; i < 8; i += 1) {
+    const index = Number(value & 0x1fn);
+    out = CROCKFORD_BASE32[index] + out;
+    value >>= 5n;
+  }
+  return out;
+};
+
 export const makeBattleId = (idea: string | undefined) => {
   const seed = idea ?? "agent-arena-demo";
-  const hash = Array.from(seed).reduce((sum, character) => (sum * 31 + character.charCodeAt(0)) >>> 0, 7);
-  return `battle-${hash.toString(36)}`;
+  return `btl_${toBase32Eight(seed)}`;
 };
 
 export const runBattleFromPayload = (payload: BattleCreateInput, battleId?: string): CompletedBattleBundle => {

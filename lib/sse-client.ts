@@ -1,4 +1,4 @@
-import { assertBattleEvent, type BattleEvent } from "@/arena";
+import { assertBattleEvent, type BattleEvent } from "@/arena/schemas";
 
 /**
  * Typed callback invoked for every validated SSE event.

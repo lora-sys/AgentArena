@@ -109,6 +109,19 @@ beforeAll(async () => {
     implementation: () => new Date(),
     impure: true,
   } as never);
+  // Register jsonb_array_length for pg-mem so CHECK constraints that validate
+  // non-empty JSON arrays can be applied. Real Postgres has this built in.
+  pgMem.public.registerFunction({
+    name: "jsonb_array_length",
+    args: [DataType.jsonb],
+    returns: DataType.integer,
+    implementation: (value: unknown) => {
+      if (!Array.isArray(value)) {
+        return 0;
+      }
+      return value.length;
+    },
+  } as never);
 
   // Apply the Drizzle-generated schema from lib/db/migrations/0000_*.sql
   // so the test exercises the exact column/foreign-key layout that ships.

@@ -33,7 +33,11 @@ const DEFAULT_MODEL = "gpt-5";
 const DEFAULT_MAX_RETRIES = 3;
 
 export type SchemaRepairEvent = {
-  type: "schema_repair_started" | "schema_repair_completed" | "low_confidence_judging";
+  type:
+    | "schema_repair_started"
+    | "schema_repair_completed"
+    | "low_confidence_judging"
+    | "battle_failed";
   spec: AgentSpec;
   method: string;
   attempt: number;
@@ -48,6 +52,25 @@ export type MastraRuntimeOptions = {
 };
 
 type ChatMessage = { role: "system" | "user"; content: string };
+
+function safeJsonParse(input: string): unknown {
+  try {
+    return JSON.parse(input);
+  } catch (err) {
+    if (err instanceof SyntaxError) {
+      throw new Error(`Invalid JSON: ${err.message}`);
+    }
+    throw err;
+  }
+}
+
+function tryParseJsonValue(input: string): unknown {
+  try {
+    return safeJsonParse(input);
+  } catch {
+    return undefined;
+  }
+}
 
 export class MastraRuntime implements ArenaAgentRuntime {
   private readonly client: OpenAI;
@@ -72,7 +95,7 @@ export class MastraRuntime implements ArenaAgentRuntime {
     );
   }
 
-  async runAttack(spec: AgentSpec, input: AttackOutput): Promise<AttackOutput> {
+  async runAttack(spec: AgentSpec, input: AttackInput): Promise<AttackOutput> {
     return this.generateWithRepair(
       spec,
       "runAttack",
@@ -122,8 +145,8 @@ export class MastraRuntime implements ArenaAgentRuntime {
     const retryBudget = spec.maxRetries ?? this.maxRetries;
     let lastIssues: z.ZodIssue[] = [];
 
-    for (let attempt = 0; attempt <= retryBudget; attempt++) {
-      const messages = buildMessages(attempt);
+    for (let attempt = 1; attempt <= retryBudget; attempt++) {
+      const messages = buildMessages(attempt - 1);
       const raw = await this.callOpenAI(spec, messages);
       const parsed = this.tryParseJson(raw);
       const result = schema.safeParse(parsed);
@@ -161,8 +184,16 @@ export class MastraRuntime implements ArenaAgentRuntime {
       issues: lastIssues,
     });
 
+    this.onEvent?.({
+      type: "battle_failed",
+      spec,
+      method,
+      attempt: retryBudget,
+      issues: lastIssues,
+    });
+
     throw new SchemaRepairExhaustedError(
-      `Schema validation failed after ${retryBudget + 1} attempts for ${method}`,
+      `Schema validation failed after ${retryBudget} attempts for ${method}`,
       lastIssues,
     );
   }
@@ -182,15 +213,17 @@ export class MastraRuntime implements ArenaAgentRuntime {
 
   private tryParseJson(raw: string): unknown {
     const trimmed = raw.trim();
-    try {
-      return JSON.parse(trimmed);
-    } catch {
-      const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);
-      if (fenceMatch) {
-        return JSON.parse(fenceMatch[1].trim());
-      }
-      throw new Error("Model output is not valid JSON");
+
+    const direct = tryParseJsonValue(trimmed);
+    if (direct !== undefined) return direct;
+
+    const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (fenceMatch) {
+      const fromFence = tryParseJsonValue(fenceMatch[1].trim());
+      if (fromFence !== undefined) return fromFence;
     }
+
+    throw new Error("Model output is not valid JSON");
   }
 }
 

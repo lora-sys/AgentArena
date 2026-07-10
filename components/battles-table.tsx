@@ -5,8 +5,15 @@ import type { Route } from "next";
 import { Plus, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { TeamAvatar } from "@/components/arena-cards";
-import { teams } from "@/lib/demo-data";
 import type { Team } from "@/lib/types";
+
+// Static team stubs (mirror the 3 built-in teams) — kept inline so this
+// client component does not pull in @/lib/demo-data → @/arena/* → @/lib/db/*.
+const DEMO_TEAMS: Team[] = [
+  { id: "safe-builder",   name: "Safe Builder",   subtitle: "落地派", strategy: "MVP scope + risk control", color: "blue",   score: 0, avatar: "🛡", skills: [], spark: [] },
+  { id: "viral-designer", name: "Viral Designer", subtitle: "传播派", strategy: "Demo wow + share loop",  color: "purple", score: 0, avatar: "✦", skills: [], spark: [] },
+  { id: "infra-hacker",   name: "Infra Hacker",   subtitle: "技术派", strategy: "Protocol-grade depth",   color: "green",  score: 0, avatar: "▲", skills: [], spark: [] },
+];
 
 type BattleRow = {
   id: string;
@@ -24,7 +31,7 @@ const rows: BattleRow[] = [
     id: "demo",
     label: "Battle #42",
     idea: "How might we build a privacy-first AI copilot that helps teams move faster?",
-    winner: teams[0],
+    winner: DEMO_TEAMS[0],
     score: "72.4",
     completed: "Just now",
     status: "Live",
@@ -34,7 +41,7 @@ const rows: BattleRow[] = [
     id: "battle-41",
     label: "Battle #41",
     idea: "How might we reduce onboarding time for enterprise SaaS platforms?",
-    winner: teams[1],
+    winner: DEMO_TEAMS[1],
     score: "78.6",
     completed: "2 hours ago",
     status: "Completed",
@@ -44,7 +51,7 @@ const rows: BattleRow[] = [
     id: "battle-40",
     label: "Battle #40",
     idea: "How might we increase developer productivity with AI automation?",
-    winner: teams[2],
+    winner: DEMO_TEAMS[2],
     score: "74.1",
     completed: "Yesterday",
     status: "Completed",
@@ -54,7 +61,7 @@ const rows: BattleRow[] = [
     id: "battle-39",
     label: "Battle #39",
     idea: "How might we improve customer support with AI agents?",
-    winner: teams[0],
+    winner: DEMO_TEAMS[0],
     score: "68.3",
     completed: "May 10, 2025",
     status: "Completed",
@@ -108,7 +115,7 @@ export function BattlesTable() {
         </select>
         <select value={winner} onChange={(event) => setWinner(event.target.value)} aria-label="Winner">
           <option>All</option>
-          {teams.map((team) => (
+          {DEMO_TEAMS.map((team) => (
             <option key={team.id}>{team.name}</option>
           ))}
         </select>

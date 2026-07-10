@@ -24,6 +24,7 @@ import { sql } from "drizzle-orm";
 import {
   bigint,
   boolean,
+  check,
   doublePrecision,
   index,
   integer,
@@ -358,6 +359,12 @@ export const score = pgTable(
     index("score_agent_id_idx").on(t.agentId),
     index("score_judge_id_idx").on(t.judgeId),
     index("score_event_id_idx").on(t.eventId),
+    // PRD invariant: every score must bind to >=1 evidence event.
+    // Reject empty arrays and non-array values at the DB layer.
+    check(
+      "score_evidence_event_ids_non_empty",
+      sql`jsonb_array_length(${t.evidenceEventIdsJson}) >= 1`,
+    ),
   ],
 );
 
