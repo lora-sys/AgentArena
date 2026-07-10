@@ -11,7 +11,7 @@ async function streamHandler(
 ): Promise<Response> {
   const { id } = await params;
 
-  if (!validateBattleId(id)) {
+  if (id !== "demo" && !validateBattleId(id)) {
     return badRequest("Invalid battle ID format");
   }
 

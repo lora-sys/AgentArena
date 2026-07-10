@@ -148,7 +148,12 @@ export function withRateLimit<Args extends unknown[]>(
   const windowMs = options.windowMs ?? 60_000;
 
   return async (request: Request, ...args: Args): Promise<Response> => {
-    const key = getClientKey(request);
+    const clientKey = getClientKey(request);
+    // Key bucket by client + route method+url so different routes
+    // don't share their rate-limit budget (prevents test suite poisoning
+    // where one route's requests exhaust the bucket for another route).
+    const routeKey = `${request.method}:${new URL(request.url).pathname}`;
+    const key = `${clientKey}|${routeKey}`;
     const now = Date.now();
 
     // Periodic cleanup to prevent unbounded memory growth.
@@ -229,6 +234,20 @@ export function withInputValidation<T, Args extends unknown[]>(
 
     return handler(result.data, request, ...args);
   };
+}
+
+/* ------------------------------------------------------------------ */
+/* Test helpers                                                        */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Test-only: clear all in-memory rate-limit buckets.
+ * Used by e2e test setup to reset state between tests.
+ * Must NOT be called from production code.
+ */
+export function __resetRateLimit(): void {
+  buckets.clear();
+  lastCleanup = Date.now();
 }
 
 /* ------------------------------------------------------------------ */

@@ -12,7 +12,10 @@ async function getBattleHandler(
 ): Promise<Response> {
   const { id } = await params;
 
-  if (!validateBattleId(id)) {
+  // Accept "demo" as a special-case battle id for the demo bundle.
+  // Well-formed ids follow btl_<8-char base32>; "demo" is the
+  // canonical fixture used by e2e tests and the PRD demo flow.
+  if (id !== "demo" && !validateBattleId(id)) {
     return badRequest("Invalid battle ID format");
   }
 

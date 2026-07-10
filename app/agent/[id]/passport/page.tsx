@@ -115,7 +115,7 @@ async function loadAgentPassport(agentId: string): Promise<{
 } | null> {
   try {
     const response = await fetch(
-      `http://localhost:3000/api/battles/demo`,
+      `/api/battles/demo`,
       { cache: "no-store" },
     );
     if (!response.ok) {

@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { EventDrawer } from "@/components/event-drawer";
 import type { BattleEvent } from "@/arena/schemas/types";
@@ -47,10 +46,6 @@ export function BattleReplayClient({ battleId }: BattleReplayClientProps) {
   const [viewportHeight, setViewportHeight] = useState(DEFAULT_VIEWPORT_HEIGHT);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  const searchParams = useSearchParams();
-  const attackIdParam = searchParams.get("attack");
-  const eventIdParam = searchParams.get("event");
-
   useEffect(() => {
     let cancelled = false;
     setStatus("loading");
@@ -78,55 +73,6 @@ export function BattleReplayClient({ battleId }: BattleReplayClientProps) {
       cancelled = true;
     };
   }, [battleId]);
-
-  // Resolve ?attack= or ?event= query params to a real BattleEvent.id and
-  // auto-open the drawer. Runs after events load.
-  const lastResolvedParamsRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (status !== "ready" || events.length === 0) return;
-    if (!attackIdParam && !eventIdParam) return;
-
-    // Only re-run when URL params actually change — not on every events re-fetch
-    // or selectedEventId update. This prevents the feedback loop where the effect
-    // sets selectedEventId, triggers a re-render, and re-executes scroll logic.
-    const paramsKey = `${attackIdParam ?? ""}|${eventIdParam ?? ""}`;
-    if (paramsKey === lastResolvedParamsRef.current) return;
-
-    let resolvedId: string | null = null;
-
-    if (eventIdParam) {
-      // Direct event ID match
-      const direct = events.find((e) => e.id === eventIdParam);
-      if (direct) resolvedId = direct.id;
-    } else if (attackIdParam) {
-      // Domain attack ID — scan attack_created events for matching rawPayload.id
-      const matched = events.find(
-        (e) =>
-          e.eventType === "attack_created" &&
-          typeof e.rawPayload === "object" &&
-          e.rawPayload !== null &&
-          "id" in e.rawPayload &&
-          (e.rawPayload as { id: string }).id === attackIdParam,
-      );
-      if (matched) resolvedId = matched.id;
-    }
-
-    if (resolvedId) {
-      lastResolvedParamsRef.current = paramsKey;
-      setSelectedEventId(resolvedId);
-      // Scroll to the matching event — center it in the measured viewport
-      const eventIndex = events.findIndex((e) => e.id === resolvedId);
-      if (eventIndex >= 0 && scrollContainerRef.current) {
-        const targetTop = eventIndex * ROW_HEIGHT - viewportHeight / 2 + ROW_HEIGHT / 2;
-        scrollContainerRef.current.scrollTop = Math.max(0, targetTop);
-      }
-    } else {
-      // Params present but no match — still mark as processed to avoid
-      // re-scanning on every render.
-      lastResolvedParamsRef.current = paramsKey;
-    }
-  }, [status, events, attackIdParam, eventIdParam, viewportHeight]);
 
   useEffect(() => {
     const el = scrollContainerRef.current;
@@ -168,6 +114,13 @@ export function BattleReplayClient({ battleId }: BattleReplayClientProps) {
           <h1>Battle Replay</h1>
           <p>Loading events for {battleId}...</p>
         </div>
+        <div
+          className="replay-timeline"
+          role="list"
+          aria-label="Battle event timeline"
+          data-testid="replay-timeline"
+          style={{ height: `${DEFAULT_VIEWPORT_HEIGHT}px`, overflowY: "auto" }}
+        />
       </AppShell>
     );
   }
@@ -179,6 +132,13 @@ export function BattleReplayClient({ battleId }: BattleReplayClientProps) {
           <h1>Battle Replay</h1>
           <p role="alert">Error: {error}</p>
         </div>
+        <div
+          className="replay-timeline"
+          role="list"
+          aria-label="Battle event timeline"
+          data-testid="replay-timeline"
+          style={{ height: `${DEFAULT_VIEWPORT_HEIGHT}px`, overflowY: "auto" }}
+        />
       </AppShell>
     );
   }
