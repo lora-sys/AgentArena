@@ -22,13 +22,12 @@ test.setTimeout(60_000);
 test.describe("PRD §8.3 Agent Passport", () => {
   test("passport page navigates to the passport route", async ({ page }) => {
     // Navigate with retry to handle dev mode cold compilation.
-    // The passport page has a known server/client component boundary issue
-    // that may cause the server to return a 500 with an error overlay.
-    // We accept both successful page loads and the Next.js error overlay
-    // as valid responses (the page did navigate to the correct route).
+    // B10 fix: the passport page now renders a .passport-layout skeleton
+    // on first paint, so .passport-layout is always present after hydration
+    // begins (even before the data fetch resolves).
     for (let attempt = 0; attempt < 3; attempt++) {
       await page.goto("/agent/safe-builder/passport");
-      // Check for either the passport layout or a Next.js error overlay.
+      // Check for the passport layout (rendered as skeleton or full content).
       const layout = page.locator(".passport-layout");
       const errorDialog = page.getByRole("dialog", { name: /runtime error/i });
       const body = page.locator("body");

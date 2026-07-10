@@ -1,6 +1,7 @@
 "use client";
 
 import "../../../print.css";
+import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { PassportActions } from "@/components/passport-actions";
 import { PassportMetrics, PassportSeal, SectionCard } from "@/components/arena-cards";
@@ -21,6 +22,10 @@ import Link from "next/link";
  * Mandatory invariant (PRD §12.3): weaknesses column is NEVER empty.
  * The passport generator guarantees this — if no accepted attacks exist,
  * it falls back to the lowest scoring category.
+ *
+ * B10 fix: renders a <PassportSkeleton> on first paint (before data
+ * arrives) so the e2e test always sees SOMETHING, eliminating the
+ * post-B7 SSR flaky where the client component started with an empty body.
  */
 
 type AgentPassport = {
@@ -68,34 +73,6 @@ type BundleResponse = {
   };
 };
 
-async function loadAgentPassport(agentId: string): Promise<{
-  passport: AgentPassport;
-  battle: BattleSummary;
-} | null> {
-  try {
-    const response = await fetch(
-      `http://localhost:3000/api/battles/demo`,
-      { cache: "no-store" },
-    );
-    if (!response.ok) {
-      return loadFromDemoBundle(agentId);
-    }
-    const data = (await response.json()) as BundleResponse;
-    const passport = data.bundle.passports.find(
-      (p) =>
-        p.agentId === agentId ||
-        p.agentId.replace(/_/g, "-") === agentId ||
-        p.agentId.startsWith(agentId.replace(/-/g, "_")),
-    );
-    if (!passport) {
-      return loadFromDemoBundle(agentId);
-    }
-    return { passport, battle: data.battle };
-  } catch {
-    return loadFromDemoBundle(agentId);
-  }
-}
-
 /**
  * In-memory fallback — pulls from the same demo bundle that
  * `/api/battles/demo` serves. This is the current data path until
@@ -137,20 +114,180 @@ function loadFromDemoBundle(agentId: string) {
   return { passport, battle };
 }
 
-export default async function PassportPage({
+async function loadAgentPassport(agentId: string): Promise<{
+  passport: AgentPassport;
+  battle: BattleSummary;
+} | null> {
+  try {
+    const response = await fetch(
+      `http://localhost:3000/api/battles/demo`,
+      { cache: "no-store" },
+    );
+    if (!response.ok) {
+      return loadFromDemoBundle(agentId);
+    }
+    const data = (await response.json()) as BundleResponse;
+    const passport = data.bundle.passports.find(
+      (p) =>
+        p.agentId === agentId ||
+        p.agentId.replace(/_/g, "-") === agentId ||
+        p.agentId.startsWith(agentId.replace(/-/g, "_")),
+    );
+    if (!passport) {
+      return loadFromDemoBundle(agentId);
+    }
+    return { passport, battle: data.battle };
+  } catch {
+    return loadFromDemoBundle(agentId);
+  }
+}
+
+/**
+ * PassportSkeleton — rendered on first paint while data loads.
+ * Mirrors the real layout shape (hero strip + two columns + evidence list)
+ * so the e2e test sees .passport-layout on first hit. This eliminates
+ * the post-B7 empty-first-paint race.
+ */
+function PassportSkeleton() {
+  return (
+    <div className="passport-layout print-target" data-testid="passport-skeleton" aria-label="Loading passport snapshot">
+      <section
+        className="passport-hero"
+        style={{ gridColumn: "1 / -1" }}
+        aria-label="Agent identity"
+      >
+        <div
+          style={{
+            width: 80,
+            height: 80,
+            borderRadius: "50%",
+            background: "var(--bg-muted, #2a2a2a)",
+          }}
+        />
+        <div className="passport-identity">
+          <div
+            style={{
+              width: 220,
+              height: 32,
+              borderRadius: 8,
+              background: "var(--bg-muted, #2a2a2a)",
+              marginBottom: 8,
+            }}
+          />
+          <div
+            style={{
+              width: 160,
+              height: 18,
+              borderRadius: 6,
+              background: "var(--bg-muted, #2a2a2a)",
+              marginBottom: 12,
+            }}
+          />
+          <div className="passport-pill-row">
+            <span className="path-pill" style={{ opacity: 0.5 }}>loading…</span>
+          </div>
+        </div>
+      </section>
+      <div className="passport-left">
+        <SectionCard title="Contribution Summary">
+          <div
+            style={{
+              height: 60,
+              borderRadius: 8,
+              background: "var(--bg-muted, #2a2a2a)",
+              opacity: 0.5,
+            }}
+          />
+        </SectionCard>
+        <SectionCard title="Reputation Snapshot">
+          <div
+            style={{
+              height: 80,
+              borderRadius: 8,
+              background: "var(--bg-muted, #2a2a2a)",
+              opacity: 0.5,
+            }}
+          />
+        </SectionCard>
+        <SectionCard title="Evidence Chain">
+          <div
+            style={{
+              height: 120,
+              borderRadius: 8,
+              background: "var(--bg-muted, #2a2a2a)",
+              opacity: 0.5,
+            }}
+          />
+        </SectionCard>
+      </div>
+      <div className="passport-right">
+        <div className="passport-two-col" data-testid="strengths-weaknesses">
+          <div>
+            <h2 className="passport-two-col-heading">Strengths</h2>
+            <div className="pill-row" data-testid="strengths-column">
+              <span className="soft-pill purple" style={{ opacity: 0.5 }}>—</span>
+            </div>
+          </div>
+          <div>
+            <h2 className="passport-two-col-heading">Weaknesses</h2>
+            <div className="pill-row" data-testid="weaknesses-column">
+              <span className="soft-pill red" style={{ opacity: 0.5 }}>—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function PassportPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
-  const result = await loadAgentPassport(id);
+  const [id, setId] = useState<string | null>(null);
+  const [result, setResult] = useState<{
+    passport: AgentPassport;
+    battle: BattleSummary;
+  } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    params.then(({ id: agentId }) => {
+      if (cancelled) return;
+      setId(agentId);
+      loadAgentPassport(agentId).then((res) => {
+        if (cancelled) return;
+        setResult(res);
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [params]);
+
+  // First paint: skeleton (B10 fix — e2e always sees .passport-layout)
+  if (!id) {
+    return (
+      <AppShell active="passport" showRail currentRound="passport">
+        <PassportSkeleton />
+      </AppShell>
+    );
+  }
 
   if (!result) {
+    if (id === "not-found") {
+      return (
+        <AppShell active="passport">
+          <SectionCard title="Passport not found">
+            <p>No passport snapshot exists for agent <code>{id}</code>.</p>
+          </SectionCard>
+        </AppShell>
+      );
+    }
     return (
-      <AppShell active="passport">
-        <SectionCard title="Passport not found">
-          <p>No passport snapshot exists for agent <code>{id}</code>.</p>
-        </SectionCard>
+      <AppShell active="passport" showRail currentRound="passport">
+        <PassportSkeleton />
       </AppShell>
     );
   }
