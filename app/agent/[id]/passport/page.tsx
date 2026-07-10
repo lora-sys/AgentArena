@@ -1,10 +1,10 @@
 import "../../../print.css";
 import { AppShell } from "@/components/app-shell";
+import { PassportActions } from "@/components/passport-actions";
 import { PassportMetrics, PassportSeal, SectionCard } from "@/components/arena-cards";
 import { demoBattle, winner } from "@/lib/demo-data";
 import type { Route } from "next";
 import Link from "next/link";
-import { Download, Play, Printer, Share2 } from "lucide-react";
 
 /**
  * Agent Passport Snapshot — bound to the real battle API.
@@ -300,42 +300,7 @@ export default async function PassportPage({
           </div>
 
           <SectionCard title="Actions">
-            <div className="passport-actions">
-              <Link
-                href={`/battle/${battle.id}/replay` as Route}
-                className="inline-flex items-center gap-s-2 rounded-r-md bg-team-safe px-s-6 py-s-2 font-bold text-white"
-              >
-                <Play size={16} fill="currentColor" /> View Replay
-              </Link>
-              <Link
-                href={`/api/battles/${battle.id}/export` as Route}
-                className="inline-flex items-center gap-s-2 rounded-r-md border border-border px-s-6 py-s-2 font-bold text-fg bg-bg-elev"
-              >
-                <Download size={16} /> Export .md
-              </Link>
-              <button
-                type="button"
-                className="ghost-button no-print"
-                onClick={() => {
-                  if (typeof window !== "undefined") {
-                    window.print();
-                  }
-                }}
-              >
-                <Printer size={16} /> Print
-              </button>
-              <button
-                type="button"
-                className="ghost-button no-print"
-                onClick={() => {
-                  if (typeof navigator !== "undefined" && navigator.clipboard) {
-                    void navigator.clipboard.writeText(shareUrl);
-                  }
-                }}
-              >
-                <Share2 size={16} /> Share Link
-              </button>
-            </div>
+            <PassportActions battleId={battle.id} shareUrl={shareUrl} />
             <div className="share-url no-print" aria-label="Shareable URL">
               <code>{shareUrl}</code>
             </div>
