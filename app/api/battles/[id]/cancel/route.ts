@@ -20,7 +20,10 @@ async function cancelBattleHandler(
   return NextResponse.json({
     battleId: id,
     cancelled,
-    status: cancelled ? "cancelling" : "not_running",
+    // Demo battles run synchronously and complete before any cancel can
+    // reach them. Return a distinct status so the client can show feedback
+    // instead of silently no-oping. Real AI battles will return "cancelling".
+    status: cancelled ? "cancelling" : "demo_not_cancellable",
   });
 }
 

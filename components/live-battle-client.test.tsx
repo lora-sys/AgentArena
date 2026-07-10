@@ -85,4 +85,33 @@ describe("LiveBattleClient", () => {
     errorSpy.mockRestore();
     globalThis.fetch = originalFetch;
   });
+
+  it("does not redirect when server returns cancelled: false (demo battle)", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({ battleId: "battle-42", cancelled: false, status: "demo_not_cancellable" }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+      ),
+    ) as unknown as typeof fetch;
+
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    render(<LiveBattleClient battleId="battle-42" />);
+
+    const cancelButton = screen.getByRole("button", { name: /cancel battle/i });
+
+    await act(async () => {
+      fireEvent.click(cancelButton);
+      await vi.advanceTimersByTimeAsync(100);
+    });
+
+    // Should NOT have redirected since cancelled was false
+    expect(mockPush).not.toHaveBeenCalled();
+
+    warnSpy.mockRestore();
+    globalThis.fetch = originalFetch;
+  });
 });

@@ -143,7 +143,15 @@ export function LiveBattleClient({ battleId }: LiveBattleClientProps) {
       if (!res.ok) {
         throw new Error(`Cancel endpoint returned HTTP ${res.status}`);
       }
-      router.push("/battles" as Parameters<typeof router.push>[0]);
+      const { cancelled } = (await res.json()) as { cancelled: boolean };
+      // Only navigate when the cancel actually signalled an in-flight battle.
+      // Demo battles return cancelled: false (they complete synchronously);
+      // redirecting anyway would lose the user's evidence with no feedback.
+      if (cancelled) {
+        router.push("/battles" as Parameters<typeof router.push>[0]);
+      } else {
+        console.warn("Cancel is not supported for this battle type");
+      }
     } catch (error) {
       // Surface the error so the caller can show feedback; do not redirect
       // on failure (user would lose evidence and land on a stale page).
