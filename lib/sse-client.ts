@@ -1,5 +1,4 @@
 import { assertBattleEvent, type BattleEvent } from "@/arena/schemas";
-import { battleEventTypes } from "@/arena/schemas/types";
 
 /**
  * Typed callback invoked for every validated SSE event.
@@ -101,17 +100,10 @@ export function connectSse(options: SseClientOptions): SseClientHandle {
     if (closed) return;
     source = new SourceCtor(url);
 
-    // Register a named listener for every known BattleEventType so the browser
-    // dispatches typed SSE events (event: proposal_created\ndata: {...}) to the
-    // correct handler instead of swallowing them in the default onmessage.
-    const namedHandler = (e: MessageEvent<string>) => {
-      handleMessage(e.data);
-    };
-    for (const eventType of battleEventTypes) {
-      source.addEventListener(eventType, namedHandler);
-    }
-
-    // Fallback for messages without an event: field.
+    // Single onmessage handler — typed SSE events (`event: foo`) ALSO fire
+    // onmessage per the SSE spec, and the eventType is already in the JSON
+    // payload validated by assertBattleEvent. Registering per-type listeners
+    // would double-dispatch every event.
     source.onmessage = (e: MessageEvent<string>) => {
       handleMessage(e.data);
     };

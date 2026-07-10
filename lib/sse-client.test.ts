@@ -26,12 +26,14 @@ class MockEventSource {
     this.onmessage?.({ data } as MessageEvent<string>);
   }
 
-  /** Simulate a typed SSE event (event: <type>\ndata: ...). Fires named listeners. */
+  /** Simulate a typed SSE event (event: <type>\ndata: ...). Fires onmessage
+   * and any registered named listeners (matching real EventSource behavior). */
   emitTypedEvent(eventType: string, data: string): void {
     const handlers = this.listeners[eventType] ?? [];
     for (const handler of handlers) {
       handler({ type: eventType, data } as MessageEvent<string>);
     }
+    this.onmessage?.({ type: eventType, data } as MessageEvent<string>);
   }
 
   /** Simulate a connection-level error. Triggers onerror and close. */
@@ -277,7 +279,7 @@ describe("sse-client", () => {
     );
   });
 
-  it("delivers typed SSE events (event: field) via addEventListener", () => {
+  it("delivers typed SSE events (event: field) via onmessage", () => {
     const onEvent = vi.fn();
     const onValidationError = vi.fn();
 
@@ -290,8 +292,7 @@ describe("sse-client", () => {
 
     const source = MockEventSource.latest()!;
     // Simulate a server pushing `event: proposal_created\ndata: {...}`
-    // — this is the standard SSE pattern and fires the named listener,
-    // NOT onmessage.
+    // — the JSON payload already carries eventType, so onmessage delivers it.
     source.emitTypedEvent("proposal_created", JSON.stringify(validEvent));
 
     expect(onEvent).toHaveBeenCalledTimes(1);
@@ -299,5 +300,22 @@ describe("sse-client", () => {
     expect(received.eventType).toBe("proposal_created");
     expect(received.id).toBe("ev_test_001");
     expect(onValidationError).not.toHaveBeenCalled();
+  });
+
+  it("dispatches each event exactly once (no duplicate handler firing)", () => {
+    const onEvent = vi.fn();
+
+    connectSse({
+      url: "/api/battles/battle-42/events/stream",
+      onEvent,
+      EventSourceCtor: MockEventSource as unknown as typeof EventSource,
+    });
+
+    const source = MockEventSource.latest()!;
+    // Emit both a default message and a typed event — each must fire onEvent exactly once.
+    source.emitMessage(JSON.stringify(validEvent));
+    source.emitTypedEvent("proposal_created", JSON.stringify(validEvent));
+
+    expect(onEvent).toHaveBeenCalledTimes(2);
   });
 });
