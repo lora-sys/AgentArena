@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Clock3, Play, ShieldCheck, Sparkles, Swords, Trophy } from "lucide-react";
+import { ArrowRight, Play, ShieldCheck, Sparkles, Swords, Trophy } from "lucide-react";
 import { AppShell, PrimaryAction } from "@/components/app-shell";
 import { FlowStrip, MiniStat, QuoteBand, SectionCard, TeamScoreCard } from "@/components/arena-cards";
 import { demoBattle, teams, winner } from "@/lib/demo-data";

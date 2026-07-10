@@ -15,8 +15,6 @@ import type {
   AgentPassport,
   Artifact,
   Attack,
-  Battle,
-  BattleBrief,
   BattleEvent,
   BattleReplay,
   CalculatedScore,

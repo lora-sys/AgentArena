@@ -27,7 +27,6 @@ import type {
   BattleEvent,
   ScoreBreakdown,
   Team,
-  TeamId
 } from "@/lib/types";
 
 /* Team color → token mapping for design system direction B */
@@ -52,8 +51,6 @@ const severityTokenMap: Record<string, string> = {
 };
 
 export function TeamAvatar({ team, size = "md" }: { team: Team; size?: "sm" | "md" | "lg" }) {
-  const sizeClass =
-    size === "sm" ? "h-8 w-8 text-xs" : size === "lg" ? "h-16 w-16" : "h-12 w-12";
   return (
     <span
       className={`inline-grid place-items-center rounded-full font-bold ${teamColorMap[team.color]} bg-bg-elev border ${teamBorderMap[team.color]}`}

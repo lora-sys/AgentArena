@@ -69,6 +69,9 @@ function assertNoIssues<T>(schemaName: string, issues: string[], value: unknown)
   if (issues.length > 0) {
     throw new SchemaValidationError(schemaName, issues);
   }
+  // The `value` parameter is intentionally unused at runtime; it exists only
+  // to carry the `asserts value is T` type narrowing for callers.
+  void value;
 }
 
 const validateScoreBreakdown = (value: unknown, path: string, issues: string[]): value is ScoreBreakdown => {

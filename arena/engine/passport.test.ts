@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { generateAgentPassports, type PassportGeneratorInput } from "./passport";
 import type {
-  AgentPassport,
   Attack,
   CalculatedScore,
   Defense,

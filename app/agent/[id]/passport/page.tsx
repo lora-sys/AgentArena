@@ -84,11 +84,6 @@ function loadFromDemoBundle(agentId: string) {
   const score = bundle.scores[agentId as keyof typeof bundle.scores];
   const teamEntry = bundle.teams.find((t) => t.id === agentId);
   const displayName = teamEntry?.name ?? winner.name;
-  const initials = displayName
-    .split(/\s+/)
-    .map((word) => word[0]?.toUpperCase() ?? "")
-    .join("")
-    .slice(0, 2) || "AG";
   const passport: AgentPassport = {
     id: `passport_${bundle.id}_${agentId}`,
     agentId: `${engineTeamId}_agent`,
@@ -293,7 +288,6 @@ export default function PassportPage({
   }
 
   const { passport, battle } = result;
-  const team = demoBattle.teams.find((t) => t.id === id) ?? winner;
   const isChampion = battle.winnerTeamId === id || battle.winnerTeamId === id.replace(/-/g, "_");
   const shareUrl = `https://agentarena.ai/agent/${id}/passport`;
 

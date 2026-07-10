@@ -1,6 +1,5 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { EventDrawer } from "./event-drawer";
 import type { BattleEvent } from "@/arena/schemas/types";
 
