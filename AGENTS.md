@@ -10,26 +10,47 @@ Product source of truth: [`Agent_Arena_PRD_v0.4_Reputation_Arena_Product_Manual.
 
 ## Current Status
 
-v0.4 (Mastra OSS, Postgres-backed). Sprint 0 in progress. Eve framework is retired — see [`docs/adr/0001-eve-to-mastra.md`](docs/adr/0001-eve-to-mastra.md).
+v0.4 (Mastra OSS, Postgres-backed). Sprint 0 and Sprint 1 complete. MVP is demoable end-to-end with deterministic engine. Real Mastra + Postgres end-to-end pending Sprint 2.
+
+**What's new (v0.4 direction):**
+- Replaced Eve framework with **Mastra OSS** (core only) as the AI runtime
+- Backend is Postgres-backed (Drizzle ORM, 12 tables per PRD §19)
+- 5 agents wired through the `ArenaAgentRuntime` contract with Zod validation and a 3-retry repair loop
+- 6 pages, 12 Playwright e2e specs, 167 unit tests passing
 
 ## Read Order (v0.4)
 
-1. **This file** (`AGENTS.md`) — you are here.
-2. **Project fact sheet** — [`docs/CLAUDE.md`](docs/CLAUDE.md). Workspace layout, tech stack, package boundary rules, core invariants.
-3. **Role orchestration** — [`docs/agents.md`](docs/agents.md). Who owns what, handoff protocol, sprint plan.
-4. **Visual language** — [`docs/design.md`](docs/design.md). Tokens, components, six screenshot points (visual direction B — Linear x sports data viz).
-5. **Test guidelines** — [`docs/test-guidelines.md`](docs/test-guidelines.md). Test pyramid, evidence format, coverage bars.
-6. **Migration context** — [`docs/migration-v0.4.md`](docs/migration-v0.4.md). Why v0.3 was abandoned, what survived, what was replaced.
-7. **Architecture decisions** — [`docs/adr/`](docs/adr/). Why each structural choice was made. Start with `0001-eve-to-mastra.md`.
-8. **PRD section** — read the specific PRD section linked from your ticket. PRD v0.4 is the source of truth for product behavior.
+1. **Project fact sheet** -- [`docs/CLAUDE.md`](docs/CLAUDE.md). Workspace layout, tech stack, package boundary rules, core invariants. **Read first.**
+2. **This file** (`AGENTS.md`) -- you are here. Quick reference + command rules.
+3. **Role orchestration** -- [`docs/agents.md`](docs/agents.md). Who owns what, handoff protocol, sprint plan.
+4. **Visual language** -- [`docs/design.md`](docs/design.md). Tokens, components, six screenshot points (visual direction B -- Linear x sports data viz).
+5. **Test guidelines** -- [`docs/test-guidelines.md`](docs/test-guidelines.md). Test pyramid, evidence format, coverage bars.
+6. **Migration context** -- [`docs/migration-v0.4.md`](docs/migration-v0.4.md). Why v0.3 was abandoned, what survived, what was replaced.
+7. **Architecture decisions** -- [`docs/adr/`](docs/adr/). Why each structural choice was made. Start with `0001-eve-to-mastra.md`.
+8. **PRD section** -- read the specific PRD section linked from your ticket. PRD v0.4 is the source of truth for product behavior.
+
+## Role Orchestration
+
+The project uses a **2+2 parallel mode**: Backend and UI/UX run in parallel during Sprint 0-1; Frontend and QA run in parallel during Sprint 2-5.
+
+Four roles:
+
+| Role | Owns | Evidence received from |
+|---|---|---|
+| **Backend (雅座)** | `packages/battle-engine`, `packages/agent-runtime`, `packages/schemas`, `packages/event-store`, `agents/*/spec.yaml`, `apps/web/app/api/*` | PRD, UI/UX contracts |
+| **UI/UX Designer** | `packages/ui-kit`, `docs/design.md`, visual baselines | PRD §16, Backend payload shapes |
+| **Frontend (老师)** | `apps/web/app/**`, `apps/web/components/**`, SSE wiring | UI/UX tokens, Backend API/SSE contracts |
+| **QA** | `docs/test-guidelines.md`, `apps/web/tests/e2e/**`, coverage reports | Backend fixtures, Frontend previews, UI/UX baselines |
+
+Full details (daily flow, acceptance bar, custom skill prompts, inter-role contracts) are in [`docs/agents.md`](docs/agents.md).
 
 ## Do NOT read (archived)
 
 The following docs pre-date the v0.4 Mastra direction and are kept for archaeology only. Do not link to them, do not follow their guidance:
 
-- `docs/archive/eve-v0.3/prd.md` — v0.3 Eve-first PRD
-- `docs/archive/eve-v0.3/eve-agents.md` — v0.3 Eve agent directory patterns
-- `docs/archive/eve-v0.3/ui-react-bits.md` — v0.3 UI guide
+- `docs/archive/eve-v0.3/prd.md` -- v0.3 Eve-first PRD
+- `docs/archive/eve-v0.3/eve-agents.md` -- v0.3 Eve agent directory patterns
+- `docs/archive/eve-v0.3/ui-react-bits.md` -- v0.3 UI guide
 
 See [`docs/archive/eve-v0.3/README.md`](docs/archive/eve-v0.3/README.md) for the full archive index and what replaced each doc.
 
@@ -70,6 +91,20 @@ Any PR violating these is rejected.
 | Why a decision was made | `docs/adr/NNNN-*.md` |
 | Sprint plan | `docs/agents.md` §4 |
 | Cross-role handoff | `docs/agents.md` §3 |
+
+## Development Commands
+
+```bash
+pnpm install          # install dependencies
+pnpm dev              # Next.js dev server on :3000
+pnpm test             # vitest run (all unit tests)
+pnpm test:coverage    # vitest run --coverage
+pnpm e2e              # Playwright end-to-end journeys
+pnpm build            # production build
+pnpm typecheck        # tsc --noEmit across workspace
+pnpm lint             # ESLint flat config
+pnpm db:push          # apply Drizzle schema to dev DB
+```
 
 ## Command Rules
 

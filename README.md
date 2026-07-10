@@ -8,12 +8,12 @@ Short version:
 
 ## Current Status
 
-v0.4 (Mastra OSS, Postgres-backed). Sprint 0 in progress. Eve framework is retired; see `docs/adr/0001-eve-to-mastra.md` for the migration decision.
+v0.4 (Mastra OSS, Postgres-backed). Sprint 0 and Sprint 1 complete. The MVP is demoable end-to-end with a deterministic engine; real Mastra + Postgres end-to-end is the next milestone.
 
 The durable source docs are:
 
 - [PRD v0.4](Agent_Arena_PRD_v0.4_Reputation_Arena_Product_Manual.md): product vision, MVP scope, long-term roadmap.
-- [Project Fact Sheet](docs/CLAUDE.md): workspace layout, tech stack, package boundaries, core invariants.
+- [Project Fact Sheet](docs/CLAUDE.md): workspace layout, tech stack, package boundaries, core invariants. **Read first.**
 - [Role Orchestration](docs/agents.md): who owns what, handoff protocol, sprint plan.
 - [Visual Language](docs/design.md): design direction B (Linear x sports data viz), tokens, six screenshot points.
 - [Test Guidelines](docs/test-guidelines.md): test pyramid, evidence format, coverage bars.
@@ -33,6 +33,17 @@ User enters a messy hackathon idea. Three fixed teams compete:
 
 The Battle Engine controls the round order, event log, score calculation, champion selection, replay generation, artifact packaging, and passport snapshot. Agents generate content; code controls rules.
 
+### Current state (end of Sprint 1)
+
+- 6 pages render with full content
+- POST /api/battles creates real battles (idempotent)
+- 5 route files hardened with rate limit + input validation
+- 12 Playwright spec files covering 14 PRD §8.3 rows
+- 167 unit tests pass; 76.5% global line coverage
+- 8 visual baselines refreshed via agent-browser
+- CI green: typecheck, lint, test, build, e2e
+- Real Mastra + Postgres end-to-end pending Sprint 2 (needs OPENAI_API_KEY)
+
 ## One-Command Start
 
 ```bash
@@ -47,12 +58,35 @@ Run diagnostics with:
 ./scripts/doctor.sh
 ```
 
+## Development
+
+Common commands (run from repo root):
+
+```bash
+pnpm install          # install dependencies
+pnpm dev              # start Next.js dev server (port 3000)
+pnpm test             # run all unit tests (Vitest)
+pnpm test:coverage    # run tests with coverage report
+pnpm e2e              # run Playwright end-to-end journeys
+pnpm build            # production build
+pnpm typecheck        # tsc --noEmit across workspace
+pnpm lint             # ESLint flat config
+```
+
+Database setup (Drizzle + Postgres):
+
+```bash
+cp .env.example .env.local   # then fill in OPENAI_API_KEY, DATABASE_URL
+pnpm db:push                 # apply Drizzle schema to dev DB
+pnpm db:studio               # Drizzle Studio GUI
+```
+
 ## Read Order For Agents
 
 1. Read this README.
 2. Read [AGENTS.md](AGENTS.md).
-3. Read [docs/CLAUDE.md](docs/CLAUDE.md).
-4. Read [docs/agents.md](docs/agents.md).
+3. Read [docs/CLAUDE.md](docs/CLAUDE.md) -- workspace layout, invariants, tech stack.
+4. Read [docs/agents.md](docs/agents.md) -- role ownership, handoff protocol, sprint plan.
 5. Read the task-specific sibling doc in [docs](docs/).
 6. Read the PRD section linked from your ticket.
 
