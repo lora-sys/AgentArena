@@ -5,6 +5,7 @@ import { demoBundle } from "@/lib/demo-data";
 import { summarizeBattleBundle, makeBattleId } from "@/lib/battle-api";
 import { getDb } from "@/lib/db/client";
 import { battle } from "@/lib/db/schema";
+import { withRateLimit } from "@/lib/api/guards";
 
 export function GET() {
   return NextResponse.json({
@@ -20,15 +21,13 @@ export function GET() {
 const CreateBattleBodySchema = z.object({
   idea: z
     .string()
+    .trim()
     .min(10, "idea must be at least 10 characters")
     .max(2000, "idea must be at most 2000 characters"),
   mode: z.enum(["quick", "full"]).optional().default("full"),
 });
 
-export async function POST(request: Request) {
-  // TODO(be): rate-limit per IP — separate ticket (B5). Logged here for visibility.
-  console.log("[POST /api/battles] rate-limit check skipped (TODO B5)");
-
+async function createBattleHandler(request: Request): Promise<Response> {
   // 1. Parse and validate body
   let raw: unknown;
   try {
@@ -94,8 +93,34 @@ export async function POST(request: Request) {
       mode,
     });
   } catch (dbErr) {
-    // DB write failed — log but still return the battle_id so the client
-    // can proceed (Sprint 0 demo: engine runs in-memory from battle-api.ts).
+    // DB write failed — could be a unique-constraint violation on idea
+    // (TOCTOU race: concurrent POST with same idea won the insert).
+    // Re-fetch the winner's id and return it idempotently.
+    const isUniqueViolation =
+      dbErr instanceof Error &&
+      /unique|duplicate/i.test(dbErr.message);
+
+    if (isUniqueViolation) {
+      try {
+        const db = getDb();
+        const winner = await db
+          .select({ id: battle.id })
+          .from(battle)
+          .where(eq(battle.idea, idea))
+          .limit(1);
+        if (winner.length > 0) {
+          return NextResponse.json(
+            { battleId: winner[0].id, status: "created" },
+            { status: 200 },
+          );
+        }
+      } catch {
+        // fall through to in-memory fallback below
+      }
+    }
+
+    // DB write failed for another reason — log but still return the battle_id
+    // so the client can proceed (Sprint 0 demo: engine runs in-memory).
     console.warn("[POST /api/battles] DB insert failed, returning in-memory id:", dbErr);
   }
 
@@ -111,3 +136,5 @@ export async function POST(request: Request) {
     { status: 201 },
   );
 }
+
+export const POST = withRateLimit(createBattleHandler);

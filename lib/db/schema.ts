@@ -171,6 +171,7 @@ export const battle = pgTable(
     index("battle_trial_template_id_idx").on(t.trialTemplateId),
     index("battle_type_idx").on(t.type),
     index("battle_created_at_idx").on(t.createdAt),
+    uniqueIndex("battle_idea_idx").on(t.idea),
   ],
 );
 

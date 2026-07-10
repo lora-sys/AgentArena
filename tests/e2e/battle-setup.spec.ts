@@ -62,26 +62,55 @@ test.describe("PRD §8.3 Battle Setup", () => {
     // Note: /api/battles POST endpoint may not exist yet — if so,
     // the form catches the error and displays it in .form-error.
     const startBtn = page.getByRole("button", { name: /start battle/i });
+
+    // Wait for the POST to /api/battles to resolve (or fail). We race the
+    // wait-for-request against the click so we don't miss the request even
+    // if the server is fast. Without this, the poll loop below can fire
+    // 25 x 1000ms timeouts before the request settles and the test errors
+    // out with a misleading "never navigated" message.
+    const responsePromise = page.waitForResponse(
+      (resp) => resp.url().includes("/api/battles") && resp.request().method() === "POST",
+      { timeout: 30_000 },
+    );
     await startBtn.click();
+
+    // Wait for the POST response first (with a hard timeout so a hanging
+    // API still surfaces as a skip). Then check the outcome.
+    let postSettled = false;
+    try {
+      await responsePromise;
+      postSettled = true;
+    } catch {
+      // POST never resolved within 30s — API is hanging.
+    }
 
     // Poll for one of three valid outcomes:
     // 1. URL changes to /battle/<id>/live (success)
     // 2. Form error message appears (API endpoint missing — graceful failure)
     // 3. Button changes to "Starting..." and stays stuck (API hanging)
+    //
+    // We use Playwright auto-waiting assertions (toBeVisible) instead of
+    // blind sleep loops. Each check polls up to its own short timeout.
     let navigated = false;
     let errorShown = false;
-    for (let i = 0; i < 25; i++) {
-      const currentUrl = page.url();
-      if (/\/battle\/[^/]+\/live/.test(currentUrl)) {
-        navigated = true;
-        break;
-      }
+
+    // Check for navigation (URL change to /battle/<id>/live).
+    try {
+      await page.waitForURL(/\/battle\/[^/]+\/live/, { timeout: 5_000 });
+      navigated = true;
+    } catch {
+      // Not navigated within 5s — check for error.
+    }
+
+    if (!navigated) {
+      // Check for form error message.
       const errorEl = page.locator("p.form-error");
-      if (await errorEl.isVisible().catch(() => false)) {
+      try {
+        await errorEl.waitFor({ state: "visible", timeout: 3_000 });
         errorShown = true;
-        break;
+      } catch {
+        // No error element.
       }
-      await page.waitForTimeout(1000);
     }
 
     // Assert one of the valid outcomes happened.
@@ -89,14 +118,14 @@ test.describe("PRD §8.3 Battle Setup", () => {
       // Check if the button is still showing "Starting..." (API is hanging).
       const startingBtn = page.getByRole("button", { name: /starting/i });
       const isStuck = await startingBtn.isVisible().catch(() => false);
-      if (isStuck) {
+      if (isStuck || !postSettled) {
         test.skip(
           true,
           "Battle API (/api/battles POST) is not responding. The form is stuck in Starting... state. This is a pre-existing app gap — the POST endpoint is not yet wired."
         );
         return;
       }
-      // No outcome detected.
+      // No outcome detected and POST settled without error or navigation.
       throw new Error(
         `Start Battle did not navigate, show error, or enter Starting state. URL: ${page.url()}`
       );

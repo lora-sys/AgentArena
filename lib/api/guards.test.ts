@@ -3,10 +3,15 @@ import { z } from "zod";
 import {
   validateBattleId,
   validateIdea,
-  withRateLimit,
   withInputValidation,
   badRequest,
 } from "@/lib/api/guards";
+
+// Note: `withRateLimit` is intentionally NOT imported statically.
+// Each test in the withRateLimit describe block uses dynamic
+// `await import("@/lib/api/guards")` after `vi.resetModules()` so the
+// module-level `buckets` Map is fresh per test. Without this, tests
+// using the "unknown" fallback key would collide across runs.
 
 /* ------------------------------------------------------------------ */
 /* validateBattleId                                                    */
@@ -149,11 +154,17 @@ describe("validateIdea", () => {
 
 describe("withRateLimit", () => {
   beforeEach(() => {
+    // Reset the module to clear the module-level `buckets` Map and
+    // `lastCleanup` timestamp so each test starts with a clean rate
+    // limiter state. Without this, tests using "unknown" as a key
+    // collide with each other.
+    vi.resetModules();
     vi.useFakeTimers();
   });
 
   it("allows requests up to the limit", async () => {
     const handler = vi.fn().mockResolvedValue(new Response("ok"));
+    const { withRateLimit } = await import("@/lib/api/guards");
     const wrapped = withRateLimit(handler, { max: 3, windowMs: 60_000 });
 
     const req = new Request("http://localhost/test", {
@@ -172,6 +183,7 @@ describe("withRateLimit", () => {
 
   it("returns 429 when the limit is exceeded", async () => {
     const handler = vi.fn().mockResolvedValue(new Response("ok"));
+    const { withRateLimit } = await import("@/lib/api/guards");
     const wrapped = withRateLimit(handler, { max: 2, windowMs: 60_000 });
 
     const req = new Request("http://localhost/test", {
@@ -191,6 +203,7 @@ describe("withRateLimit", () => {
 
   it("resets the bucket after the window elapses", async () => {
     const handler = vi.fn().mockResolvedValue(new Response("ok"));
+    const { withRateLimit } = await import("@/lib/api/guards");
     const wrapped = withRateLimit(handler, { max: 1, windowMs: 1_000 });
 
     const req = new Request("http://localhost/test", {
@@ -210,6 +223,7 @@ describe("withRateLimit", () => {
 
   it("uses defaults of 10 requests per 60s", async () => {
     const handler = vi.fn().mockResolvedValue(new Response("ok"));
+    const { withRateLimit } = await import("@/lib/api/guards");
     const wrapped = withRateLimit(handler);
 
     const req = new Request("http://localhost/test", {
@@ -223,6 +237,143 @@ describe("withRateLimit", () => {
 
     const blocked = await wrapped(req);
     expect(blocked.status).toBe(429);
+  });
+
+  /* ----- Critical #2: spoofable x-forwarded-for bypass --------------- */
+
+  it("ignores spoofed first value in x-forwarded-for and uses a valid IP", async () => {
+    // Vercel appends the real client IP to the end of the chain.
+    // The first value is attacker-controlled and must not be trusted.
+    const handler = vi.fn().mockResolvedValue(new Response("ok"));
+    const { withRateLimit } = await import("@/lib/api/guards");
+    const wrapped = withRateLimit(handler, { max: 2, windowMs: 60_000 });
+
+    const req = new Request("http://localhost/test", {
+      headers: { "x-forwarded-for": "999.999.999.999, 10.0.0.50" },
+    });
+
+    const r1 = await wrapped(req);
+    const r2 = await wrapped(req);
+    expect(r1.status).toBe(200);
+    expect(r2.status).toBe(200);
+
+    // Third request from same real IP (10.0.0.50) should be blocked
+    // — proving the spoofed first value did NOT create a separate bucket.
+    const blocked = await wrapped(req);
+    expect(blocked.status).toBe(429);
+  });
+
+  it("falls back to 'unknown' when x-forwarded-for contains no valid IP", async () => {
+    const handler = vi.fn().mockResolvedValue(new Response("ok"));
+    const { withRateLimit } = await import("@/lib/api/guards");
+    const wrapped = withRateLimit(handler, { max: 1, windowMs: 60_000 });
+
+    const req = new Request("http://localhost/test", {
+      headers: { "x-forwarded-for": "not-an-ip, also-not-an-ip" },
+    });
+
+    const r1 = await wrapped(req);
+    expect(r1.status).toBe(200);
+
+    // Second request shares the "unknown" bucket → blocked.
+    const blocked = await wrapped(req);
+    expect(blocked.status).toBe(429);
+  });
+
+  it("does not create a fresh bucket per non-IP header value (falls back to 'unknown')", async () => {
+    const handler = vi.fn().mockResolvedValue(new Response("ok"));
+    const { withRateLimit } = await import("@/lib/api/guards");
+    const wrapped = withRateLimit(handler, { max: 1, windowMs: 60_000 });
+
+    // First request — non-IP header value → "unknown" bucket.
+    const r1 = await wrapped(
+      new Request("http://localhost/test", {
+        headers: { "x-forwarded-for": "not-an-ip" },
+      }),
+    );
+    expect(r1.status).toBe(200);
+
+    // Second request — different non-IP header value. Both map to
+    // "unknown", so they share the bucket and the second is blocked.
+    const r2 = await wrapped(
+      new Request("http://localhost/test", {
+        headers: { "x-forwarded-for": "also-not-an-ip" },
+      }),
+    );
+    expect(r2.status).toBe(429);
+  });
+
+  /* ----- Critical #3: full burst on window boundary ------------------ */
+
+  it("does not allow 2*max burst across a window boundary (continuous refill)", async () => {
+    const handler = vi.fn().mockResolvedValue(new Response("ok"));
+    const max = 5;
+    const { withRateLimit } = await import("@/lib/api/guards");
+    const wrapped = withRateLimit(handler, { max, windowMs: 1_000 });
+
+    const req = new Request("http://localhost/test", {
+      headers: { "x-forwarded-for": "10.0.0.99" },
+    });
+
+    // Exhaust the bucket at the start of the window.
+    for (let i = 0; i < max; i += 1) {
+      const r = await wrapped(req);
+      expect(r.status).toBe(200);
+    }
+
+    // Immediately try one more — should be blocked (tokens < 1).
+    const blockedImmediate = await wrapped(req);
+    expect(blockedImmediate.status).toBe(429);
+
+    // Advance just past the window. With continuous refill, only a
+    // proportional number of tokens regenerate — NOT the full max.
+    // A drained bucket refills to `max` over `windowMs`, so after
+    // 1100ms it should be fully restored. But the bug was that even
+    // 1ms past the boundary gave a full max — verify we need ~windowMs
+    // to recover by advancing only half the window.
+    vi.advanceTimersByTime(500);
+
+    const halfRefill = await wrapped(req);
+    // At 500ms into the window with max=5/windowMs=1000ms, refill rate
+    // is 5 tokens/sec. After 500ms from the last request (which left
+    // tokens=0), we have ~2.5 tokens. A single request should succeed.
+    expect(halfRefill.status).toBe(200);
+  });
+
+  /* ----- Critical #1: unbounded memory growth ------------------------ */
+
+  it("cleans up idle buckets after the window elapses", async () => {
+    const handler = vi.fn().mockResolvedValue(new Response("ok"));
+    const { withRateLimit } = await import("@/lib/api/guards");
+    const wrapped = withRateLimit(handler, { max: 1, windowMs: 1_000 });
+
+    // Create a bucket for one IP.
+    await wrapped(
+      new Request("http://localhost/test", {
+        headers: { "x-forwarded-for": "10.0.0.200" },
+      }),
+    );
+
+    // Advance far past the windowMs to make the bucket eligible for
+    // eviction, AND past the CLEANUP_INTERVAL_MS (60s) to trigger the
+    // cleanup pass.
+    vi.advanceTimersByTime(70_000);
+
+    // New request from a different IP — triggers cleanupExpiredBuckets.
+    await wrapped(
+      new Request("http://localhost/test", {
+        headers: { "x-forwarded-for": "10.0.0.201" },
+      }),
+    );
+
+    // Now the old IP (10.0.0.200) should have a fresh bucket (got
+    // evicted during cleanup), so it gets full max=1 tokens again.
+    const afterCleanup = await wrapped(
+      new Request("http://localhost/test", {
+        headers: { "x-forwarded-for": "10.0.0.200" },
+      }),
+    );
+    expect(afterCleanup.status).toBe(200);
   });
 });
 

@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { POST } from "./route";
 
 /* ------------------------------------------------------------------ */
 /* Mocks                                                              */
@@ -7,7 +6,7 @@ import { POST } from "./route";
 
 // Mock the DB client so the route handler works in tests without a real
 // Postgres connection. Tests control return values via the mock state.
-const mockSelectResult: Array<{ id: string }> = [];
+const mockSelectResults: Array<Array<{ id: string }>> = [[]];
 const mockInsert = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("@/lib/db/client", () => ({
@@ -15,7 +14,10 @@ vi.mock("@/lib/db/client", () => ({
     select: () => ({
       from: () => ({
         where: () => ({
-          limit: () => Promise.resolve(mockSelectResult),
+          limit: () => {
+            // Pop the next preset result, or default to empty.
+            return Promise.resolve(mockSelectResults.shift() ?? []);
+          },
         }),
       }),
     }),
@@ -47,10 +49,19 @@ const validIdea = "Build an AI agent that writes poetry for cats in space.";
 /* ------------------------------------------------------------------ */
 
 describe("POST /api/battles", () => {
-  beforeEach(() => {
-    mockSelectResult.length = 0;
+  // POST is dynamically imported inside beforeEach so that vi.resetModules()
+  // clears the module-level `buckets` Map in lib/api/guards.ts. Without
+  // this reset, the rate limiter state leaks between tests using the
+  // "unknown" client key (no forwarded-for header) and depletes the bucket.
+  let POST: (request: Request) => Promise<Response>;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    mockSelectResults.length = 0;
     mockInsert.mockClear();
     warnSpy.mockClear();
+    const mod = await import("./route");
+    POST = mod.POST;
   });
 
   it("returns 201 with { battleId, status: 'created' } for a valid idea", async () => {
@@ -129,7 +140,7 @@ describe("POST /api/battles", () => {
   });
 
   it("returns the existing battle_id when the same idea was submitted before (idempotency)", async () => {
-    mockSelectResult.push({ id: "btl_EXISTING1" });
+    mockSelectResults.push([{ id: "btl_EXISTING1" }]);
 
     const response = await POST(makeRequest({ idea: validIdea }));
     const body = await response.json();
@@ -156,12 +167,57 @@ describe("POST /api/battles", () => {
     expect(insertArg.originalInput).toEqual({ idea: validIdea, mode: "quick" });
   });
 
-  it("logs a TODO for rate limiting", async () => {
-    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-    await POST(makeRequest({ idea: validIdea }));
-    expect(logSpy).toHaveBeenCalledWith(
-      expect.stringContaining("rate-limit"),
+  it("trims the idea before length validation — 10 spaces fails validation", async () => {
+    const response = await POST(makeRequest({ idea: "          " }));
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.issues.some((s: string) => s.includes("at least 10"))).toBe(true);
+  });
+
+  it("stores the trimmed idea in the DB on create", async () => {
+    const paddedIdea = "  Build an AI agent that writes poetry for cats in space.  ";
+    await POST(makeRequest({ idea: paddedIdea }));
+    const insertArg = mockInsert.mock.calls[0][0];
+    expect(insertArg.idea).toBe(validIdea);
+  });
+
+  it("returns 429 when rate limit is exceeded", async () => {
+    // Default rate limit is 10 requests per 60s window.
+    // Use a unique x-forwarded-for IP so this test is not affected by
+    // other tests sharing the "unknown" bucket.
+    const ip = "10.99.0.1";
+    const responses: Array<{ status: number }> = [];
+    for (let i = 0; i < 11; i += 1) {
+      const req = new Request("http://localhost/api/battles", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-forwarded-for": ip,
+        },
+        body: JSON.stringify({ idea: validIdea }),
+      });
+      const res = await POST(req);
+      responses.push({ status: res.status });
+    }
+    const lastResponse = responses[responses.length - 1];
+    expect(lastResponse.status).toBe(429);
+  });
+
+  it("recovers from a unique-constraint violation (TOCTOU race) and returns the existing battle id", async () => {
+    // Simulate: idempotency check finds nothing (select returns []),
+    // then insert throws a unique-violation error,
+    // then recovery select returns the winner's row.
+    mockSelectResults.length = 0;
+    mockInsert.mockRejectedValueOnce(
+      new Error("duplicate key value violates unique constraint"),
     );
-    logSpy.mockRestore();
+    // Queue: [empty (idempotency check), winner row (recovery)]
+    mockSelectResults.push([], [{ id: "btl_RACEFIX" }]);
+
+    const response = await POST(makeRequest({ idea: validIdea }));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.battleId).toBe("btl_RACEFIX");
   });
 });

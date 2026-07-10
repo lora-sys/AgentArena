@@ -74,7 +74,7 @@ export type RateLimitOptions = {
   windowMs?: number;
 };
 
-type Bucket = { tokens: number; resetAt: number };
+type Bucket = { tokens: number; lastRefill: number };
 
 // Module-level map keyed by client key (IP + route).
 // Suitable for single-process dev/Vercel-serverless usage. For
@@ -82,15 +82,53 @@ type Bucket = { tokens: number; resetAt: number };
 // public API (withRateLimit) stays the same.
 const buckets = new Map<string, Bucket>();
 
+// Periodic cleanup of expired buckets to prevent unbounded memory growth.
+// Runs at most once every CLEANUP_INTERVAL_MS to avoid overhead.
+const CLEANUP_INTERVAL_MS = 60_000;
+let lastCleanup = Date.now();
+
+function cleanupExpiredBuckets(now: number, windowMs: number): void {
+  if (now - lastCleanup < CLEANUP_INTERVAL_MS) return;
+  lastCleanup = now;
+  for (const [key, bucket] of buckets) {
+    // If the bucket has been idle long enough to fully refill, remove it.
+    // idle time >= windowMs means tokens would be clamped to max anyway.
+    if (now - bucket.lastRefill >= windowMs) {
+      buckets.delete(key);
+    }
+  }
+}
+
+/**
+ * Validates that a string looks like a plausible IP address (v4 or v6).
+ * Prevents header injection / spoofing via non-IP garbage in forwarded headers.
+ */
+const IP_PATTERN =
+  /^(?:\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|(?:[0-9a-fA-F]{1,4}:){2,7}[0-9a-fA-F]{1,4})$/;
+
+/**
+ * Extracts a client IP from request headers. Only accepts values that look
+ * like valid IP addresses to prevent spoofing. Falls back to "unknown" when
+ * no valid IP is available.
+ */
 function getClientKey(request: Request): string {
-  // Prefer standard forwarded-for header, fall back to a constant
-  // for local dev. Vercel populates x-forwarded-for; in unit tests
-  // there is no header, so we use a fixed key.
   const forwarded = request.headers.get("x-forwarded-for");
   if (forwarded) {
-    return forwarded.split(",")[0]?.trim() ?? "unknown";
+    // Vercel *appends* to x-forwarded-for, so the last hop is the trusted one.
+    // The first value is attacker-controlled and must not be trusted alone.
+    const hops = forwarded.split(",");
+    for (let i = hops.length - 1; i >= 0; i -= 1) {
+      const hop = hops[i]?.trim();
+      if (hop && IP_PATTERN.test(hop)) {
+        return hop;
+      }
+    }
   }
-  return request.headers.get("x-real-ip") ?? "unknown";
+  const realIp = request.headers.get("x-real-ip")?.trim();
+  if (realIp && IP_PATTERN.test(realIp)) {
+    return realIp;
+  }
+  return "unknown";
 }
 
 /**
@@ -112,15 +150,34 @@ export function withRateLimit<Args extends unknown[]>(
   return async (request: Request, ...args: Args): Promise<Response> => {
     const key = getClientKey(request);
     const now = Date.now();
+
+    // Periodic cleanup to prevent unbounded memory growth.
+    cleanupExpiredBuckets(now, windowMs);
+
     const bucket = buckets.get(key);
 
-    if (!bucket || now >= bucket.resetAt) {
-      buckets.set(key, { tokens: max - 1, resetAt: now + windowMs });
+    if (!bucket) {
+      // First request from this key: bucket starts full minus the
+      // request we're about to serve.
+      buckets.set(key, { tokens: max - 1, lastRefill: now });
       return handler(request, ...args);
     }
 
-    if (bucket.tokens <= 0) {
-      const retryAfter = Math.ceil((bucket.resetAt - now) / 1000);
+    // Continuous refill: regenerate tokens proportional to elapsed time.
+    // tokensPerMs = max / windowMs, so a fully-drained bucket refills
+    // to `max` over exactly `windowMs`. No all-or-nothing burst at
+    // a window boundary.
+    const elapsed = now - bucket.lastRefill;
+    const refilled = bucket.tokens + (elapsed * max) / windowMs;
+    const tokens = Math.min(max, refilled);
+
+    if (tokens < 1) {
+      // Not enough tokens — compute retry-after as the time needed
+      // to accrue 1 token.
+      const tokensNeeded = 1 - tokens;
+      const msUntilRefill = Math.ceil((tokensNeeded * windowMs) / max);
+      const retryAfter = Math.max(1, Math.ceil(msUntilRefill / 1000));
+      bucket.lastRefill = now;
       return NextResponse.json(
         { error: "Rate limit exceeded", retryAfter },
         {
@@ -130,7 +187,8 @@ export function withRateLimit<Args extends unknown[]>(
       );
     }
 
-    bucket.tokens -= 1;
+    bucket.tokens = tokens - 1;
+    bucket.lastRefill = now;
     return handler(request, ...args);
   };
 }
