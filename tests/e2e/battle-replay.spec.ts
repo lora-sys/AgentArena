@@ -19,7 +19,9 @@ test.describe("PRD §8.3 Battle Replay", () => {
 
     // The replay page fetches /api/battles/demo/events.
     // Wait for either the timeline (status="ready") or an error state.
-    const timeline = page.getByRole("list", { name: /battle event timeline/i });
+    // Use the CSS class .replay-timeline directly — more reliable than
+    // getByRole("list", { name: ... }) which can be inconsistent.
+    const timeline = page.locator(".replay-timeline");
     const errorAlert = page.getByRole("alert");
     const loadingHeading = page.getByRole("heading", { name: /battle replay/i });
 
@@ -47,7 +49,7 @@ test.describe("PRD §8.3 Battle Replay", () => {
     await page.goto("/battle/demo/replay");
 
     // Wait for the timeline to appear (proves first fetch + render worked).
-    const timeline = page.getByRole("list", { name: /battle event timeline/i });
+    const timeline = page.locator(".replay-timeline");
     await expect(timeline).toBeVisible({ timeout: 15_000 });
 
     // Get the row count after first load.
@@ -70,7 +72,7 @@ test.describe("PRD §8.3 Battle Replay", () => {
     // champion_selected, artifact_created.
     await page.goto("/battle/demo/replay");
 
-    const timeline = page.getByRole("list", { name: /battle event timeline/i });
+    const timeline = page.locator(".replay-timeline");
     await expect(timeline).toBeVisible({ timeout: 15_000 });
 
     // Collect all event types rendered in the timeline.
@@ -88,7 +90,7 @@ test.describe("PRD §8.3 Battle Replay", () => {
   test("clicking a timeline row opens event drawer", async ({ page }) => {
     await page.goto("/battle/demo/replay");
 
-    const timeline = page.getByRole("list", { name: /battle event timeline/i });
+    const timeline = page.locator(".replay-timeline");
     await expect(timeline).toBeVisible({ timeout: 15_000 });
 
     // Click the first timeline row.

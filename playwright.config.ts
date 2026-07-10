@@ -14,6 +14,10 @@ import { defineConfig, devices } from "@playwright/test";
  */
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
+// Override to use system Chromium when bundled browser is unavailable.
+// CI: leave undefined so pnpm e2e:install downloads the right version.
+// Local dev: set PLAYWRIGHT_CHROMIUM_PATH=/usr/bin/chromium
+const CHROMIUM_PATH = process.env.PLAYWRIGHT_CHROMIUM_PATH;
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -45,6 +49,7 @@ export default defineConfig({
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 1440, height: 900 },
+        launchOptions: CHROMIUM_PATH ? { executablePath: CHROMIUM_PATH } : undefined,
       },
     },
     // Chromium mobile (iPhone 14 Pro viewport)
@@ -56,6 +61,7 @@ export default defineConfig({
         isMobile: true,
         hasTouch: true,
         deviceScaleFactor: 3,
+        launchOptions: CHROMIUM_PATH ? { executablePath: CHROMIUM_PATH } : undefined,
       },
     },
     // WebKit desktop (Safari parity)
@@ -79,8 +85,6 @@ export default defineConfig({
     },
   ],
 
-  // Spin up the Next.js dev server if none is running. In CI the
-  // e2e job starts the server externally (see .github/workflows/ci.yml)
   // CI: server is started by the workflow (after `pnpm build`).
   // Local: Playwright spawns `pnpm dev` for us.
   webServer: process.env.CI

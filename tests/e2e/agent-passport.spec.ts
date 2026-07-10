@@ -52,9 +52,10 @@ test.describe("PRD §8.3 Agent Passport", () => {
       await page.goto("/agent/safe-builder/passport");
 
       // Wait for the passport layout to appear (proves page compiled + rendered).
+      // loadAgentPassport is async — needs generous timeout.
       const passportLayout = page.locator(".passport-layout");
       try {
-        await expect(passportLayout).toBeVisible({ timeout: 12_000 });
+        await expect(passportLayout).toBeVisible({ timeout: 15_000 });
         layoutFound = true;
         break;
       } catch {

@@ -15,7 +15,7 @@ import { test, expect } from "./_fixtures/test";
  * guard is not yet enforced.
  */
 
-test.describe("PRD §8.3 API Validators", () => {
+test.describe.serial("PRD §8.3 API Validators", () => {
   test("bad battle id returns 400 or is rejected by guard", async ({ request }) => {
     // Attempt to GET a battle with an invalid id format.
     // Valid format: btl_<8-char base32> per CLAUDE.md §8.
@@ -93,30 +93,28 @@ test.describe("PRD §8.3 API Validators", () => {
 
   test("rate limiting returns 429 after exceeding threshold", async ({ request }) => {
     // Rate limit per lib/api/guards.ts: max=10 per 60s window.
-    // Send 12 requests rapidly to the same endpoint.
-    const responses: number[] = [];
-    for (let i = 0; i < 12; i++) {
+    // Send 10 requests rapidly — all should succeed (201).
+    // The 11th request should be rate-limited (429).
+    const successStatuses: number[] = [];
+    for (let i = 0; i < 10; i++) {
       const response = await request.post("/api/battles", {
         data: { idea: `Rate limit test battle idea number ${i}` },
         headers: { "Content-Type": "application/json" },
       });
-      responses.push(response.status());
+      successStatuses.push(response.status());
     }
 
-    // At least one response should be 429 (rate limited).
-    // Note: If rate limiting is not yet wired on this route, all
-    // responses will be 201 — skip if so.
-    const hasRateLimit = responses.includes(429);
-
-    if (!hasRateLimit) {
+    // First 10 requests should all be 201 (accepted).
+    const allSucceeded = successStatuses.every((s) => s === 201);
+    if (!allSucceeded) {
       test.skip(
         true,
-        "Rate limiting (withRateLimit) is not yet wired on POST /api/battles. All 12 requests returned 201. lib/api/guards.ts has the implementation."
+        `Rate limiting or validation changed behavior: got statuses ${JSON.stringify(successStatuses)}. Expected all 201.`,
       );
       return;
     }
 
-    // If rate limited, verify the response shape.
+    // 11th request should be rate-limited (429).
     const limitedResponse = await request.post("/api/battles", {
       data: { idea: "One more after limit" },
       headers: { "Content-Type": "application/json" },
