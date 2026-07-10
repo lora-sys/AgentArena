@@ -14,6 +14,7 @@ class MockEventSource {
   onerror: ((e: Event) => void) | null = null;
   onopen: (() => void) | null = null;
   closed = false;
+  private listeners: Record<string, ((e: MessageEvent<string>) => void)[]> = {};
 
   constructor(url: string) {
     this.url = url;
@@ -25,10 +26,28 @@ class MockEventSource {
     this.onmessage?.({ data } as MessageEvent<string>);
   }
 
+  /** Simulate a typed SSE event (event: <type>\ndata: ...). Fires named listeners. */
+  emitTypedEvent(eventType: string, data: string): void {
+    const handlers = this.listeners[eventType] ?? [];
+    for (const handler of handlers) {
+      handler({ type: eventType, data } as MessageEvent<string>);
+    }
+  }
+
   /** Simulate a connection-level error. Triggers onerror and close. */
   emitError(): void {
     this.readyState = 2;
     this.onerror?.(new Event("error"));
+  }
+
+  addEventListener(
+    type: string,
+    handler: (e: MessageEvent<string>) => void,
+  ): void {
+    if (!this.listeners[type]) {
+      this.listeners[type] = [];
+    }
+    this.listeners[type].push(handler);
   }
 
   close(): void {
@@ -256,5 +275,29 @@ describe("sse-client", () => {
     expect((onEvent.mock.calls[1][0] as BattleEvent).eventType).toBe(
       "attack_created",
     );
+  });
+
+  it("delivers typed SSE events (event: field) via addEventListener", () => {
+    const onEvent = vi.fn();
+    const onValidationError = vi.fn();
+
+    connectSse({
+      url: "/api/battles/battle-42/events/stream",
+      onEvent,
+      onValidationError,
+      EventSourceCtor: MockEventSource as unknown as typeof EventSource,
+    });
+
+    const source = MockEventSource.latest()!;
+    // Simulate a server pushing `event: proposal_created\ndata: {...}`
+    // — this is the standard SSE pattern and fires the named listener,
+    // NOT onmessage.
+    source.emitTypedEvent("proposal_created", JSON.stringify(validEvent));
+
+    expect(onEvent).toHaveBeenCalledTimes(1);
+    const received = onEvent.mock.calls[0][0] as BattleEvent;
+    expect(received.eventType).toBe("proposal_created");
+    expect(received.id).toBe("ev_test_001");
+    expect(onValidationError).not.toHaveBeenCalled();
   });
 });

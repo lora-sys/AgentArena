@@ -190,6 +190,19 @@ describe("MastraRuntime", () => {
     expect(completed[0].method).toBe("runProposal");
   });
 
+  it("schema_repair_completed does NOT fire on first-attempt success (critical fix)", async () => {
+    // Critical fix: `if (attempt > 0)` was always true for attempt=1,
+    // making the event semantically meaningless. After fix, the event
+    // should only fire when a repair actually occurred (attempt > 1).
+    const fakeClient = makeFakeClient([{ content: JSON.stringify(validProposal) }]);
+    const runtime = makeRuntime(fakeClient);
+
+    await runtime.runProposal(sampleSpec, validProposal);
+
+    const completed = events.filter((e) => e.type === "schema_repair_completed");
+    expect(completed).toHaveLength(0);
+  });
+
   it("repair loop retries up to maxRetries total attempts then falls back to mock", async () => {
     const invalid = { ...validProposal, productName: "" };
     const fakeClient = makeFakeClient([

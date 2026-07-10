@@ -210,7 +210,7 @@ export class MastraRuntime implements ArenaAgentRuntime {
       const result = schema.safeParse(parsed);
 
       if (result.success) {
-        if (attempt > 0) {
+        if (attempt > 1) {
           this.onEvent?.({
             type: "schema_repair_completed",
             spec,

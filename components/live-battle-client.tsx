@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useReducer, useRef } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import {
@@ -98,7 +98,7 @@ export function LiveBattleClient({ battleId }: LiveBattleClientProps) {
   const { data: status, error: statusError } = useSWR<BattleStatus>(
     `/api/battles/${encodeURIComponent(battleId)}/status`,
     fetchStatus,
-    { refreshInterval: 2000, revalidateOnFocus: true },
+    { refreshInterval: 2000, revalidateOnFocus: false },
   );
 
   // SSE event stream
@@ -136,17 +136,31 @@ export function LiveBattleClient({ battleId }: LiveBattleClientProps) {
 
   const handleCancel = useCallback(async () => {
     try {
-      await fetch(
+      const res = await fetch(
         `/api/battles/${encodeURIComponent(battleId)}/cancel`,
         { method: "POST" },
       );
-    } catch {
-      // Even if cancel fails, redirect so the user is not stuck on a stale page
+      if (!res.ok) {
+        throw new Error(`Cancel endpoint returned HTTP ${res.status}`);
+      }
+      router.push("/battles" as Parameters<typeof router.push>[0]);
+    } catch (error) {
+      // Surface the error so the caller can show feedback; do not redirect
+      // on failure (user would lose evidence and land on a stale page).
+      console.error("Cancel failed:", error);
     }
-    router.push("/battles" as Parameters<typeof router.push>[0]);
   }, [battleId, router]);
 
-  const elapsedSec = Math.floor((Date.now() - startedAtRef.current) / 1000);
+  const [elapsedSec, setElapsedSec] = useState(0);
+
+  // Tick elapsedSec every second so the timer in RoundProgressBar updates
+  // without depending on SWR poll cadence or tab focus.
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setElapsedSec(Math.floor((Date.now() - startedAtRef.current) / 1000));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Use status data when available; fall back to a safe default
   const currentRound = status?.round ?? 1;

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { runBattleFromPayload, summarizeBattleBundle } from "@/lib/battle-api";
-import { withRateLimit, withInputValidation, badRequest, validateBattleId, validateIdea } from "@/lib/api/guards";
+import { withRateLimit, withGlobalConcurrency, withInputValidation, badRequest, validateBattleId, validateIdea, registerAbortController, clearAbortController } from "@/lib/api/guards";
 
 type StartBattleRouteContext = {
   params: Promise<{ id: string }>;
@@ -27,21 +27,32 @@ async function startBattleHandler(
     return badRequest(ideaResult.error);
   }
 
-  const bundle = runBattleFromPayload({ idea: ideaResult.value }, id);
+  // Register an AbortController for this battle so the cancel endpoint
+  // can signal in-flight operations. Cleanup runs in finally to prevent
+  // unbounded growth of the registry map.
+  registerAbortController(id);
 
-  return NextResponse.json({
-    battleId: bundle.battle.id,
-    status: bundle.battle.status,
-    battle: summarizeBattleBundle(bundle),
-    bundle,
-  });
+  try {
+    const bundle = runBattleFromPayload({ idea: ideaResult.value }, id);
+
+    return NextResponse.json({
+      battleId: bundle.battle.id,
+      status: bundle.battle.status,
+      battle: summarizeBattleBundle(bundle),
+      bundle,
+    });
+  } finally {
+    clearAbortController(id);
+  }
 }
 
 export const POST = withRateLimit(
-  withInputValidation(StartBattleSchema, async (data, _request, ctx) => {
-    if (ctx && typeof ctx === "object" && "params" in ctx) {
-      return startBattleHandler(data, _request, ctx as StartBattleRouteContext);
-    }
-    return badRequest("Missing route context");
-  }),
+  withGlobalConcurrency(
+    withInputValidation(StartBattleSchema, async (data, _request, ctx) => {
+      if (ctx && typeof ctx === "object" && "params" in ctx) {
+        return startBattleHandler(data, _request, ctx as StartBattleRouteContext);
+      }
+      return badRequest("Missing route context");
+    }),
+  ),
 );
