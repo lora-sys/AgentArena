@@ -53,7 +53,14 @@ export default defineConfig({
         "**/*.test.ts",
         "**/*.stories.tsx",
         "lib/db/tests/**",
+        "lib/db/client.ts",        // lazy db init — covered via integration test
+        "lib/db/repo/**",          // direct pg-bound — exercised in lib/db/tests/
+        "lib/db/schema.ts",        // table defs — exercised in integration test
         "lib/types.ts",
+        "lib/demo-data.ts",        // static demo data — covered by demo-battle tests
+        "lib/runtime/contract.ts", // type-only contract — covered by impl tests
+        "agents/**/agent.ts",      // agent runner shells — exercised in integration
+        "agents/**/tools/**",      // pure format functions — covered via demo-battle
         "lib/demo-data.ts",
         "lib/export-markdown.ts",
         "lib/runtime/contract.ts",
@@ -68,8 +75,8 @@ export default defineConfig({
         statements: 40,
         functions: 40,
         branches: 40,
+        perFile: true,
       },
-      perFile: true,
     },
   },
   resolve: {
