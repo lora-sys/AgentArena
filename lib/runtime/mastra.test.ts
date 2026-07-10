@@ -11,12 +11,18 @@ import {
 
 type ChatChoice = { message: { content: string | null } };
 
-function makeFakeClient(responses: Array<{ content: string } | Error>) {
+function makeFakeClient(responses: Array<{ content: string } | Error | { status: number }>) {
   let callIndex = 0;
   const create = vi.fn(async (_args: { messages: Array<{ role: string; content: string }> }) => {
     const resp = responses[callIndex++];
     if (!resp) throw new Error("No more fake responses queued");
     if (resp instanceof Error) throw resp;
+    if ("status" in resp) {
+      // Simulate OpenAI SDK error with a .status property.
+      const err = new Error(`OpenAI API error: HTTP ${resp.status}`);
+      (err as Error & { status: number }).status = resp.status;
+      throw err;
+    }
     return {
       choices: [{ message: { content: resp.content } } satisfies ChatChoice],
     };
@@ -353,5 +359,36 @@ describe("MastraRuntime", () => {
     const result = await runtime.runProposal(sampleSpec, validProposal);
     expect(result).toBeDefined();
     ProposalSchema.parse(result);
+  });
+
+  it("re-throws 401 infrastructure errors instead of silently falling back to mock", async () => {
+    // Critical fix: 401 (unauthorized) must not be masked as mock output.
+    // Before fix, any error from OpenAI → fallback to mock → caller never
+    // knows the API key is invalid.
+    const fakeClient = makeFakeClient([{ status: 401 }]);
+    const runtime = makeRuntime(fakeClient);
+
+    await expect(runtime.runProposal(sampleSpec, validProposal)).rejects.toThrow();
+    // Should NOT have called the mock fallback — the error must propagate.
+    const fallbackEvents = events.filter((e) => e.type === "battle_failed" && e.attempt === 0);
+    expect(fallbackEvents).toHaveLength(0);
+  });
+
+  it("re-throws 429 rate-limit errors instead of silently falling back to mock", async () => {
+    // Critical fix: 429 (rate limited) must propagate so callers can retry.
+    const fakeClient = makeFakeClient([{ status: 429 }]);
+    const runtime = makeRuntime(fakeClient);
+
+    await expect(runtime.runProposal(sampleSpec, validProposal)).rejects.toThrow();
+  });
+
+  it("re-throws AbortError without falling back to mock", async () => {
+    // AbortError: user cancelled — propagation is correct, mock fallback is NOT.
+    const abortErr = new Error("Request was aborted");
+    abortErr.name = "AbortError";
+    const fakeClient = makeFakeClient([abortErr]);
+    const runtime = makeRuntime(fakeClient);
+
+    await expect(runtime.runProposal(sampleSpec, validProposal)).rejects.toThrow("aborted");
   });
 });

@@ -7,6 +7,10 @@ export function ArtifactViewer() {
   const [activeId, setActiveId] = useState(demoBattle.artifacts[0]?.id);
   const active = demoBattle.artifacts.find((artifact) => artifact.id === activeId) ?? demoBattle.artifacts[0];
 
+  if (!active) {
+    return <div className="artifact-viewer artifact-empty">No artifact selected</div>;
+  }
+
   return (
     <div className="artifact-viewer">
       <div className="artifact-tabs" role="tablist" aria-label="Generated artifacts">

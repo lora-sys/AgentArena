@@ -195,6 +195,7 @@ export default function BattleResultPage({ params }: { params: Promise<{ id: str
   useEffect(() => {
     let cancelled = false;
     setBattleId(battleIdParam);
+    setResult(null);
     setLoading(true);
     setError(null);
     fetchBattleResult(battleIdParam)

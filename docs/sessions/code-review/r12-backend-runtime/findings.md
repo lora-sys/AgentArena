@@ -1,0 +1,16 @@
+# R12 Backend Runtime
+
+Date: 2026-07-10
+
+## CRITICAL
+
+1. lib/runtime/mastra.ts:172-194 — User-cancelled requests silently produce mock data. `runWithFallback` catches ALL errors from `generateWithRepair` (including `AbortError` from a triggered `AbortSignal`) and calls `this.fallback.runProposal(...)`. When a user presses cancel mid-battle, the runtime does not propagate the abort — instead it fires a `battle_failed` event with `issues: undefined` and returns deterministic mock output as if it were a real agent result. This is a data integrity violation: the battle engine persists mock data in the event store with no indication the real model was never invoked.
+
+2. lib/runtime/mastra.ts:237-256 + 185-191 — Double `battle_failed` event emitted on repair exhaustion with diagnostic data destroyed. When `generateWithRepair` exhausts its retry budget, it fires a `battle_failed` event (line 245-251) carrying the actual `lastIssues`. Immediately after, the `SchemaRepairExhaustedError` propagates to `runWithFallback`, which fires a SECOND `battle_failed` event (line 185-191) with `attempt: 0` and `issues: undefined`. The second event overwrites the useful diagnostic context in the event log. Every failed battle produces two `battle_failed` events; consumers reading the stream cannot tell which one carries the real failure context.
+
+3. lib/runtime/mastra.ts:178-194 — Infrastructure-level errors (401, 429, network timeout) are silently masked by mock fallback. `runWithFallback` catches every thrown error identically: invalid API key, rate limit, DNS failure, and exhausted repair budget all produce the same `console.warn` + fallback path. There is no distinction between a recoverable model failure (where fallback to mock is sensible) and a configuration/infrastructure failure (where fallback hides the real problem and returns fake data to the event store). A production deployment with a revoked API key would emit mock AI output and persist it as real battle evidence — a silent data corruption.
+
+4. lib/sse-client.ts:118-128 — SSE reconnect timer is not cleared on close, leaking pending reconnection. When `close()` is called (line 133-144), it clears `reconnectTimer` and closes the source. However, the `onerror` handler at line 118 closes the source and nulls it (line 121-122), then schedules a reconnect via `setTimeout(open, backoff)` (line 125). If `close()` is called between the error firing and the timer firing, the timer is cleared correctly. BUT: if the timer has already fired and `open()` is executing (synchronously creating a new `EventSource` and setting handlers), there is no guard preventing `open()` from running after `closed = true`. The `open()` function checks `if (closed) return;` at line 100 — but if `closed` is set to `true` during the synchronous `new SourceCtor(url)` call, a new EventSource is still created and its handlers registered before the early-return check. This leaks an EventSource connection on rapid close-during-reconnect.
+
+## Summary
+- Criticals: 4

@@ -76,6 +76,23 @@ function tryParseJsonValue(input: string): unknown {
   }
 }
 
+function isAbortError(err: unknown): boolean {
+  if (err instanceof Error && (err.name === "AbortError" || err.name === "APIUserAbortError")) {
+    return true;
+  }
+  return false;
+}
+
+function isInfrastructureError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const e = err as { status?: unknown; error?: { code?: unknown }; code?: unknown };
+  if (typeof e.status === "number" && e.status >= 400 && e.status < 600) {
+    return true;
+  }
+  const errCode = e.error?.code ?? e.code;
+  return errCode === "ECONNREFUSED" || errCode === "ENOTFOUND" || errCode === "ETIMEDOUT";
+}
+
 export class MastraRuntime implements ArenaAgentRuntime {
   private readonly client: OpenAI;
   private readonly model: string;
@@ -178,6 +195,15 @@ export class MastraRuntime implements ArenaAgentRuntime {
     try {
       return await primary();
     } catch (err) {
+      // AbortError: user cancelled — do not fall back, just propagate.
+      if (isAbortError(err)) {
+        throw err;
+      }
+      // Infrastructure errors (401, 429, 500, network) must not be masked
+      // as mock output. Re-throw so callers see the real failure.
+      if (isInfrastructureError(err)) {
+        throw err;
+      }
       console.warn(
         `[MastraRuntime] ${method} failed, falling back to mock:`,
         err instanceof Error ? err.message : String(err),
