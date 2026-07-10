@@ -37,7 +37,11 @@ export default defineConfig({
     baseURL: BASE_URL,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
-    video: "retain-on-failure",
+    // Video recording is disabled: it requires Playwright's bundled ffmpeg
+    // binary which may be missing in some environments. We rely on
+    // screenshots + traces for debug info instead. To re-enable video,
+    // run `pnpm exec playwright install ffmpeg` and set video here.
+    video: "off",
     actionTimeout: 10_000,
     navigationTimeout: 15_000,
   },
