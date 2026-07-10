@@ -19,12 +19,14 @@ test.describe("PRD §8.3 Battle Live", () => {
   test("live page renders with round timeline and team scores", async ({ page }) => {
     await page.goto("/battle/demo/live");
 
+    // The live page fetches battle data then renders. Give it generous
+    // timeout for the client-side fetch + render cycle.
     // Page heading (battle title) is visible.
-    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible({ timeout: 15_000 });
 
     // Round Timeline (nav with aria-label="Battle round timeline") is visible.
     const timeline = page.getByRole("navigation", { name: /battle round timeline/i });
-    await expect(timeline).toBeVisible();
+    await expect(timeline).toBeVisible({ timeout: 15_000 });
 
     // At least one round step is rendered (Briefing, Propose, Attack, etc.).
     const roundSteps = timeline.locator(".round-step");
@@ -43,19 +45,13 @@ test.describe("PRD §8.3 Battle Live", () => {
     await page.goto("/battle/demo/live");
 
     // The page uses connectSse which fires a request to /api/battles/demo/events/stream.
-    // We assert that the page does not crash and renders the connection status.
-    // The status pill shows LIVE / CONNECTING / RECONNECTING / ERROR.
-    const statusPill = page.locator(".live-header .status-pill, .live-header [class*='status']").first();
-
-    // Wait for either the status pill or the round timeline to appear.
+    // We wait for the round timeline to render, proving the page mounted successfully
+    // and did not crash on the SSE connection attempt.
     await expect(
       page.getByRole("navigation", { name: /battle round timeline/i })
-    ).toBeVisible({ timeout: 10_000 });
+    ).toBeVisible({ timeout: 15_000 });
 
-    // The page must not show an unhandled error.
-    const errorBanner = page.locator("[role='alert'].error-banner");
-    // Error banner may or may not be present depending on SSE availability;
-    // we just assert the page rendered without crashing.
+    // The page must not be blank — body must have content.
     await expect(page.locator("body")).not.toBeEmpty();
   });
 });

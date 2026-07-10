@@ -49,7 +49,8 @@ test.describe("PRD §8.3 Battle Setup", () => {
     await page.waitForURL(/\/battle\/[^/]+\/live/, { timeout: 15_000 });
 
     // Verify the URL pattern matches a battle live route.
+    // Battle IDs use the btl_ prefix with uppercase base32 characters.
     const url = page.url();
-    expect(url).toMatch(/\/battle\/demo\/live|\/battle\/btl_[a-z0-9]+\/live/);
+    expect(url).toMatch(/\/battle\/(demo|btl_[A-Z0-9]+)\/live/);
   });
 });
