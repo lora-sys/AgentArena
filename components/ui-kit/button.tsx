@@ -18,7 +18,7 @@ const sizeStyles: Record<ButtonSize, React.CSSProperties> = {
 const variantStyles: Record<ButtonVariant, React.CSSProperties> = {
   primary: {
     background: "var(--team-safe)",
-    color: "#FFFFFF",
+    color: "var(--bg-elev)",
     border: "1px solid var(--team-safe)",
   },
   secondary: {
@@ -33,7 +33,7 @@ const variantStyles: Record<ButtonVariant, React.CSSProperties> = {
   },
   danger: {
     background: "var(--sev-high)",
-    color: "#FFFFFF",
+    color: "var(--bg-elev)",
     border: "1px solid var(--sev-high)",
   },
 };

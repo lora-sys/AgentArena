@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { EventDrawer } from "@/components/event-drawer";
 import type { BattleEvent } from "@/arena/schemas/types";
@@ -25,8 +26,8 @@ const eventTypeColor: Record<string, string> = {
   proposal_created: "var(--team-safe)",
   attack_created: "var(--sev-high)",
   defense_created: "var(--team-infra)",
-  score_created: "var(--champion)",
-  champion_selected: "var(--champion)",
+  score_created: "var(--team-viral)",
+  champion_selected: "var(--team-viral)",
   artifact_created: "var(--team-viral)",
   replay_created: "var(--status-ok)",
   passport_created: "var(--status-ok)",
@@ -45,6 +46,10 @@ export function BattleReplayClient({ battleId }: BattleReplayClientProps) {
   const [scrollTop, setScrollTop] = useState(0);
   const [viewportHeight, setViewportHeight] = useState(DEFAULT_VIEWPORT_HEIGHT);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const searchParams = useSearchParams();
+  const attackIdParam = searchParams.get("attack");
+  const eventIdParam = searchParams.get("event");
 
   useEffect(() => {
     let cancelled = false;
@@ -73,6 +78,41 @@ export function BattleReplayClient({ battleId }: BattleReplayClientProps) {
       cancelled = true;
     };
   }, [battleId]);
+
+  // Resolve ?attack= or ?event= query params to a real BattleEvent.id and
+  // auto-open the drawer. Runs after events load.
+  useEffect(() => {
+    if (status !== "ready" || events.length === 0) return;
+
+    let resolvedId: string | null = null;
+
+    if (eventIdParam) {
+      // Direct event ID match
+      const direct = events.find((e) => e.id === eventIdParam);
+      if (direct) resolvedId = direct.id;
+    } else if (attackIdParam) {
+      // Domain attack ID — scan attack_created events for matching rawPayload.id
+      const matched = events.find(
+        (e) =>
+          e.eventType === "attack_created" &&
+          typeof e.rawPayload === "object" &&
+          e.rawPayload !== null &&
+          "id" in e.rawPayload &&
+          (e.rawPayload as { id: string }).id === attackIdParam,
+      );
+      if (matched) resolvedId = matched.id;
+    }
+
+    if (resolvedId && resolvedId !== selectedEventId) {
+      setSelectedEventId(resolvedId);
+      // Scroll to the matching event
+      const eventIndex = events.findIndex((e) => e.id === resolvedId);
+      if (eventIndex >= 0 && scrollContainerRef.current) {
+        const targetTop = eventIndex * ROW_HEIGHT - DEFAULT_VIEWPORT_HEIGHT / 2 + ROW_HEIGHT / 2;
+        scrollContainerRef.current.scrollTop = Math.max(0, targetTop);
+      }
+    }
+  }, [status, events, attackIdParam, eventIdParam, selectedEventId]);
 
   useEffect(() => {
     const el = scrollContainerRef.current;

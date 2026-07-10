@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { BattleReplayClient } from "@/components/battle-replay-client";
 
 type BattleReplayPageProps = {
@@ -6,5 +7,9 @@ type BattleReplayPageProps = {
 
 export default async function BattleReplayPage({ params }: BattleReplayPageProps) {
   const { id } = await params;
-  return <BattleReplayClient battleId={id} />;
+  return (
+    <Suspense fallback={null}>
+      <BattleReplayClient battleId={id} />
+    </Suspense>
+  );
 }

@@ -247,7 +247,7 @@ export default async function PassportPage({
                   <span className="evidence-type accepted">Accepted</span>
                   <p>{claim.claim}</p>
                   <Link
-                    href={`/battle/${battle.id}/replay?event=${claim.attackId}` as Route}
+                    href={`/battle/${battle.id}/replay?attack=${claim.attackId}` as Route}
                     className="evidence-link font-mono"
                   >
                     {claim.attackId}
@@ -259,7 +259,7 @@ export default async function PassportPage({
                   <span className="evidence-type rejected">Rejected</span>
                   <p>{claim.claim}</p>
                   <Link
-                    href={`/battle/${battle.id}/replay?event=${claim.attackId}` as Route}
+                    href={`/battle/${battle.id}/replay?attack=${claim.attackId}` as Route}
                     className="evidence-link font-mono"
                   >
                     {claim.attackId}
@@ -310,12 +310,12 @@ export default async function PassportPage({
               <ul>
                 {passport.acceptedClaims.map((claim) => (
                   <li key={`print-accept-${claim.attackId}`}>
-                    {claim.attackId} (accepted): https://agentarena.ai/battle/{battle.id}/replay?event={claim.attackId}
+                    {claim.attackId} (accepted): https://agentarena.ai/battle/{battle.id}/replay?attack={claim.attackId}
                   </li>
                 ))}
                 {passport.rejectedClaims.map((claim) => (
                   <li key={`print-reject-${claim.attackId}`}>
-                    {claim.attackId} (rejected): https://agentarena.ai/battle/{battle.id}/replay?event={claim.attackId}
+                    {claim.attackId} (rejected): https://agentarena.ai/battle/{battle.id}/replay?attack={claim.attackId}
                   </li>
                 ))}
               </ul>

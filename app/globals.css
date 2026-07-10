@@ -213,6 +213,7 @@ a {
   --orange-soft: rgba(212, 175, 55, 0.08);
   --red: var(--sev-high);
   --red-soft: rgba(220, 38, 38, 0.08);
+  --purple-accent: #704cff;
   --shadow: var(--shadow-3);
   --radius: 8px;
 }
@@ -377,7 +378,7 @@ a {
 .battle-rail li.active .rail-node {
   border-color: var(--blue);
   color: #fff;
-  background: linear-gradient(135deg, #704cff, var(--blue));
+  background: linear-gradient(135deg, var(--purple-accent), var(--blue));
   box-shadow: 0 10px 20px rgba(72, 76, 246, 0.25);
 }
 
@@ -415,7 +416,7 @@ a {
 .hero-copy h1 strong {
   display: block;
   color: transparent;
-  background: linear-gradient(90deg, #704cff, #0067ff);
+  background: linear-gradient(90deg, var(--purple-accent), #0067ff);
   background-clip: text;
 }
 
@@ -941,7 +942,7 @@ a {
 }
 
 .flow-strip .active span {
-  background: linear-gradient(135deg, #704cff, var(--blue));
+  background: linear-gradient(135deg, var(--purple-accent), var(--blue));
 }
 
 .flow-strip p {
@@ -1653,17 +1654,30 @@ a {
 }
 
 .attack-matrix {
-  display: grid;
-  grid-template-columns: 140px repeat(3, minmax(120px, 1fr));
-  min-width: 520px;
+  display: flex;
+  flex-direction: column;
+  min-width: 560px;
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   background: var(--bg-elev);
   overflow: hidden;
 }
 
-.attack-matrix-corner {
+.attack-matrix-row {
+  display: grid;
+  grid-template-columns: 140px repeat(3, minmax(0, 1fr));
   border-bottom: 1px solid var(--border);
+}
+
+.attack-matrix-row:last-child {
+  border-bottom: 0;
+}
+
+.attack-matrix-header-row {
+  background: var(--bg-sunken);
+}
+
+.attack-matrix-corner {
   border-right: 1px solid var(--border);
   background: var(--bg-sunken);
 }
@@ -1674,7 +1688,6 @@ a {
   justify-content: center;
   gap: 6px;
   padding: 12px 8px;
-  border-bottom: 1px solid var(--border);
   border-right: 1px solid var(--border);
   font-family: var(--font-body);
   font-size: var(--t-sm);
@@ -1695,7 +1708,6 @@ a {
   display: flex;
   align-items: center;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
   border-right: 1px solid var(--border);
   font-family: var(--font-body);
   font-size: var(--t-sm);
@@ -1704,7 +1716,13 @@ a {
 }
 
 .attack-matrix-cell-wrap {
-  display: contents;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+}
+
+.attack-matrix-cell-wrap:last-child {
+  border-right: 0;
 }
 
 .attack-matrix-cell {
@@ -1715,8 +1733,6 @@ a {
   min-height: 72px;
   padding: 8px;
   border: 0;
-  border-bottom: 1px solid var(--border);
-  border-right: 1px solid var(--border);
   border-left: 3px solid transparent;
   background: var(--bg-elev);
   font: inherit;
@@ -1726,11 +1742,7 @@ a {
     border-color var(--dur-fast) var(--ease-out);
 }
 
-.attack-matrix-cell:last-child {
-  border-right: 0;
-}
-
-.attack-matrix-cell:hover:not(.attack-matrix-cell-self) {
+.attack-matrix-cell:hover {
   background: var(--bg-sunken);
 }
 
@@ -1740,11 +1752,11 @@ a {
   z-index: 1;
 }
 
-.attack-matrix-cell.has-attacks {
+.attack-matrix-cell-wrap.has-attacks .attack-matrix-cell {
   border-left-color: var(--team-viral);
 }
 
-.attack-matrix-cell.expanded {
+.attack-matrix-cell-wrap.expanded .attack-matrix-cell {
   background: var(--bg-sunken);
 }
 
@@ -1756,6 +1768,10 @@ a {
     var(--bg-sunken) 4px,
     var(--bg-sunken) 8px
   );
+  cursor: default;
+}
+
+.attack-matrix-cell-empty {
   cursor: default;
 }
 
@@ -1778,10 +1794,105 @@ a {
 }
 
 .attack-matrix-expanded {
-  grid-column: 1 / -1;
   padding: 12px 16px 16px;
   background: var(--bg-sunken);
-  border-bottom: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+}
+
+.attack-matrix-card {
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--bg-elev);
+  margin-bottom: 8px;
+}
+
+.attack-matrix-card:last-child {
+  margin-bottom: 0;
+}
+
+.attack-matrix-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.attack-matrix-card-id {
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  color: var(--fg-subtle);
+}
+
+.attack-matrix-card-severity {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--r-full);
+  font-family: var(--font-body);
+  font-size: var(--t-xs);
+  font-weight: var(--w-bold);
+  color: var(--sev-high);
+  background: rgba(220, 38, 38, 0.08);
+}
+
+.attack-matrix-card-claim {
+  margin: 0 0 8px;
+  font-size: var(--t-sm);
+  line-height: 1.5;
+  color: var(--fg);
+}
+
+.attack-matrix-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.attack-matrix-card-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--t-xs);
+  color: var(--fg-muted);
+}
+
+.attack-matrix-card-time {
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  color: var(--fg-subtle);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .attack-matrix-cell {
+    transition: none;
+  }
+}
+
+.attack-matrix-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: var(--r-full);
+  font-family: var(--font-mono);
+  font-size: var(--t-sm);
+  font-weight: var(--w-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.attack-matrix-empty {
+  font-size: var(--t-lg);
+  color: var(--fg-subtle);
+  opacity: 0.5;
+}
+
+.attack-matrix-expanded {
+  padding: 12px 16px 16px;
+  background: var(--bg-sunken);
+  border-top: 1px solid var(--border);
 }
 
 .attack-matrix-card {
