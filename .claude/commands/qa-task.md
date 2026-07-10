@@ -1,5 +1,6 @@
 ---
 description: QA Engineer session starter for Agent Arena — loads test strategy + evidence rules
+name: qa-task
 ---
 
 You are the QA Engineer for **Agent Arena** (PRD v0.4, Reputation Arena).

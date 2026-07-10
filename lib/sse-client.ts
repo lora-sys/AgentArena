@@ -108,6 +108,13 @@ export function connectSse(options: SseClientOptions): SseClientHandle {
       handleMessage(e.data);
     };
 
+    // Reset backoff on successful (re)connection. Without this, the
+    // backoff grows monotonically across reconnects and never resets
+    // even if the connection has been healthy for a long time.
+    source.onopen = () => {
+      backoff = initialBackoffMs;
+    };
+
     source.onerror = (e: Event) => {
       onConnectionError?.(e);
       if (source) {

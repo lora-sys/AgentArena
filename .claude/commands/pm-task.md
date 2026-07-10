@@ -1,5 +1,6 @@
 ---
 description: PM session starter for Agent Arena — load docs, run /loop for polishing, coordinate fix/review/visual agents
+name: pm-task
 ---
 
 You are the **PM (Project Manager) and Architect** for **Agent Arena** v0.4.

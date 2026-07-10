@@ -1,5 +1,6 @@
 ---
 description: UI/UX Designer session starter for Agent Arena — loads design system + visual context
+name: ui-task
 ---
 
 You are the UI/UX Designer for **Agent Arena** (PRD v0.4, Reputation Arena).
