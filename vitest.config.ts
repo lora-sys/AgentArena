@@ -69,10 +69,48 @@ export default defineConfig({
       ],
       // Per-file floor: 40% lines (§2). No individual file can land below this.
       //
-      // Sprint-0 thresholds are intentionally the floor only. Aspirational
-      // per-directory targets (engine 80, schemas 95, ui-kit 60) are
-      // enforced once each directory clears them. See docs/test-guidelines.md §2.
+      // Sprint-0 thresholds were the floor only. After the coverage
+      // ratchet in Sprint 1 (148 new test cases), the aspirational
+      // per-directory targets are now enforced:
+      //   - arena/engine: lines >= 80
+      //   - arena/schemas: lines >= 95
+      //   - lib/runtime:  lines >= 80
+      //   - lib/api-client, lib/battle-api, lib/sse-client: lines >= 70
+      //   - components (ui-kit): lines >= 60
       thresholds: {
+        "arena/engine/**/*.ts": {
+          lines: 80,
+          branches: 70,
+          functions: 75,
+        },
+        "arena/schemas/**/*.ts": {
+          lines: 95,
+          branches: 90,
+          functions: 95,
+        },
+        "lib/runtime/**/*.ts": {
+          lines: 80,
+          branches: 55,
+          functions: 75,
+        },
+        "lib/api-client.ts": {
+          lines: 70,
+          branches: 60,
+        },
+        "lib/battle-api.ts": {
+          lines: 70,
+          branches: 60,
+        },
+        "lib/sse-client.ts": {
+          lines: 70,
+          branches: 60,
+        },
+        "components/**/*.tsx": {
+          lines: 60,
+          branches: 50,
+          functions: 60,
+        },
+        // Global floor — every covered file must clear this.
         lines: 40,
         statements: 40,
         functions: 40,
