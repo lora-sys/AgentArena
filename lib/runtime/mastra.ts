@@ -28,6 +28,7 @@ import {
   buildJudgeMessages,
   buildArtifactMessages,
 } from "./agent-prompts";
+import { MockRuntime } from "./mock";
 
 const DEFAULT_MODEL = process.env.OPENAI_MODEL ?? "gpt-4";
 const DEFAULT_BASE_URL = process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1";
@@ -92,53 +93,104 @@ export class MastraRuntime implements ArenaAgentRuntime {
   }
 
   async runProposal(spec: AgentSpec, input: ProposalInput): Promise<ProposalOutput> {
-    return this.generateWithRepair(
+    return this.runWithFallback(
       spec,
       "runProposal",
-      ProposalSchema,
-      input,
-      (repairAttempt) => buildProposalMessages(spec, input, repairAttempt),
+      () => this.generateWithRepair(
+        spec,
+        "runProposal",
+        ProposalSchema,
+        input,
+        (repairAttempt) => buildProposalMessages(spec, input, repairAttempt),
+      ),
+      () => this.fallback.runProposal(spec, input),
     );
   }
 
   async runAttack(spec: AgentSpec, input: AttackInput): Promise<AttackOutput> {
-    return this.generateWithRepair(
+    return this.runWithFallback(
       spec,
       "runAttack",
-      AttackSchema,
-      input,
-      (repairAttempt) => buildAttackMessages(spec, input, repairAttempt),
+      () => this.generateWithRepair(
+        spec,
+        "runAttack",
+        AttackSchema,
+        input,
+        (repairAttempt) => buildAttackMessages(spec, input, repairAttempt),
+      ),
+      () => this.fallback.runAttack(spec, input),
     );
   }
 
   async runDefense(spec: AgentSpec, input: DefenseInput): Promise<DefenseOutput> {
-    return this.generateWithRepair(
+    return this.runWithFallback(
       spec,
       "runDefense",
-      DefenseSchema,
-      input,
-      (repairAttempt) => buildDefenseMessages(spec, input, repairAttempt),
+      () => this.generateWithRepair(
+        spec,
+        "runDefense",
+        DefenseSchema,
+        input,
+        (repairAttempt) => buildDefenseMessages(spec, input, repairAttempt),
+      ),
+      () => this.fallback.runDefense(spec, input),
     );
   }
 
   async runJudge(spec: AgentSpec, input: JudgeInput): Promise<JudgeOutput> {
-    return this.generateWithRepair(
+    return this.runWithFallback(
       spec,
       "runJudge",
-      ScoreSchema,
-      input,
-      (repairAttempt) => buildJudgeMessages(spec, input, repairAttempt),
+      () => this.generateWithRepair(
+        spec,
+        "runJudge",
+        ScoreSchema,
+        input,
+        (repairAttempt) => buildJudgeMessages(spec, input, repairAttempt),
+      ),
+      () => this.fallback.runJudge(spec, input),
     );
   }
 
   async runArtifact(spec: AgentSpec, input: ArtifactInput): Promise<ArtifactOutput> {
-    return this.generateWithRepair(
+    return this.runWithFallback(
       spec,
       "runArtifact",
-      ArtifactSchema,
-      input,
-      (repairAttempt) => buildArtifactMessages(spec, input, repairAttempt),
+      () => this.generateWithRepair(
+        spec,
+        "runArtifact",
+        ArtifactSchema,
+        input,
+        (repairAttempt) => buildArtifactMessages(spec, input, repairAttempt),
+      ),
+      () => this.fallback.runArtifact(spec, input),
     );
+  }
+
+  private readonly fallback = new MockRuntime();
+
+  private async runWithFallback<T>(
+    spec: AgentSpec,
+    method: string,
+    primary: () => Promise<T>,
+    fallbackFn: () => Promise<T>,
+  ): Promise<T> {
+    try {
+      return await primary();
+    } catch (err) {
+      console.warn(
+        `[MastraRuntime] ${method} failed, falling back to mock:`,
+        err instanceof Error ? err.message : String(err),
+      );
+      this.onEvent?.({
+        type: "battle_failed",
+        spec,
+        method,
+        attempt: 0,
+        issues: undefined,
+      });
+      return fallbackFn();
+    }
   }
 
   private async generateWithRepair<T>(

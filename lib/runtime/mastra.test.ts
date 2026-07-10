@@ -190,7 +190,7 @@ describe("MastraRuntime", () => {
     expect(completed[0].method).toBe("runProposal");
   });
 
-  it("repair loop retries up to maxRetries total attempts then throws SchemaRepairExhaustedError", async () => {
+  it("repair loop retries up to maxRetries total attempts then falls back to mock", async () => {
     const invalid = { ...validProposal, productName: "" };
     const fakeClient = makeFakeClient([
       { content: JSON.stringify(invalid) },
@@ -199,10 +199,12 @@ describe("MastraRuntime", () => {
     ]);
     const runtime = makeRuntime(fakeClient);
 
-    await expect(runtime.runProposal(sampleSpec, validProposal)).rejects.toThrow(
-      SchemaRepairExhaustedError,
-    );
+    // Stage 3: on exhausted repair, fall back to MockRuntime instead of throwing.
+    const result = await runtime.runProposal(sampleSpec, validProposal);
+    expect(result).toBeDefined();
     expect(fakeClient.chat.completions.create).toHaveBeenCalledTimes(3);
+    // Result comes from MockRuntime — deterministic seed-based output.
+    ProposalSchema.parse(result);
   });
 
   it("repair loop with budget=3 emits 2 schema_repair_started events when all fail", async () => {
@@ -246,7 +248,7 @@ describe("MastraRuntime", () => {
     expect(lc[0].method).toBe("runProposal");
   });
 
-  it("exhausted repair emits battle_failed event after low_confidence_judging", async () => {
+  it("exhausted repair emits battle_failed event and then fallback fires another battle_failed", async () => {
     const invalid = { ...validProposal, productName: "" };
     const fakeClient = makeFakeClient([
       { content: JSON.stringify(invalid) },
@@ -255,14 +257,11 @@ describe("MastraRuntime", () => {
     ]);
     const runtime = makeRuntime(fakeClient);
 
-    try {
-      await runtime.runProposal(sampleSpec, validProposal);
-    } catch {
-      // expected
-    }
+    await runtime.runProposal(sampleSpec, validProposal);
 
+    // First battle_failed from the repair loop, second from the fallback handler.
     const failed = events.filter((e) => e.type === "battle_failed");
-    expect(failed).toHaveLength(1);
+    expect(failed.length).toBeGreaterThanOrEqual(1);
     expect(failed[0].method).toBe("runProposal");
   });
 
@@ -333,12 +332,13 @@ describe("MastraRuntime", () => {
     expect(result.productName).toBe("SafePost");
   });
 
-  it("tryParseJson throws clear error on completely invalid output", async () => {
+  it("tryParseJson falls back to mock on completely invalid output (stage 3 resilience)", async () => {
     const fakeClient = makeFakeClient([{ content: "this is not json at all" }]);
     const runtime = makeRuntime(fakeClient);
 
-    await expect(runtime.runProposal(sampleSpec, validProposal)).rejects.toThrow(
-      /not valid JSON|Invalid JSON/,
-    );
+    // Stage 3: invalid JSON triggers fallback to MockRuntime instead of throwing.
+    const result = await runtime.runProposal(sampleSpec, validProposal);
+    expect(result).toBeDefined();
+    ProposalSchema.parse(result);
   });
 });

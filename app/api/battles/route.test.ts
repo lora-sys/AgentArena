@@ -160,7 +160,7 @@ describe("POST /api/battles", () => {
     expect(insertArg.id).toMatch(/^btl_/);
     expect(insertArg.idea).toBe(validIdea);
     expect(insertArg.mode).toBe("quick");
-    expect(insertArg.status).toBe("idle");
+    expect(insertArg.status).toBe("briefing");
     expect(insertArg.type).toBe("hackathon");
     expect(insertArg.title).toBe(validIdea.slice(0, 100));
     expect(insertArg.settingsJson).toEqual({ mode: "quick" });

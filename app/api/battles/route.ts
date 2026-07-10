@@ -87,7 +87,7 @@ async function createBattleHandler(request: Request): Promise<Response> {
       title: idea.slice(0, 100),
       idea,
       type: "hackathon",
-      status: "idle",
+      status: "briefing",
       originalInput,
       settingsJson,
       mode,
