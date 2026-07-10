@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { artifactTypes, battleStatuses, battleTypes } from "@/arena/schemas/types";
+import { artifactTypes, battleEventTypes, battleStatuses, battleTypes } from "@/arena/schemas/types";
 
 /* ------------------------------------------------------------------ */
 /* Zod schemas for the Battle API response                             */
@@ -105,7 +105,7 @@ export const BattleApiResponseSchema = z.object({
     events: z.array(
       z.object({
         id: z.string().min(1),
-        eventType: z.string(),
+        eventType: z.enum(battleEventTypes),
         actorId: z.string().optional(),
         targetId: z.string().optional(),
         title: z.string(),
@@ -201,7 +201,13 @@ function findScoreEvidenceEventId(
   const match = events.find(
     (event) => event.eventType === "score_created" && event.targetId === teamId,
   );
-  return match?.id ?? `unknown-${teamId}`;
+  if (!match) {
+    throw new BattleApiError(
+      `Score for team ${teamId} has no evidence event (invariant violation: every Score must bind to >=1 evidenceEventId)`,
+      500,
+    );
+  }
+  return match.id;
 }
 
 /**

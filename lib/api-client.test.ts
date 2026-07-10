@@ -259,6 +259,63 @@ describe("fetchBattleResult", () => {
     await expect(fetchBattleResult(validBattleId)).rejects.toThrow(BattleApiError);
   });
 
+  it("throws BattleApiError on invalid eventType enum value", async () => {
+    const invalidEventType = {
+      ...validApiResponse,
+      bundle: {
+        ...validApiResponse.bundle,
+        events: [
+          { id: "evt_bad", eventType: "not_a_real_event", title: "Bogus" },
+        ],
+      },
+    };
+
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      mockFetchResponse(invalidEventType, { status: 200 }),
+    );
+
+    try {
+      await fetchBattleResult(validBattleId);
+      expect.fail("Expected fetchBattleResult to throw");
+    } catch (error) {
+      expect(error).toBeInstanceOf(BattleApiError);
+      const apiError = error as BattleApiError;
+      expect(apiError.message).toContain("validation");
+    }
+  });
+
+  it("throws BattleApiError when a score has no matching evidence event (invariant violation)", async () => {
+    const missingEvidence = {
+      ...validApiResponse,
+      bundle: {
+        ...validApiResponse.bundle,
+        events: [
+          {
+            id: "evt_champ",
+            eventType: "champion_selected",
+            actorId: "battle_engine",
+            targetId: "team_viral_designer_v1",
+            title: "Viral Designer wins",
+          },
+        ],
+      },
+    };
+
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      mockFetchResponse(missingEvidence, { status: 200 }),
+    );
+
+    try {
+      await fetchBattleResult(validBattleId);
+      expect.fail("Expected fetchBattleResult to throw");
+    } catch (error) {
+      expect(error).toBeInstanceOf(BattleApiError);
+      const apiError = error as BattleApiError;
+      expect(apiError.status).toBe(500);
+      expect(apiError.message).toContain("no evidence event");
+    }
+  });
+
   it("throws BattleApiError on network failure", async () => {
     (globalThis.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
       new Error("ECONNREFUSED"),

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { Download, Play, Trophy, FileText, ArrowRight } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
@@ -186,6 +186,7 @@ function ArtifactList({ battleId, artifacts }: { battleId: string; artifacts: Ba
 /* ------------------------------------------------------------------ */
 
 export default function BattleResultPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: battleIdParam } = use(params);
   const [battleId, setBattleId] = useState<string | null>(null);
   const [result, setResult] = useState<BattleResult | null>(null);
   const [error, setError] = useState<{ message: string; status?: number } | null>(null);
@@ -193,34 +194,32 @@ export default function BattleResultPage({ params }: { params: Promise<{ id: str
 
   useEffect(() => {
     let cancelled = false;
-    params.then(({ id }) => {
-      setBattleId(id);
-      setLoading(true);
-      setError(null);
-      fetchBattleResult(id)
-        .then((data) => {
-          if (!cancelled) {
-            setResult(data);
-            setLoading(false);
+    setBattleId(battleIdParam);
+    setLoading(true);
+    setError(null);
+    fetchBattleResult(battleIdParam)
+      .then((data) => {
+        if (!cancelled) {
+          setResult(data);
+          setLoading(false);
+        }
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          if (err instanceof BattleApiError) {
+            setError({ message: err.message, status: err.status });
+          } else {
+            setError({
+              message: err instanceof Error ? err.message : "Unknown error",
+            });
           }
-        })
-        .catch((err: unknown) => {
-          if (!cancelled) {
-            if (err instanceof BattleApiError) {
-              setError({ message: err.message, status: err.status });
-            } else {
-              setError({
-                message: err instanceof Error ? err.message : "Unknown error",
-              });
-            }
-            setLoading(false);
-          }
-        });
-    });
+          setLoading(false);
+        }
+      });
     return () => {
       cancelled = true;
     };
-  }, [params]);
+  }, [battleIdParam]);
 
   return (
     <AppShell active="battle">

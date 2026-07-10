@@ -1,7 +1,7 @@
 "use client";
 
 import "../../../print.css";
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { PassportActions } from "@/components/passport-actions";
 import { PassportMetrics, PassportSeal, SectionCard } from "@/components/arena-cards";
@@ -240,6 +240,7 @@ export default function PassportPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const { id: paramId } = use(params);
   const [id, setId] = useState<string | null>(null);
   const [result, setResult] = useState<{
     passport: AgentPassport;
@@ -248,18 +249,16 @@ export default function PassportPage({
 
   useEffect(() => {
     let cancelled = false;
-    params.then(({ id: agentId }) => {
-      if (cancelled) return;
-      setId(agentId);
-      loadAgentPassport(agentId).then((res) => {
-        if (cancelled) return;
+    setId(paramId);
+    loadAgentPassport(paramId).then((res) => {
+      if (!cancelled) {
         setResult(res);
-      });
+      }
     });
     return () => {
       cancelled = true;
     };
-  }, [params]);
+  }, [paramId]);
 
   // First paint: skeleton (B10 fix — e2e always sees .passport-layout)
   if (!id) {
