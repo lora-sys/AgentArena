@@ -1,0 +1,271 @@
+/*
+ * print.css — Agent Arena Passport Print Stylesheet
+ *
+ * Per docs/design.md §7 (Accessibility > Print):
+ *   "Passport page prints to one A4 with all evidence links as URLs"
+ *
+ * Layout intent:
+ *   - One A4 page (210mm × 297mm) with 12mm margins
+ *   - Two-column layout (identity+contribution | reputation+strengths+weaknesses)
+ *     collapses to a single column on print for better ink economy
+ *   - All interactive controls (.no-print) are hidden
+ *   - Evidence links become plain URLs visible only in print
+ *   - Background colors and shadows stripped for ink savings
+ *   - Color contrast preserved for B&W printers
+ *
+ * Usage:
+ *   Import this file at the top of app/layout.tsx:
+ *     import "./print.css";
+ *
+ * Trigger:
+ *   The passport page calls window.print() via the Print button, or users
+ *   use the browser's native print shortcut. Browser automatically applies
+ *   @media print rules.
+ *
+ * Verification:
+ *   pnpm build && pnpm typecheck must pass. Manual verify via browser
+ *   print preview (Cmd/Ctrl+P) on /agent/viral-designer/passport.
+ */
+
+/* =============================================================
+   Force @media print even when Next.js loads this as a module
+   ============================================================= */
+
+@media print {
+  /* Hide everything that shouldn't print */
+  .no-print,
+  header.topbar,
+  nav.nav-tabs,
+  .battle-rail,
+  .header-actions,
+  button {
+    display: none !important;
+  }
+
+  /* Force one-column flow — two columns wastes paper */
+  .passport-layout {
+    display: block !important;
+    grid-template-columns: none !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .passport-left,
+  .passport-right {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 0 8mm 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Strip card styling — borders and shadows waste ink */
+  .section-card,
+  [class*="rounded-r-md"],
+  [class*="border"] {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 0 6mm 0 !important;
+  }
+
+  /* Page setup — one A4 */
+  @page {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 10pt !important;
+    line-height: 1.4 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Typography — no decorative display fonts in print */
+  * {
+    font-family: "Inter", -apple-system, "Helvetica Neue", Arial, sans-serif !important;
+    color: #000 !important;
+  }
+
+  .font-mono {
+    font-family: "Geist Mono", "JetBrains Mono", "Courier New", monospace !important;
+    font-size: 8pt !important;
+    color: #333 !important;
+  }
+
+  /* Headings */
+  h1 {
+    font-size: 18pt !important;
+    font-weight: 700 !important;
+    margin: 0 0 4mm 0 !important;
+    page-break-after: avoid !important;
+  }
+
+  h2 {
+    font-size: 13pt !important;
+    font-weight: 700 !important;
+    margin: 4mm 0 2mm 0 !important;
+    padding-bottom: 1mm !important;
+    border-bottom: 0.5pt solid #999 !important;
+    page-break-after: avoid !important;
+  }
+
+  h3 {
+    font-size: 11pt !important;
+    font-weight: 600 !important;
+    margin: 3mm 0 1mm 0 !important;
+    page-break-after: avoid !important;
+  }
+
+  p {
+    margin: 0 0 2mm 0 !important;
+  }
+
+  /* Seal — keep but simplify to outline */
+  .passport-seal-wrap svg circle:first-child {
+    stroke: #000 !important;
+    fill: none !important;
+  }
+
+  .passport-seal-wrap svg circle:nth-child(2) {
+    fill: #eee !important;
+    opacity: 1 !important;
+  }
+
+  .passport-seal-wrap svg text {
+    fill: #000 !important;
+  }
+
+  /* Pills — strip background, keep text */
+  .soft-pill,
+  .status-pill,
+  .path-pill {
+    background: transparent !important;
+    border: 0.5pt solid #666 !important;
+    padding: 0.5mm 2mm !important;
+    margin: 0 1mm 1mm 0 !important;
+    display: inline-block !important;
+    color: #000 !important;
+    font-size: 9pt !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Metric grid — inline instead of grid */
+  .metric-grid {
+    display: block !important;
+  }
+
+  .metric-card {
+    display: inline-block !important;
+    width: 48% !important;
+    margin: 0 1% 2mm 0 !important;
+    padding: 1mm 0 !important;
+    border: none !important;
+    vertical-align: top !important;
+  }
+
+  .metric-card span {
+    display: block !important;
+    font-size: 8pt !important;
+    color: #666 !important;
+  }
+
+  .metric-card strong {
+    display: block !important;
+    font-size: 11pt !important;
+    font-weight: 700 !important;
+  }
+
+  /* Evidence — show as numbered list */
+  .evidence-list {
+    display: block !important;
+  }
+
+  .evidence-row {
+    display: grid !important;
+    grid-template-columns: 20mm 1fr 25mm !important;
+    gap: 2mm !important;
+    padding: 1mm 0 !important;
+    border-bottom: 0.25pt dotted #ccc !important;
+    page-break-inside: avoid !important;
+  }
+
+  .evidence-type {
+    font-size: 8pt !important;
+    font-weight: 600 !important;
+  }
+
+  .evidence-link {
+    font-size: 8pt !important;
+    color: #000 !important;
+    text-decoration: underline !important;
+  }
+
+  /* Strengths / Weaknesses — flat list */
+  .pill-row {
+    display: block !important;
+  }
+
+  .pill-row .soft-pill {
+    display: block !important;
+    margin: 0 0 1mm 0 !important;
+    border: none !important;
+    padding: 0 !important;
+    border-bottom: 0.25pt dotted #ccc !important;
+  }
+
+  /* Print-only elements — visible */
+  .print-only {
+    display: block !important;
+    page-break-inside: avoid !important;
+    margin-top: 4mm !important;
+    padding-top: 2mm !important;
+    border-top: 0.5pt solid #000 !important;
+  }
+
+  .evidence-urls-print ul {
+    list-style: none !important;
+    padding: 0 !important;
+    margin: 1mm 0 0 0 !important;
+  }
+
+  .evidence-urls-print li {
+    font-size: 7.5pt !important;
+    font-family: "Geist Mono", "JetBrains Mono", "Courier New", monospace !important;
+    color: #333 !important;
+    word-break: break-all !important;
+    margin: 0.5mm 0 !important;
+    line-height: 1.3 !important;
+  }
+
+  /* Hide screen-only print button hint */
+  .share-url {
+    display: none !important;
+  }
+
+  /* Avoid page breaks inside important blocks */
+  .passport-hero,
+  .evidence-row,
+  .section-card {
+    page-break-inside: avoid !important;
+  }
+
+  /* Ensure URLs are shown for evidence (key print requirement) */
+  a[href]::after {
+    content: " (" attr(href) ")";
+    font-size: 7pt;
+    color: #555;
+  }
+}
+
+/* Screen default — hide print-only elements */
+@media screen {
+  .print-only {
+    display: none !important;
+  }
+}
