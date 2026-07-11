@@ -17,13 +17,21 @@ async function cancelBattleHandler(
 
   const cancelled = cancelCurrentBattle(id);
 
+  // R22 fix: only the explicit demo battle is "demo_not_cancellable" (it
+  // runs synchronously and finishes before cancel can reach it). Real AI
+  // battles use the abort controller and can be cancelled; if no
+  // controller is registered, return "not_running" so the client can
+  // distinguish a real-but-finished battle from an already-finished demo.
+  const status = cancelled
+    ? "cancelling"
+    : id === "demo"
+      ? "demo_not_cancellable"
+      : "not_running";
+
   return NextResponse.json({
     battleId: id,
     cancelled,
-    // Demo battles run synchronously and complete before any cancel can
-    // reach them. Return a distinct status so the client can show feedback
-    // instead of silently no-oping. Real AI battles will return "cancelling".
-    status: cancelled ? "cancelling" : "demo_not_cancellable",
+    status,
   });
 }
 

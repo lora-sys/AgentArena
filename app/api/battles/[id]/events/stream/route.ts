@@ -15,10 +15,13 @@ async function streamHandler(
     return badRequest("Invalid battle ID format");
   }
 
+  // R22 fix: SSE protocol requires a blank line (\n\n) between events.
+  // Without the blank line, EventSource clients concatenate consecutive
+  // events into a single malformed message.
   const bundle = runBattleFromPayload({}, id);
   const body = bundle.events
-    .map((event) => `event: ${event.eventType}\ndata: ${JSON.stringify(event)}\n`)
-    .join("\n");
+    .map((event) => `event: ${event.eventType}\ndata: ${JSON.stringify(event)}\n\n`)
+    .join("");
 
   return new Response(body, {
     headers: {

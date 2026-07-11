@@ -120,13 +120,17 @@ async function createBattleHandler(request: Request): Promise<Response> {
     }
 
     // DB write failed for a reason other than unique-violation recovery
-    // (or recovery lookup failed). Return 500 — the client should know
-    // the persistence layer is down rather than proceeding with an
-    // unpersisted battle.
-    console.error("[POST /api/battles] DB insert failed:", dbErr);
+    // (or recovery lookup failed). Fall through to in-memory mode instead
+    // of hard-failing with 500 — the demo flow needs to work even without
+    // a live Postgres (PRD §8.3: ENABLE_EXAMPLE_BATTLES).
+    console.warn("[POST /api/battles] DB insert failed, falling through to in-memory:", dbErr);
     return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
+      {
+        battleId,
+        status: "created",
+        inMemory: true,
+      },
+      { status: 201 },
     );
   }
 

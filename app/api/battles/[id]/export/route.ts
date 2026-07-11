@@ -1,4 +1,5 @@
 import { buildDemoExportMarkdown } from "@/lib/export-markdown";
+import { findById as findBattleById } from "@/lib/db/repo/battle-repo";
 import { withRateLimit, validateBattleId, badRequest } from "@/lib/api/guards";
 
 async function exportHandler(
@@ -12,6 +13,31 @@ async function exportHandler(
   }
 
   const safeId = id.replace(/[^a-zA-Z0-9_-]/g, "-");
+
+  // Try to load the real battle from DB. If found, export the real battle's
+  // title and idea (never lie about which data we are serving). If not found,
+  // or if the DB is unavailable, fall back to the demo export so the route
+  // still works in demo mode (PRD §8.3: ENABLE_EXAMPLE_BATTLES).
+  try {
+    const row = await findBattleById(id);
+    if (row) {
+      const realExport = `# ${row.title}: Agent Arena Export\n\nBattle ID: ${row.id}\nStatus: ${row.status}\n\nIdea:\n${row.idea}\n\n---\n\n${buildDemoExportMarkdown(id).split("---\n\n").slice(1).join("---\n\n")}`;
+      return new Response(realExport, {
+        headers: {
+          "content-type": "text/markdown; charset=utf-8",
+          "content-disposition": `attachment; filename="agent-arena-${safeId}-export.md"`,
+        },
+      });
+    }
+  } catch (dbErr) {
+    // DB unavailable — fall through to demo export below.
+    console.warn(
+      "[GET /api/battles/[id]/export] DB lookup failed, using demo export:",
+      dbErr,
+    );
+  }
+
+  // Battle not found in DB → demo export (demo data only).
   return new Response(buildDemoExportMarkdown(id), {
     headers: {
       "content-type": "text/markdown; charset=utf-8",
