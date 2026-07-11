@@ -13,7 +13,7 @@ type ChatChoice = { message: { content: string | null } };
 
 function makeFakeClient(responses: Array<{ content: string } | Error | { status: number }>) {
   let callIndex = 0;
-  const create = vi.fn(async (_args: { messages: Array<{ role: string; content: string }> }) => {
+  const create = vi.fn(async (_args: { model: string; messages: Array<{ role: string; content: string }> }) => {
     const resp = responses[callIndex++];
     if (!resp) throw new Error("No more fake responses queued");
     if (resp instanceof Error) throw resp;
@@ -436,5 +436,34 @@ describe("MastraRuntime", () => {
       expect.any(Object),
       expect.objectContaining({ maxRetries: 0 }),
     );
+  });
+
+  it("callOpenAI uses spec.model when provided instead of falling back to runtime default (R27)", async () => {
+    // R27 fix: callOpenAI was ignoring the spec.model field and always using
+    // this.model. The call site already passed `spec`, so the fix renames the
+    // parameter and wires spec.model through to the API call.
+    const fakeClient = makeFakeClient([{ content: JSON.stringify(validProposal) }]);
+    const runtime = makeRuntime(fakeClient);
+
+    const customSpec: AgentSpec = { ...sampleSpec, model: "openai/gpt-5-custom" };
+    await runtime.runProposal(customSpec, validProposal);
+
+    const calls = fakeClient.chat.completions.create.mock.calls;
+    expect(calls).toHaveLength(1);
+    const callArgs = calls[0]![0];
+    expect(callArgs.model).toBe("openai/gpt-5-custom");
+  });
+
+  it("callOpenAI falls back to this.model when spec.model is undefined (R27)", async () => {
+    const fakeClient = makeFakeClient([{ content: JSON.stringify(validProposal) }]);
+    const runtime = new MastraRuntime({ client: fakeClient as unknown as never, model: "openai/gpt-default" });
+
+    const noModelSpec: AgentSpec = { agentId: "agent_safe_builder_v1" };
+    await runtime.runProposal(noModelSpec, validProposal);
+
+    const calls = fakeClient.chat.completions.create.mock.calls;
+    expect(calls).toHaveLength(1);
+    const callArgs = calls[0]![0];
+    expect(callArgs.model).toBe("openai/gpt-default");
   });
 });

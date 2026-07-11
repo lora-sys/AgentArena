@@ -299,10 +299,10 @@ export class MastraRuntime implements ArenaAgentRuntime {
     );
   }
 
-  private async callOpenAI(_spec: AgentSpec, messages: ChatMessage[]): Promise<string> {
+  private async callOpenAI(spec: AgentSpec, messages: ChatMessage[]): Promise<string> {
     const response = await this.client.chat.completions.create(
       {
-        model: this.model,
+        model: spec?.model ?? this.model,
         messages,
         response_format: { type: "json_object" },
       },

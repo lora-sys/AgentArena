@@ -35,9 +35,13 @@ export function ReplayControls({ elapsed, duration }: { elapsed: string; duratio
   }, []);
 
   const copy = async () => {
-    await navigator.clipboard.writeText(shareUrl);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1600);
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch {
+      setCopied(false);
+    }
   };
 
   return (
