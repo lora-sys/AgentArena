@@ -96,6 +96,7 @@ function isInfrastructureError(err: unknown): boolean {
 function isModelOutputError(err: unknown): boolean {
   if (err instanceof SchemaRepairExhaustedError) return true;
   if (err instanceof Error && /model output is not valid json/i.test(err.message)) return true;
+  if (err instanceof Error && /returned empty content/i.test(err.message)) return true;
   return false;
 }
 

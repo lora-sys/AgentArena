@@ -412,6 +412,20 @@ describe("MastraRuntime", () => {
     await expect(runtime.runProposal(sampleSpec, validProposal)).rejects.toThrow("aborted");
   });
 
+  it("re-throws empty-content error without falling back to mock (R23)", async () => {
+    // R23 fix: "OpenAI returned empty content" is a model-output error.
+    // It must throw so callers see the real failure, not silently
+    // receive fabricated mock output.
+    const fakeClient = makeFakeClient([
+      { choices: [{ message: { content: null } }] } as never,
+    ]);
+    const runtime = makeRuntime(fakeClient);
+
+    await expect(runtime.runProposal(sampleSpec, validProposal)).rejects.toThrow(
+      /returned empty content/i,
+    );
+  });
+
   it("passes maxRetries: 0 to chat.completions.create so repair loop counts match actual API calls (BE-2)", async () => {
     const fakeClient = makeFakeClient([{ content: JSON.stringify(validProposal) }]);
     const runtime = new MastraRuntime({ client: fakeClient as unknown as never });
