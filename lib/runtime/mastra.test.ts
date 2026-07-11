@@ -412,4 +412,16 @@ describe("MastraRuntime", () => {
 
     await expect(runtime.runProposal(sampleSpec, validProposal)).rejects.toThrow("aborted");
   });
+
+  it("passes maxRetries: 0 to chat.completions.create so repair loop counts match actual API calls (BE-2)", async () => {
+    const fakeClient = makeFakeClient([{ content: JSON.stringify(validProposal) }]);
+    const runtime = new MastraRuntime({ client: fakeClient as unknown as never });
+
+    await runtime.runProposal(sampleSpec, validProposal);
+
+    expect(fakeClient.chat.completions.create).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({ maxRetries: 0 }),
+    );
+  });
 });

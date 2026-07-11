@@ -136,4 +136,47 @@ describe("passport page — fix verification", () => {
     root.unmount();
     container.remove();
   });
+
+  it("renders 'Passport not found' SectionCard when result is null (FE-1: no infinite skeleton)", async () => {
+    // FE-1: the not-found branch must render for any null result,
+    // not only when id === "not-found".
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          battle: { id: "btl_TEST01", title: "Test" },
+          bundle: { passports: [] },
+        }),
+        { status: 200 },
+      ),
+    );
+
+    const mod = await import("./page");
+    const PassportPage = mod.default;
+
+    const params = Promise.resolve({ id: "some-unknown-agent" });
+    const { act } = await import("@testing-library/react");
+    const { createRoot } = await import("react-dom/client");
+    const React = await import("react");
+
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(React.createElement(PassportPage, { params }));
+    });
+
+    // Wait for the async loadAgentPassport to resolve with null.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+
+    const text = container.textContent ?? "";
+    // The not-found SectionCard should render, not the skeleton.
+    expect(text).toContain("Passport not found");
+    expect(container.querySelector('[data-testid="passport-skeleton"]')).toBeNull();
+
+    root.unmount();
+    container.remove();
+  });
 });

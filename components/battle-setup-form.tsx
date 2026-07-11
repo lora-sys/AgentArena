@@ -70,8 +70,8 @@ export function BattleSetupForm() {
         throw new Error("Battle API failed to create a seeded run.");
       }
 
-      const data = (await response.json()) as { battle?: { id?: string } };
-      const battleId = data.battle?.id ?? "demo";
+      const data = (await response.json()) as { battleId?: string };
+      const battleId = data.battleId ?? "demo";
       window.localStorage.setItem(
         "agent-arena-last-setup",
         JSON.stringify({

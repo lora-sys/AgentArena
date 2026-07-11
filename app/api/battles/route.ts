@@ -125,13 +125,10 @@ async function createBattleHandler(request: Request): Promise<Response> {
   }
 
   // 5. Return the created battle_id.
-  //    Also include `battle.id` for backward compatibility with the existing
-  //    setup form which reads `data.battle?.id`.
   return NextResponse.json(
     {
       battleId,
       status: "created",
-      battle: { id: battleId },
     },
     { status: 201 },
   );

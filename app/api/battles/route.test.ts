@@ -71,7 +71,7 @@ describe("POST /api/battles", () => {
     expect(response.status).toBe(201);
     expect(body.status).toBe("created");
     expect(body.battleId).toMatch(/^btl_[0-9A-HJKMNP-TV-Z]{8}$/);
-    expect(body.battle).toEqual({ id: body.battleId });
+    expect(body).not.toHaveProperty("battle");
   });
 
   it("generates a deterministic battle_id from the idea text", async () => {
@@ -148,6 +148,9 @@ describe("POST /api/battles", () => {
     expect(response.status).toBe(200);
     expect(body.battleId).toBe("btl_EXISTING1");
     expect(body.status).toBe("created");
+    // Idempotent path must return the same flat shape so the client
+    // form can always read data.battleId regardless of code path.
+    expect(body).not.toHaveProperty("battle");
     // Should NOT have inserted a new row.
     expect(mockInsert).not.toHaveBeenCalled();
   });
@@ -219,5 +222,9 @@ describe("POST /api/battles", () => {
 
     expect(response.status).toBe(200);
     expect(body.battleId).toBe("btl_RACEFIX");
+    // Recovery path must return the flat { battleId, status } shape —
+    // no legacy `battle` wrapper — so the client form reads it correctly.
+    expect(body).not.toHaveProperty("battle");
+    expect(body.status).toBe("created");
   });
 });
