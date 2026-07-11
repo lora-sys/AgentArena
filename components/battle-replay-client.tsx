@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { EventDrawer } from "@/components/event-drawer";
@@ -10,7 +10,7 @@ const ROW_HEIGHT = 64;
 const OVERSCAN = 5;
 const DEFAULT_VIEWPORT_HEIGHT = 600;
 
-type FetchState = "loading" | "ready" | "error";
+type FetchState = "loading" | "ready" | "error" | "cancelled";
 
 const formatTimestamp = (iso: string): string => {
   try {
@@ -39,6 +39,17 @@ type BattleReplayClientProps = {
 };
 
 export function BattleReplayClient({ battleId }: BattleReplayClientProps) {
+  // useSearchParams() must be inside a Suspense boundary to avoid
+  // de-opting the entire route to dynamic rendering. Wrap the inner
+  // component (which reads the params) in Suspense at the boundary.
+  return (
+    <Suspense fallback={null}>
+      <BattleReplayClientInner battleId={battleId} />
+    </Suspense>
+  );
+}
+
+function BattleReplayClientInner({ battleId }: BattleReplayClientProps) {
   const searchParams = useSearchParams();
   const [events, setEvents] = useState<BattleEvent[]>([]);
   const [status, setStatus] = useState<FetchState>("loading");
@@ -69,6 +80,11 @@ export function BattleReplayClient({ battleId }: BattleReplayClientProps) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : "Unknown error");
           setStatus("error");
+        } else {
+          // Request was cancelled (component unmounted or battleId changed);
+          // transition to cancelled instead of error to avoid masking the
+          // intentional teardown.
+          setStatus("cancelled");
         }
       });
 
@@ -94,12 +110,16 @@ export function BattleReplayClient({ battleId }: BattleReplayClientProps) {
     }, [searchParams, status, events]);
 
   useEffect(() => {
-    // Only set up the ResizeObserver once after we've reached the ready
-    // state. Previously this effect re-ran on every status change, which
-    // caused stale-ref issues (observing a node that had been replaced
-    // by the loading→ready re-render).
+    // Set up the ResizeObserver once we reach the ready state. We
+    // disconnect any previous observer first so that if the ref changes
+    // (e.g. due to a status transition re-render), the stale observer
+    // doesn't leak or observe a detached node.
     if (status !== "ready") return;
-    if (resizeObserverRef.current) return; // already set up
+
+    if (resizeObserverRef.current) {
+      resizeObserverRef.current.disconnect();
+      resizeObserverRef.current = null;
+    }
 
     const el = scrollContainerRef.current ?? containerRef.current;
     if (!el) return;
@@ -139,7 +159,7 @@ export function BattleReplayClient({ battleId }: BattleReplayClientProps) {
     setSelectedEventId(null);
   }, []);
 
-  if (status === "loading") {
+  if (status === "loading" || status === "cancelled") {
     return (
       <AppShell active="battle" showRail currentRound="cross_attack">
         <div ref={containerRef}>

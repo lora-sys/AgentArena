@@ -3,24 +3,36 @@
 import { useEffect, useState } from "react";
 import { Check, Copy, Download, Pause, Play, Share2, X } from "lucide-react";
 
+/**
+ * Parse a "M:SS" or "H:MM:SS" timestamp string into seconds.
+ * Returns 0 for unparseable input so the UI degrades gracefully.
+ */
+const parseTimestampToSeconds = (stamp: string): number => {
+  if (typeof stamp !== "string") return 0;
+  const parts = stamp.split(":").map((p) => Number.parseInt(p, 10));
+  if (parts.some((p) => Number.isNaN(p))) return 0;
+  if (parts.length === 1) return parts[0];
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  return parts[0] * 3600 + parts[1] * 60 + parts[2];
+};
+
 export function ReplayControls({ elapsed, duration }: { elapsed: string; duration: string }) {
   const [playing, setPlaying] = useState(false);
-  const [progress, setProgress] = useState(38);
   const [shareOpen, setShareOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [shareUrl, setShareUrl] = useState("http://localhost:3000/battle/demo/replay");
 
+  // Derive replay progress from elapsed/duration props so the bar
+  // reflects real position instead of a hardcoded 38% placeholder.
+  const elapsedSeconds = parseTimestampToSeconds(elapsed);
+  const durationSeconds = parseTimestampToSeconds(duration);
+  const progress = durationSeconds > 0
+    ? Math.min(100, Math.round((elapsedSeconds / durationSeconds) * 100))
+    : 0;
+
   useEffect(() => {
     setShareUrl(window.location.href);
   }, []);
-
-  useEffect(() => {
-    if (!playing) return undefined;
-    const interval = window.setInterval(() => {
-      setProgress((value) => (value >= 96 ? 12 : value + 2));
-    }, 700);
-    return () => window.clearInterval(interval);
-  }, [playing]);
 
   const copy = async () => {
     await navigator.clipboard.writeText(shareUrl);
@@ -31,11 +43,21 @@ export function ReplayControls({ elapsed, duration }: { elapsed: string; duratio
   return (
     <>
       <div className="button-row replay-actions">
-        <button className="primary-action button-reset" type="button" onClick={() => setPlaying(true)}>
+        <button
+          className="primary-action button-reset"
+          type="button"
+          onClick={() => setPlaying(true)}
+          aria-pressed={playing}
+        >
           <Play size={16} fill="currentColor" />
           Play
         </button>
-        <button className="ghost-button" type="button" onClick={() => setPlaying(false)}>
+        <button
+          className="ghost-button"
+          type="button"
+          onClick={() => setPlaying(false)}
+          aria-pressed={!playing}
+        >
           <Pause size={16} />
           Pause
         </button>

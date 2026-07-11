@@ -84,6 +84,12 @@ const formatTimestamp = (iso: string): string => {
 export function EventDrawer({ event, open, onClose, allEvents }: EventDrawerProps) {
   const drawerRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  // Track whether the drawer has ever been opened in this mount.
+  // The cleanup callback restores focus to whatever was focused
+  // before the effect ran, but on the very first render the drawer
+  // is closed and there is nothing meaningful to restore — restoring
+  // would steal focus from whatever element the user actually has.
+  const hasOpenedRef = useRef(false);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -96,13 +102,24 @@ export function EventDrawer({ event, open, onClose, allEvents }: EventDrawerProp
   );
 
   useEffect(() => {
-    previousFocusRef.current = document.activeElement as HTMLElement | null;
     if (open) {
+      // Capture the element focused *before* we move focus into the drawer,
+      // so the cleanup can restore it when the drawer closes.
+      previousFocusRef.current = document.activeElement as HTMLElement | null;
+      hasOpenedRef.current = true;
       drawerRef.current?.focus();
+      return () => {
+        previousFocusRef.current?.focus();
+      };
     }
-    return () => {
+    // When closing, only restore focus if this drawer was previously open.
+    // On the very first mount with open=false there is no captured focus
+    // target, so the cleanup would otherwise fire on unmount and steal
+    // focus from an unrelated element.
+    if (hasOpenedRef.current) {
       previousFocusRef.current?.focus();
-    };
+    }
+    return undefined;
   }, [open]);
 
   if (!open || !event) return null;

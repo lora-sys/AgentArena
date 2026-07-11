@@ -148,6 +148,31 @@ describe("EventDrawer", () => {
     document.body.removeChild(triggerButton);
   });
 
+  it("does not steal focus on unmount when drawer was never opened (R25 fix #3)", () => {
+    const triggerButton = document.createElement("button");
+    triggerButton.textContent = "External";
+    document.body.appendChild(triggerButton);
+    triggerButton.focus();
+
+    expect(document.activeElement).toBe(triggerButton);
+
+    // Render the drawer in the closed state from the start. Since the
+    // drawer is never opened, the focus-restoration guard should skip
+    // its cleanup and leave focus on the external button.
+    const event = makeEvent();
+    const { unmount } = render(
+      <EventDrawer event={event} open={false} onClose={() => {}} allEvents={mockAllEvents} />,
+    );
+
+    unmount();
+
+    // Focus must remain on the external trigger button, not be stolen
+    // by the drawer's cleanup callback.
+    expect(document.activeElement).toBe(triggerButton);
+
+    document.body.removeChild(triggerButton);
+  });
+
   afterEach(() => {
     cleanup();
   });
