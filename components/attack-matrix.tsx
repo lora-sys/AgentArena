@@ -22,11 +22,13 @@ const ATTACKER_TEAMS = [
   { id: "infra_hacker", name: "Infra Hacker", color: "text-team-infra", border: "border-team-infra", bg: "bg-team-infra-08" },
 ] as const;
 
+const normalizeId = (id: string): string => id.replace(/[_-]/g, "");
+
 const cellAttacksFor = (attacks: AttackEventLike[], from: string, to: string): AttackEventLike[] =>
   attacks.filter(
     (e) =>
-      e.actorId === from.replace(/_/g, "-") &&
-      e.targetId === to.replace(/_/g, "-"),
+      normalizeId(e.actorId ?? "") === normalizeId(from) &&
+      normalizeId(e.targetId ?? "") === normalizeId(to),
   );
 
 const cellKey = (from: string, to: string): string => `${from}->${to}`;

@@ -209,7 +209,9 @@ describe("MastraRuntime", () => {
     expect(completed).toHaveLength(0);
   });
 
-  it("repair loop retries up to maxRetries total attempts then falls back to mock", async () => {
+  it("repair loop retries up to maxRetries total attempts then THROWS instead of fabricating mock output (R21)", async () => {
+    // R21 fix: model-output errors must NOT be silently masked by mock fallback.
+    // Throwing preserves the real failure so callers can handle it.
     const invalid = { ...validProposal, productName: "" };
     const fakeClient = makeFakeClient([
       { content: JSON.stringify(invalid) },
@@ -218,12 +220,8 @@ describe("MastraRuntime", () => {
     ]);
     const runtime = makeRuntime(fakeClient);
 
-    // Stage 3: on exhausted repair, fall back to MockRuntime instead of throwing.
-    const result = await runtime.runProposal(sampleSpec, validProposal);
-    expect(result).toBeDefined();
+    await expect(runtime.runProposal(sampleSpec, validProposal)).rejects.toThrow();
     expect(fakeClient.chat.completions.create).toHaveBeenCalledTimes(3);
-    // Result comes from MockRuntime — deterministic seed-based output.
-    ProposalSchema.parse(result);
   });
 
   it("repair loop with budget=3 emits 2 schema_repair_started events when all fail", async () => {
@@ -247,11 +245,10 @@ describe("MastraRuntime", () => {
     expect(started[1].attempt).toBe(2);
   });
 
-  it("SchemaRepairExhaustedError does not cause a duplicate battle_failed from runWithFallback", async () => {
-    // Critical fix BE-1: the repair loop already emits battle_failed before
-    // throwing SchemaRepairExhaustedError. The fallback handler must NOT
-    // emit a second one for this specific error type, otherwise consumers
-    // see duplicate events.
+  it("SchemaRepairExhaustedError propagates from runWithFallback without any mock fallback (R21)", async () => {
+    // R21 fix: SchemaRepairExhaustedError is a model-output error and must
+    // be thrown, not masked by mock. The repair loop already emits
+    // battle_failed, so the caller sees exactly one battle_failed event.
     const invalid = { ...validProposal, productName: "" };
     const fakeClient = makeFakeClient([
       { content: JSON.stringify(invalid) },
@@ -260,7 +257,7 @@ describe("MastraRuntime", () => {
     ]);
     const runtime = makeRuntime(fakeClient);
 
-    await runtime.runProposal(sampleSpec, validProposal);
+    await expect(runtime.runProposal(sampleSpec, validProposal)).rejects.toThrow();
 
     const failed = events.filter((e) => e.type === "battle_failed");
     // Exactly one battle_failed: from the repair loop, not duplicated by fallback.
@@ -288,7 +285,10 @@ describe("MastraRuntime", () => {
     expect(lc[0].method).toBe("runProposal");
   });
 
-  it("exhausted repair emits battle_failed event and then fallback fires another battle_failed", async () => {
+  it("exhausted repair emits exactly one battle_failed event (no fallback battle_failed, R21)", async () => {
+    // R21 fix: SchemaRepairExhaustedError is thrown, not swallowed by mock.
+    // The repair loop emits exactly one battle_failed — the fallback handler
+    // must NOT add a duplicate for a model-output error.
     const invalid = { ...validProposal, productName: "" };
     const fakeClient = makeFakeClient([
       { content: JSON.stringify(invalid) },
@@ -297,11 +297,10 @@ describe("MastraRuntime", () => {
     ]);
     const runtime = makeRuntime(fakeClient);
 
-    await runtime.runProposal(sampleSpec, validProposal);
+    await expect(runtime.runProposal(sampleSpec, validProposal)).rejects.toThrow();
 
-    // First battle_failed from the repair loop, second from the fallback handler.
     const failed = events.filter((e) => e.type === "battle_failed");
-    expect(failed.length).toBeGreaterThanOrEqual(1);
+    expect(failed).toHaveLength(1);
     expect(failed[0].method).toBe("runProposal");
   });
 
@@ -372,14 +371,14 @@ describe("MastraRuntime", () => {
     expect(result.productName).toBe("SafePost");
   });
 
-  it("tryParseJson falls back to mock on completely invalid output (stage 3 resilience)", async () => {
+  it("tryParseJson THROWS on completely invalid output instead of fabricating mock (R21)", async () => {
+    // R21 fix: bad JSON from the model is a model-output error.
+    // It must throw so callers see the real failure, not silently
+    // receive fabricated mock output.
     const fakeClient = makeFakeClient([{ content: "this is not json at all" }]);
     const runtime = makeRuntime(fakeClient);
 
-    // Stage 3: invalid JSON triggers fallback to MockRuntime instead of throwing.
-    const result = await runtime.runProposal(sampleSpec, validProposal);
-    expect(result).toBeDefined();
-    ProposalSchema.parse(result);
+    await expect(runtime.runProposal(sampleSpec, validProposal)).rejects.toThrow();
   });
 
   it("re-throws 401 infrastructure errors instead of silently falling back to mock", async () => {

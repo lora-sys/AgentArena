@@ -49,6 +49,26 @@ describe("AttackMatrix - team ID format matching (F2-3)", () => {
     expect(cellButtons.length).toBe(0);
   });
 
+  it("matches attacks when event actorId/targetId use underscored team IDs (R21 normalization)", () => {
+    // R21 fix: event IDs with underscores (e.g. safe_builder, viral_designer)
+    // must match team IDs with hyphens (e.g. safe-builder, viral-designer).
+    // Previously the comparison only normalized the from/to params, so
+    // events with underscored actorId/targetId were silently dropped.
+    const attacks = [
+      makeAttack({
+        id: "atk-003",
+        actorId: "safe_builder",
+        targetId: "viral_designer",
+        content: "underscored ID event",
+      }),
+    ];
+
+    render(<AttackMatrix attacks={attacks} />);
+
+    const cellButton = screen.getByLabelText(/1 attack from Safe Builder to Viral Designer/);
+    expect(cellButton).toBeDefined();
+  });
+
   afterEach(() => {
     cleanup();
   });

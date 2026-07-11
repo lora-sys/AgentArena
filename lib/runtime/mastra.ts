@@ -93,6 +93,12 @@ function isInfrastructureError(err: unknown): boolean {
   return errCode === "ECONNREFUSED" || errCode === "ENOTFOUND" || errCode === "ETIMEDOUT";
 }
 
+function isModelOutputError(err: unknown): boolean {
+  if (err instanceof SchemaRepairExhaustedError) return true;
+  if (err instanceof Error && /model output is not valid json/i.test(err.message)) return true;
+  return false;
+}
+
 export class MastraRuntime implements ArenaAgentRuntime {
   private readonly client: OpenAI;
   private readonly model: string;
@@ -202,6 +208,12 @@ export class MastraRuntime implements ArenaAgentRuntime {
       // Infrastructure errors (401, 429, 500, network) must not be masked
       // as mock output. Re-throw so callers see the real failure.
       if (isInfrastructureError(err)) {
+        throw err;
+      }
+      // Model-output errors (bad JSON, schema repair exhausted) must NOT be
+      // silently swallowed by falling back to mock. That would fabricate
+      // agent output and hide real model failures from the caller.
+      if (isModelOutputError(err)) {
         throw err;
       }
       console.warn(

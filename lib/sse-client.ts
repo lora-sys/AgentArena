@@ -28,6 +28,13 @@ export type SseClientOptions = {
   initialBackoffMs?: number;
   /** Maximum reconnect delay in ms. Default 5000. */
   maxBackoffMs?: number;
+  /**
+   * Maximum number of consecutive failed reconnect attempts before
+   * giving up. Default 10. When exceeded, the client stops reconnecting
+   * and emits a final `onConnectionError` callback (with the last error).
+   * Set to Infinity for unlimited retries (legacy behavior).
+   */
+  maxRetries?: number;
   /** EventSource constructor override for testing. Defaults to globalThis.EventSource. */
   EventSourceCtor?: typeof EventSource;
 };
@@ -56,6 +63,7 @@ export function connectSse(options: SseClientOptions): SseClientHandle {
     onConnectionError,
     initialBackoffMs = 500,
     maxBackoffMs = 5000,
+    maxRetries = 10,
     EventSourceCtor,
   } = options;
 
@@ -73,6 +81,7 @@ export function connectSse(options: SseClientOptions): SseClientHandle {
   let source: EventSource | null = null;
   let backoff = initialBackoffMs;
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  let consecutiveFailures = 0;
 
   const handleMessage = (rawData: string) => {
     let parsed: unknown;
@@ -113,14 +122,20 @@ export function connectSse(options: SseClientOptions): SseClientHandle {
     // even if the connection has been healthy for a long time.
     source.onopen = () => {
       backoff = initialBackoffMs;
+      consecutiveFailures = 0;
     };
 
     source.onerror = (e: Event) => {
       if (closed) return;
       onConnectionError?.(e);
+      consecutiveFailures++;
       if (source) {
         source.close();
         source = null;
+      }
+      // Stop reconnecting after maxRetries consecutive failures.
+      if (consecutiveFailures > maxRetries) {
+        return;
       }
       if (reconnectTimer !== null) {
         clearTimeout(reconnectTimer);

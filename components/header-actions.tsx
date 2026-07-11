@@ -52,7 +52,9 @@ export function HeaderActions() {
     }
   };
 
-  const login = (formData: FormData) => {
+  const handleLoginSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
     const nextUser = {
       name: String(formData.get("name") || "Agent Builder"),
       email: String(formData.get("email") || "builder@agentarena.local")
@@ -191,7 +193,7 @@ export function HeaderActions() {
         >
           <form
             className="relative grid w-full max-w-[560px] gap-s-3 rounded-r-md border border-border bg-bg-elev p-s-8 shadow-shadow-3"
-            action={login}
+            onSubmit={handleLoginSubmit}
             role="dialog"
             aria-modal="true"
             aria-labelledby="login-title"

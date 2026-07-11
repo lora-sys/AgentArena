@@ -75,15 +75,30 @@ export function BattleReplayClient({ battleId }: BattleReplayClientProps) {
     };
   }, [battleId]);
 
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
+
   useEffect(() => {
+    // Only set up the ResizeObserver once after we've reached the ready
+    // state. Previously this effect re-ran on every status change, which
+    // caused stale-ref issues (observing a node that had been replaced
+    // by the loading→ready re-render).
+    if (status !== "ready") return;
+    if (resizeObserverRef.current) return; // already set up
+
     const el = scrollContainerRef.current ?? containerRef.current;
     if (!el) return;
+
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0];
       if (entry) setViewportHeight(entry.contentRect.height);
     });
     observer.observe(el);
-    return () => observer.disconnect();
+    resizeObserverRef.current = observer;
+
+    return () => {
+      observer.disconnect();
+      resizeObserverRef.current = null;
+    };
   }, [status]);
 
   const totalHeight = events.length * ROW_HEIGHT;
