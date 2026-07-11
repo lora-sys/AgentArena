@@ -281,18 +281,11 @@ export default function PassportPage({
   }
 
   if (!result) {
-    if (id === "not-found") {
-      return (
-        <AppShell active="passport">
-          <SectionCard title="Passport not found">
-            <p>No passport snapshot exists for agent <code>{id}</code>.</p>
-          </SectionCard>
-        </AppShell>
-      );
-    }
     return (
-      <AppShell active="passport" showRail currentRound="passport">
-        <PassportSkeleton />
+      <AppShell active="passport">
+        <SectionCard title="Passport not found">
+          <p>No passport snapshot exists for agent <code>{id}</code>.</p>
+        </SectionCard>
       </AppShell>
     );
   }

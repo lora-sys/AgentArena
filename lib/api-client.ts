@@ -203,8 +203,8 @@ function findScoreEvidenceEventId(
   );
   if (!match) {
     throw new BattleApiError(
-      `Score for team ${teamId} has no evidence event (data not available)`,
-      404,
+      `Score for team ${teamId} has no evidence event (data integrity issue)`,
+      422,
     );
   }
   return match.id;

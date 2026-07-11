@@ -293,7 +293,7 @@ export class MastraRuntime implements ArenaAgentRuntime {
         messages,
         response_format: { type: "json_object" },
       },
-      { signal: this.signal },
+      { signal: this.signal, maxRetries: 0 },
     );
     const content = response.choices[0]?.message?.content;
     if (!content) {

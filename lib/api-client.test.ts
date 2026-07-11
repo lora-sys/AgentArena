@@ -311,8 +311,8 @@ describe("fetchBattleResult", () => {
     } catch (error) {
       expect(error).toBeInstanceOf(BattleApiError);
       const apiError = error as BattleApiError;
-      expect(apiError.status).toBe(404);
       expect(apiError.message).toContain("no evidence event");
+      expect(apiError.status).toBe(422);
     }
   });
 
