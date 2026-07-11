@@ -248,9 +248,9 @@ describe("POST /api/battles", () => {
     expect(body.status).toBe("created");
   });
 
-  /* ----- R18 Critical: DB write failure returns 500, not silent 201 --- */
+  /* ----- R22: DB write failure falls through to in-memory (201, inMemory: true) --- */
 
-  it("returns 500 when DB insert fails for a non-unique-violation reason", async () => {
+  it("returns 201 with inMemory: true when DB insert fails for a non-unique-violation reason", async () => {
     mockSelectResults.length = 0;
     mockSelectResults.push([]); // idempotency check: no existing row
     mockInsert.mockRejectedValueOnce(new Error("connection refused"));
@@ -258,11 +258,11 @@ describe("POST /api/battles", () => {
     const response = await POST(makeRequest({ idea: validIdea }));
     const body = await response.json();
 
-    expect(response.status).toBe(500);
-    expect(body.error).toMatch(/Internal server error/);
+    expect(response.status).toBe(201);
+    expect(body.inMemory).toBe(true);
   });
 
-  it("returns 500 when unique-violation recovery lookup also fails", async () => {
+  it("returns 201 with inMemory: true when unique-violation recovery lookup also fails", async () => {
     mockSelectResults.length = 0;
     mockSelectResults.push([]); // idempotency check: no existing row
     mockInsert.mockRejectedValueOnce(
@@ -276,8 +276,8 @@ describe("POST /api/battles", () => {
     const response = await POST(makeRequest({ idea: validIdea }));
     const body = await response.json();
 
-    expect(response.status).toBe(500);
-    expect(body.error).toMatch(/Internal server error/);
+    expect(response.status).toBe(201);
+    expect(body.inMemory).toBe(true);
     expect(errorSpy).toHaveBeenCalled();
     errorSpy.mockRestore();
   });

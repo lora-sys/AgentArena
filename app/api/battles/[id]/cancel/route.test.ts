@@ -64,7 +64,9 @@ describe("POST /api/battles/[id]/cancel", () => {
 
     expect(response.status).toBe(200);
     expect(body.cancelled).toBe(false);
-    expect(body.status).toBe("demo_not_cancellable");
+    // R22 fix: "not_running" (not "demo_not_cancellable") for non-demo
+    // battle ids; "demo_not_cancellable" only applies when id === "demo".
+    expect(body.status).toBe("not_running");
   });
 
   it("returns 400 for an invalid battle ID", async () => {
