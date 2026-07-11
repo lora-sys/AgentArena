@@ -49,13 +49,28 @@ export async function GET(_request: Request, context: RouteContext) {
   }
 
   // Real battle: query DB.
+  // R26 fix: if the battle row is not found in the DB (which happens for
+  // in-memory battles created when the DB insert failed — see POST /api/battles),
+  // fall through to the same default response as DB-unavailable instead of
+  // returning 404. This preserves the create-then-poll contract: the client
+  // always gets a usable status response for any valid battle ID format.
   try {
     const battleRow = await findById(id);
     if (!battleRow) {
-      return NextResponse.json(
-        { error: "Battle not found" },
-        { status: 404 },
-      );
+      console.warn(`[GET /api/battles/${id}/status] Battle not in DB, using default state (in-memory?)`);
+      return NextResponse.json({
+        battleId: id,
+        totalRounds: TOTAL_ROUNDS,
+        round: 1,
+        progress: 0,
+        canCancel: true,
+        status: "unknown",
+        agentStates: {
+          "safe-builder": { state: "pending", streamedText: "", score: 0 },
+          "viral-designer": { state: "pending", streamedText: "", score: 0 },
+          "infra-hacker": { state: "pending", streamedText: "", score: 0 },
+        },
+      });
     }
 
     const events = await recentEvents(id, 50);

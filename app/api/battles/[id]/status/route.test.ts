@@ -48,4 +48,34 @@ describe("GET /api/battles/[id]/status", () => {
 
     vi.doUnmock("@/lib/db/repo/battle-repo");
   });
+
+  it("falls through to default state (not 404) when battle not found in DB (R26: in-memory battle contract)", async () => {
+    // R26 fix: POST /api/battles may return 201 + inMemory: true when the
+    // DB insert fails. The client then polls /status — but findById
+    // returns null because the row was never persisted. Previously this
+    // returned 404, breaking the create-then-poll contract. Now it
+    // returns the same default state as the DB-unavailable path.
+    vi.resetModules();
+    vi.doMock("@/lib/db/repo/battle-repo", () => ({
+      findById: vi.fn().mockResolvedValue(null),
+      recentEvents: vi.fn().mockResolvedValue([]),
+    }));
+    const { GET: GETmocked } = await import("./route");
+
+    const response = await GETmocked(
+      new Request("http://localhost:3000/api/battles/btl_INMEM/status"),
+      { params: Promise.resolve({ id: "btl_INMEM" }) },
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.battleId).toBe("btl_INMEM");
+    expect(body.status).toBe("unknown");
+    expect(body.round).toBe(1);
+    expect(body.progress).toBe(0);
+    expect(body.canCancel).toBe(true);
+    expect(Object.keys(body.agentStates)).toHaveLength(3);
+
+    vi.doUnmock("@/lib/db/repo/battle-repo");
+  });
 });

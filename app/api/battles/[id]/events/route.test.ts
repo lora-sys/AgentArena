@@ -66,7 +66,7 @@ describe("GET /api/battles/[id]/events", () => {
     expect(body.events).toHaveLength(1);
   });
 
-  it("returns 500 when runBattleFromPayload throws", async () => {
+  it("returns 200 with empty events when runBattleFromPayload throws (R26: never 500 for valid battle ID)", async () => {
     mockRunBattleFromPayload.mockImplementation(() => {
       throw new Error("boom");
     });
@@ -77,8 +77,12 @@ describe("GET /api/battles/[id]/events", () => {
     const response = await GET(makeRequest(), makeCtx("btl_ABCDEFGH"));
     const body = await response.json();
 
-    expect(response.status).toBe(500);
-    expect(body.error).toMatch(/Internal server error/);
+    // R26 fix: in-memory battles (POST returned inMemory: true) may poll
+    // this route. A 500 would break the create-then-poll contract.
+    // Return 200 with empty events instead so the client can continue.
+    expect(response.status).toBe(200);
+    expect(body.battleId).toBe("btl_ABCDEFGH");
+    expect(body.events).toEqual([]);
     expect(errorSpy).toHaveBeenCalled();
     errorSpy.mockRestore();
   });
