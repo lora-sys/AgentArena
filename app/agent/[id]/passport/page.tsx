@@ -113,13 +113,19 @@ async function loadAgentPassport(agentId: string): Promise<{
   passport: AgentPassport;
   battle: BattleSummary;
 } | null> {
+  // F-2: fetch from the agent-specific passport endpoint instead of the
+  // hardcoded demo bundle URL.
   try {
     const response = await fetch(
-      `/api/battles/demo`,
+      `/api/agents/${agentId}/passport`,
       { cache: "no-store" },
     );
     if (!response.ok) {
-      return loadFromDemoBundle(agentId);
+      // F-1: only fall back to demo bundle when explicitly requested.
+      if (agentId === "demo") {
+        return loadFromDemoBundle(agentId);
+      }
+      return null;
     }
     const data = (await response.json()) as BundleResponse;
     const passport = data.bundle.passports.find(
@@ -129,11 +135,16 @@ async function loadAgentPassport(agentId: string): Promise<{
         p.agentId.startsWith(agentId.replace(/-/g, "_")),
     );
     if (!passport) {
-      return loadFromDemoBundle(agentId);
+      // F-1: no real match → return null so the not-found branch renders.
+      return null;
     }
     return { passport, battle: data.battle };
   } catch {
-    return loadFromDemoBundle(agentId);
+    // F-1: network failure → only fall back for explicit demo agentId.
+    if (agentId === "demo") {
+      return loadFromDemoBundle(agentId);
+    }
+    return null;
   }
 }
 
@@ -287,7 +298,13 @@ export default function PassportPage({
   }
 
   const { passport, battle } = result;
-  const isChampion = battle.winnerTeamId === id || battle.winnerTeamId === id.replace(/-/g, "_");
+  // F-3: compare winnerTeamId against both the raw id and the
+  // underscore-normalized form so the champion badge renders correctly.
+  const engineId = id.replace(/-/g, "_");
+  const isChampion =
+    battle.winnerTeamId === id ||
+    battle.winnerTeamId === engineId ||
+    battle.winnerTeamId === passport.agentId;
   const shareUrl = `https://agentarena.ai/agent/${id}/passport`;
 
   const sealInitials = passport.agentName
