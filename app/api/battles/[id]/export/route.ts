@@ -21,7 +21,13 @@ async function exportHandler(
   try {
     const row = await findBattleById(id);
     if (row) {
-      const realExport = `# ${row.title}: Agent Arena Export\n\nBattle ID: ${row.id}\nStatus: ${row.status}\n\nIdea:\n${row.idea}\n\n---\n\n${buildDemoExportMarkdown(id).split("---\n\n").slice(1).join("---\n\n")}`;
+      // R24 fix: sanitize DB-sourced content so injected `---` or
+      // newlines in title/idea can't break the markdown structure.
+      // Strip `---` sequences and collapse newlines in title; strip
+      // newlines in idea to prevent breaking section boundaries.
+      const safeTitle = (row.title ?? "").replace(/---/g, "—").replace(/[\r\n]+/g, " ");
+      const safeIdea = (row.idea ?? "").replace(/[\r\n]+/g, " ");
+      const realExport = `# ${safeTitle}: Agent Arena Export\n\nBattle ID: ${row.id}\nStatus: ${row.status}\n\n## Idea\n\n${safeIdea}\n\n## Battle Detail\n\n${buildDemoExportMarkdown(id).split("---\n\n").slice(1).join("---\n\n")}`;
       return new Response(realExport, {
         headers: {
           "content-type": "text/markdown; charset=utf-8",

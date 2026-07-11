@@ -93,6 +93,7 @@ export async function GET(_request: Request, context: RouteContext) {
       round: 1,
       progress: 0,
       canCancel: true,
+      status: "unknown",
       agentStates: {
         "safe-builder": { state: "pending", streamedText: "", score: 0 },
         "viral-designer": { state: "pending", streamedText: "", score: 0 },

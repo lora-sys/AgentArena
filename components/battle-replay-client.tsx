@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { EventDrawer } from "@/components/event-drawer";
 import type { BattleEvent } from "@/arena/schemas/types";
@@ -38,6 +39,7 @@ type BattleReplayClientProps = {
 };
 
 export function BattleReplayClient({ battleId }: BattleReplayClientProps) {
+  const searchParams = useSearchParams();
   const [events, setEvents] = useState<BattleEvent[]>([]);
   const [status, setStatus] = useState<FetchState>("loading");
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +78,20 @@ export function BattleReplayClient({ battleId }: BattleReplayClientProps) {
   }, [battleId]);
 
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
+
+  // R24 fix: auto-select and open the event drawer when the URL
+  // contains ?event=<id>. Passport evidence links use ?event=
+  // to deep-link into the replay at a specific event. This effect
+  // fires once events are loaded and the param exists.
+  useEffect(() => {
+    const eventParam = searchParams.get("event");
+    if (!eventParam || status !== "ready" || events.length === 0) return;
+    if (selectedEventId === eventParam) return;
+    const match = events.find((e) => e.id === eventParam);
+    if (match) {
+      setSelectedEventId(match.id);
+    }
+    }, [searchParams, status, events]);
 
   useEffect(() => {
     // Only set up the ResizeObserver once after we've reached the ready
