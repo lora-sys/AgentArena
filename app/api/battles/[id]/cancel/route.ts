@@ -11,7 +11,7 @@ async function cancelBattleHandler(
 ): Promise<Response> {
   const { id } = await ctx.params;
 
-  if (!validateBattleId(id)) {
+  if (id !== "demo" && !validateBattleId(id)) {
     return badRequest("Invalid battle ID format");
   }
 

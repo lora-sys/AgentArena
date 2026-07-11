@@ -9,7 +9,7 @@ type BattleEventsRouteContext = {
 async function getBattleEvents(_request: Request, { params }: BattleEventsRouteContext): Promise<Response> {
   const { id } = await params;
 
-  if (!validateBattleId(id)) {
+  if (id !== "demo" && !validateBattleId(id)) {
     return NextResponse.json(
       { error: "Invalid battle ID format" },
       { status: 400 },
