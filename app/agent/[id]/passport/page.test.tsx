@@ -29,7 +29,7 @@ describe("passport page — fix verification", () => {
 
   it("module compiles and exports the default page component", async () => {
     const mod = await import("./page");
-    expect(typeof mod.default).toBe("function");
+    expect(typeof mod.ClientPassport).toBe("function");
   });
 
   it("fetches from /api/agents/[id]/passport instead of /api/battles/demo (F-2)", async () => {
@@ -49,7 +49,7 @@ describe("passport page — fix verification", () => {
 
     // Render the page, then trigger the useEffect by re-rendering.
     const mod = await import("./page");
-    const PassportPage = mod.default;
+    const PassportPage = mod.ClientPassport;
 
     const params = Promise.resolve({ id: "safe-builder" });
     const { act } = await import("@testing-library/react");
@@ -109,7 +109,7 @@ describe("passport page — fix verification", () => {
     );
 
     const mod = await import("./page");
-    const PassportPage = mod.default;
+    const PassportPage = mod.ClientPassport;
 
     const params = Promise.resolve({ id: "demo" });
     const { act } = await import("@testing-library/react");
@@ -151,7 +151,7 @@ describe("passport page — fix verification", () => {
     );
 
     const mod = await import("./page");
-    const PassportPage = mod.default;
+    const PassportPage = mod.ClientPassport;
 
     const params = Promise.resolve({ id: "some-unknown-agent" });
     const { act } = await import("@testing-library/react");
@@ -195,7 +195,7 @@ describe("passport page — fix verification", () => {
     );
 
     const mod = await import("./page");
-    const PassportPage = mod.default;
+    const PassportPage = mod.ClientPassport;
 
     const params = Promise.resolve({ id: "some-agent" });
     const { act } = await import("@testing-library/react");
@@ -246,7 +246,7 @@ describe("passport page — fix verification", () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch");
 
     const mod = await import("./page");
-    const PassportPage = mod.default;
+    const PassportPage = mod.ClientPassport;
 
     // Use an agentId with path-traversal characters.
     const params = Promise.resolve({ id: "../../etc/passwd" });

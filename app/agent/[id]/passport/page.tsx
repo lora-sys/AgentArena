@@ -1,7 +1,7 @@
 "use client";
 
 import "../../../print.css";
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useState, Suspense } from "react";
 import { AppShell } from "@/components/app-shell";
 import { PassportActions } from "@/components/passport-actions";
 import { PassportMetrics, PassportSeal, SectionCard } from "@/components/arena-cards";
@@ -258,7 +258,7 @@ function PassportSkeleton() {
   );
 }
 
-export default function PassportPage({
+export function ClientPassport({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -495,5 +495,26 @@ export default function PassportPage({
         </div>
       </div>
     </AppShell>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Server page — wraps ClientPassport in Suspense (R30 fix)           */
+/* ------------------------------------------------------------------ */
+
+type PassportPageProps = {
+  params: Promise<{ id: string }>;
+};
+
+export default async function PassportPage({ params }: PassportPageProps) {
+  // Resolve params here so the client component receives the id.
+  // The Suspense boundary is required because ClientPassport
+  // uses React's `use(params)` hook, which suspends until the
+  // promise resolves.
+  await params;
+  return (
+    <Suspense fallback={<PassportSkeleton />}>
+      <ClientPassport params={params} />
+    </Suspense>
   );
 }

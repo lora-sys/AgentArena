@@ -129,7 +129,10 @@ function getClientKey(request: Request): string {
   if (realIp && IP_PATTERN.test(realIp)) {
     return realIp;
   }
-  return "unknown";
+  // R31 fix: when no valid IP is available, bucket the request by a
+  // route+UA fallback so an attacker cannot exhaust a single shared
+  // "unknown" bucket to lock out all clients without IP headers.
+  return `unknown:${new URL(request.url).pathname}:${(request.headers.get("user-agent") ?? "").slice(0, 32)}`;
 }
 
 /**

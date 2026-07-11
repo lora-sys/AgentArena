@@ -154,6 +154,14 @@
   --font-mono: var(--font-mono);
 }
 
+/* Custom gap utilities (since Tailwind v4 spacing token is not configured) */
+.gap-s-1 { gap: var(--s-1); }
+.gap-s-2 { gap: var(--s-2); }
+.gap-s-3 { gap: var(--s-3); }
+.gap-s-4 { gap: var(--s-4); }
+.gap-s-6 { gap: var(--s-6); }
+.gap-s-8 { gap: var(--s-8); }
+
 /* =============================================================
    :root reset
    ============================================================= */
@@ -1016,6 +1024,362 @@ a {
 }
 
 /* =============================================================
+   Battle setup form (battle-setup-form.tsx)
+   ============================================================= */
+.setup-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.setup-card h1 {
+  margin: 0 0 8px;
+  font-size: var(--t-xl);
+  font-weight: var(--w-bold);
+}
+
+.setup-card > p {
+  margin: 0 0 20px;
+  color: var(--fg-muted);
+}
+
+.setup-card label {
+  display: block;
+  margin: 16px 0 8px;
+  font-weight: var(--w-medium);
+  font-size: var(--t-sm);
+}
+
+.setup-card textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: var(--t-sm);
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.setup-card textarea:focus {
+  outline: 2px solid var(--ring);
+  outline-offset: -1px;
+  border-color: var(--ring);
+}
+
+.char-count {
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  color: var(--fg-muted);
+  text-align: right;
+}
+
+.settings-table {
+  display: grid;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.setting-row {
+  display: grid;
+  grid-template-columns: 24px 140px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--bg-elev);
+}
+
+.setting-row-wide {
+  grid-template-columns: 24px 140px 1fr auto;
+}
+
+.setting-row > span {
+  display: grid;
+  place-items: center;
+  color: var(--fg-muted);
+}
+
+.setting-row strong {
+  font-size: var(--t-sm);
+  font-weight: var(--w-medium);
+}
+
+.setting-row select {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+}
+
+.setting-row i {
+  display: block;
+  width: 1px;
+  height: 24px;
+}
+
+.tag-editor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  min-height: 36px;
+}
+
+.config-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: var(--t-xs);
+  font-weight: var(--w-medium);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+
+.config-tag:hover {
+  background: var(--bg-sunken);
+}
+
+.config-tag.selected {
+  background: var(--team-safe);
+  border-color: var(--team-safe);
+  color: #fff;
+}
+
+.setting-row button[aria-label="Add constraint"],
+.setting-row button[aria-label="Select all outputs"] {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--r-sm);
+  background: var(--bg);
+  color: var(--fg-muted);
+  cursor: pointer;
+}
+
+.setting-row button[aria-label="Add constraint"]:hover,
+.setting-row button[aria-label="Select all outputs"]:hover {
+  background: var(--bg-sunken);
+  color: var(--fg);
+}
+
+.preview-card h2 {
+  margin: 0 0 8px;
+  font-size: var(--t-lg);
+  font-weight: var(--w-bold);
+}
+
+.preview-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.preview-summary article {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--bg);
+}
+
+.preview-summary article > span:first-child {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--team-safe-08);
+  color: var(--team-safe);
+}
+
+.preview-summary p {
+  margin: 0;
+  font-size: var(--t-xs);
+  color: var(--fg-muted);
+}
+
+.preview-summary strong {
+  display: block;
+  font-size: var(--t-sm);
+  font-weight: var(--w-bold);
+  color: var(--fg);
+}
+
+.preview-teams {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.setup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.button-reset {
+  font: inherit;
+  border: 0;
+  background: none;
+  padding: 0;
+  margin: 0;
+}
+
+.form-error {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--sev-high);
+  border-radius: var(--r-sm);
+  background: rgba(220, 38, 38, 0.08);
+  color: var(--sev-high);
+  font-size: var(--t-sm);
+}
+
+@media (max-width: 860px) {
+  .setup-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =============================================================
+   Page headings (battle/new, etc.)
+   ============================================================= */
+.page-heading {
+  margin-bottom: 24px;
+}
+
+.page-heading h1 {
+  margin: 0 0 4px;
+  font-size: var(--t-2xl);
+  font-weight: var(--w-bold);
+}
+
+.page-heading p {
+  margin: 0;
+  color: var(--fg-muted);
+  font-size: var(--t-sm);
+}
+
+/* =============================================================
+   Modal dialogs (used by setup form + share modals)
+   ============================================================= */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+}
+
+.modal-panel {
+  position: relative;
+  width: min(560px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--bg-elev);
+  box-shadow: var(--shadow-3);
+}
+
+.brief-panel h2 {
+  margin: 0 0 8px;
+  font-size: var(--t-lg);
+  font-weight: var(--w-bold);
+}
+
+.brief-list {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0 0;
+}
+
+.brief-list > div {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.brief-list > div:last-child {
+  border-bottom: 0;
+}
+
+.brief-list dt {
+  margin: 0;
+  font-size: var(--t-xs);
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+.brief-list dd {
+  margin: 0;
+  font-size: var(--t-sm);
+  color: var(--fg);
+}
+
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--bg);
+  color: var(--fg);
+  cursor: pointer;
+}
+
+.modal-close:hover {
+  background: var(--bg-sunken);
+}
+
+@media (max-width: 1180px) {
+  .home-hero,
+  .dashboard-grid,
+  .hero-teams {
+    grid-template-columns: 1fr;
+  }
+
+  .flow-strip {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =============================================================
    Passport layout (design.md §4.6 / §5.6)
    Screen-mode definitions for classes consumed by
    app/agent/[id]/passport/page.tsx. Print rules live in print.css.
@@ -1280,6 +1644,525 @@ a {
 @media (prefers-color-scheme: dark) {
   .metric-card {
     background: var(--bg-sunken);
+  }
+}
+
+/* =============================================================
+   Replay mode tabs (replay-controls.tsx — ReplayModeTabs)
+   ============================================================= */
+.mode-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.mode-tabs button {
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--fg-muted);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.mode-tabs button:hover {
+  background: var(--bg-sunken);
+  color: var(--fg);
+}
+
+.mode-tabs button.active {
+  background: var(--team-safe);
+  border-color: var(--team-safe);
+  color: #fff;
+}
+
+.mode-tabs .mode-note {
+  color: var(--fg-muted);
+  font-size: var(--t-sm);
+  margin-left: 4px;
+}
+
+/* =============================================================
+   Result page layout (battle/demo/result)
+   ============================================================= */
+.result-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin-bottom: 24px;
+  font-size: var(--t-sm);
+  color: var(--fg-muted);
+}
+
+.result-meta a {
+  color: var(--team-safe);
+  font-weight: 600;
+}
+
+.result-meta a:hover {
+  text-decoration: underline;
+}
+
+.result-meta strong {
+  color: var(--fg);
+  font-weight: var(--w-bold);
+}
+
+.result-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+  margin-top: 24px;
+}
+
+.result-grid > div {
+  display: grid;
+  gap: 24px;
+  min-width: 0;
+}
+
+.judge-comments {
+  display: grid;
+  gap: 12px;
+}
+
+.judge-comments p {
+  margin: 0;
+  font-size: var(--t-sm);
+  color: var(--fg);
+  line-height: 1.5;
+}
+
+.judge-comments strong {
+  color: var(--fg);
+  font-weight: var(--w-bold);
+}
+
+@media (max-width: 860px) {
+  .result-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =============================================================
+   Live page layout (battle/demo/live)
+   ============================================================= */
+.live-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.live-header h1 {
+  margin: 0 0 8px;
+  font-size: var(--t-2xl);
+  font-weight: var(--w-bold);
+}
+
+.live-header .meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.live-header .timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-elev);
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: var(--t-sm);
+  font-weight: var(--w-medium);
+}
+
+.team-score-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+@media (max-width: 860px) {
+  .team-score-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.round-section {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.round-section:first-of-type {
+  border-top: 0;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.round-section h2 {
+  margin: 0 0 6px;
+  font-size: var(--t-lg);
+  font-weight: var(--w-bold);
+}
+
+.round-section > p {
+  margin: 0 0 16px;
+  color: var(--fg-muted);
+  font-size: var(--t-sm);
+}
+
+.next-band {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 32px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--bg-elev);
+}
+
+.next-band > :first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--sev-high);
+  border-radius: var(--r-sm);
+  background: rgba(220, 38, 38, 0.08);
+  color: var(--sev-high);
+  font-size: var(--t-sm);
+}
+
+/* =============================================================
+   Replay page layout (battle/demo/replay)
+   ============================================================= */
+.replay-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.replay-grid > div {
+  display: grid;
+  gap: 24px;
+  min-width: 0;
+}
+
+.replay-actions {
+  margin-top: 8px;
+}
+
+.replay-clock {
+  font-family: var(--font-mono);
+  font-size: var(--t-sm);
+  color: var(--fg-muted);
+  padding: 0 8px;
+}
+
+.replay-progress {
+  position: relative;
+  display: inline-block;
+  width: 140px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--bg-sunken);
+  overflow: hidden;
+}
+
+.replay-progress i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--team-safe), var(--team-viral));
+}
+
+.versus-card h2 {
+  margin: 8px 0 4px;
+  font-size: var(--t-lg);
+  font-weight: var(--w-bold);
+}
+
+.versus-card p {
+  margin: 0 0 16px;
+  color: var(--fg-muted);
+  font-size: var(--t-sm);
+}
+
+.versus-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 16px 0;
+}
+
+.versus-row strong {
+  font-size: var(--t-md);
+  font-weight: var(--w-bold);
+  color: var(--fg-muted);
+}
+
+.video-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 32px 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--bg-sunken);
+  text-align: center;
+}
+
+.video-card > strong {
+  font-size: var(--t-md);
+  font-weight: var(--w-bold);
+  color: var(--fg-muted);
+}
+
+.video-progress {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.video-progress i {
+  display: block;
+  height: 100%;
+  width: 38%;
+  background: linear-gradient(90deg, var(--team-safe), var(--team-viral));
+}
+
+.video-card small {
+  font-size: var(--t-sm);
+  color: var(--fg-muted);
+}
+
+.share-card h2 {
+  margin: 0 0 4px;
+  font-size: var(--t-md);
+  font-weight: var(--w-bold);
+}
+
+.share-card p {
+  margin: 0;
+  color: var(--fg-muted);
+  font-size: var(--t-sm);
+}
+
+.copy-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--bg-sunken);
+}
+
+.copy-box span {
+  flex: 1 1 auto;
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  color: var(--fg);
+  word-break: break-all;
+}
+
+.copy-box button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--bg);
+  color: var(--fg);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.copy-box button:hover {
+  background: var(--bg-elev);
+}
+
+/* =============================================================
+   Artifact viewer (artifact-viewer.tsx)
+   ============================================================= */
+.artifact-viewer {
+  display: grid;
+  gap: 12px;
+}
+
+.artifact-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+}
+
+.artifact-tabs button {
+  min-height: 32px;
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--bg);
+  color: var(--fg-muted);
+  font: inherit;
+  font-size: var(--t-xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.artifact-tabs button:hover {
+  background: var(--bg-sunken);
+  color: var(--fg);
+}
+
+.artifact-tabs button.active {
+  background: var(--team-safe);
+  border-color: var(--team-safe);
+  color: #fff;
+}
+
+.artifact-viewer pre {
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--bg-sunken);
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  line-height: 1.55;
+  color: var(--fg);
+  overflow-x: auto;
+  max-height: 400px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.artifact-foot {
+  font-size: var(--t-xs);
+  color: var(--fg-muted);
+}
+
+.artifact-empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--fg-muted);
+  font-size: var(--t-sm);
+}
+
+/* =============================================================
+   Battles table + page content (battles-table.tsx)
+   ============================================================= */
+.battles-grid {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.battle-stat-card {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--bg-elev);
+  box-shadow: var(--shadow-1);
+}
+
+.battle-stat-icon {
+  display: grid;
+  width: 56px;
+  height: 56px;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--team-safe-08);
+  color: var(--team-safe);
+}
+
+.battle-stat-label {
+  margin: 0;
+  font-size: var(--t-sm);
+  color: var(--fg-muted);
+}
+
+.battle-stat-value {
+  display: block;
+  margin: 4px 0;
+  font-size: var(--t-2xl);
+  font-weight: var(--w-bold);
+  color: var(--fg);
+}
+
+.battle-stat-note {
+  font-size: var(--t-xs);
+  color: var(--fg-muted);
+}
+
+/* =============================================================
+   Skip link (a11y)
+   ============================================================= */
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 0;
+  z-index: 100;
+  padding: 8px 12px;
+  background: var(--bg-elev);
+  color: var(--team-safe);
+  font-weight: 600;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+}
+
+.skip-link:focus {
+  top: 8px;
+  left: 8px;
+}
+
+@media (max-width: 860px) {
+  .replay-grid {
+    grid-template-columns: 1fr;
   }
 }
 

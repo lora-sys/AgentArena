@@ -9,8 +9,11 @@ export default function BattleResultPage() {
     <AppShell active="battle">
       <div className="result-meta">
         <Link href="/battles">Back to Battles</Link>
+        {" · "}
         <strong>Battle #42</strong>
+        {" · "}
         <span>Round 2: Cross Attack</span>
+        {" "}
         <span className="status-pill done">Completed</span>
       </div>
       <ChampionHero />
@@ -22,13 +25,13 @@ export default function BattleResultPage() {
           <SectionCard title="Judge Comments">
             <div className="judge-comments">
               <p>
-                <strong>Judge-Product</strong> Excellent product-market fit and strong differentiation.
+                <strong>Judge-Product:</strong>{" "}Excellent product-market fit and strong differentiation.
               </p>
               <p>
-                <strong>Judge-Tech</strong> Solid modular architecture with a credible event-log story.
+                <strong>Judge-Tech:</strong>{" "}Solid modular architecture with a credible event-log story.
               </p>
               <p>
-                <strong>Judge-Market</strong> High potential for virality and retention.
+                <strong>Judge-Market:</strong>{" "}High potential for virality and retention.
               </p>
             </div>
           </SectionCard>

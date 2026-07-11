@@ -411,8 +411,10 @@ export function ChampionHero() {
           <Trophy size={18} /> Champion Plan
         </p>
         <h1 className="m-0 text-t-2xl font-bold text-fg">{winner.name}</h1>
-        <p className="mt-s-2 flex items-center gap-s-2 text-fg-muted">
-          <strong className="text-2xl text-fg">{formatScore(winner.score)}</strong> /100
+        <p className="mt-s-2 flex flex-wrap items-center gap-s-3 text-fg-muted">
+          <strong className="text-2xl text-fg">{formatScore(winner.score)}</strong>
+          <span>/100</span>
+          {" "}
           <StatusPill label="Winner" tone="purple" />
         </p>
       </div>

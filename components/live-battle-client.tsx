@@ -7,9 +7,11 @@ import {
   AgentStatusCard,
   type AgentState,
 } from "@/components/agent-status-card";
+import { AppShell } from "@/components/app-shell";
 import { RoundProgressBar } from "@/components/round-progress-bar";
 import { connectSse, type SseClientHandle } from "@/lib/sse-client";
 import type { BattleEvent } from "@/arena/schemas/types";
+import type { BattleRound } from "@/lib/types";
 
 /* ─── Status API shape ──────────────────────────────────────────────────── */
 
@@ -202,8 +204,37 @@ export function LiveBattleClient({ battleId }: LiveBattleClientProps) {
   const canCancel = status?.canCancel ?? false;
   const agentStates = status?.agentStates ?? {};
 
+  // R30 fix: derive the rail's currentRound from the last SSE event so
+  // the battle flow indicator tracks the actual battle progression
+  // instead of being hardcoded to "cross_attack" in the server page.
+  const lastEventRound = state.events[state.events.length - 1]?.round;
+  const railRound: BattleRound = (() => {
+    if (!lastEventRound) return "cross_attack";
+    // SSE round values look like "proposal_round", "cross_attack_round",
+    // "defense_round", "judging_round". Strip the "_round" suffix and
+    // map to the BattleRound type used by AppShell.
+    const stripped = lastEventRound.replace(/_round$/, "");
+    const valid: BattleRound[] = [
+      "briefing",
+      "proposal",
+      "cross_attack",
+      "defense",
+      "judging",
+      "champion",
+      "artifacts",
+      "passport",
+    ];
+    return (valid as string[]).includes(stripped)
+      ? (stripped as BattleRound)
+      : "cross_attack";
+  })();
+
   return (
-    <>
+    <AppShell active="battle" showRail currentRound={railRound}>
+      <a href="#event-log" className="skip-link">
+        Skip to event log
+      </a>
+
       {statusError ? (
         <div role="alert" className="error-banner">
           <span>Polling error: {statusError.message}</span>
@@ -273,6 +304,6 @@ export function LiveBattleClient({ battleId }: LiveBattleClientProps) {
           </div>
         )}
       </section>
-    </>
+    </AppShell>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { Download, Play, Trophy, FileText, ArrowRight } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
@@ -185,7 +185,7 @@ function ArtifactList({ battleId, artifacts }: { battleId: string; artifacts: Ba
 /* Main Page                                                           */
 /* ------------------------------------------------------------------ */
 
-export default function BattleResultPage({ params }: { params: Promise<{ id: string }> }) {
+export function ClientBattleResult({ params }: { params: Promise<{ id: string }> }) {
   const { id: battleIdParam } = use(params);
   const [battleId, setBattleId] = useState<string | null>(null);
   const [result, setResult] = useState<BattleResult | null>(null);
@@ -277,5 +277,26 @@ export default function BattleResultPage({ params }: { params: Promise<{ id: str
         </>
       )}
     </AppShell>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Server page — wraps ClientBattleResult in Suspense (R30 fix)       */
+/* ------------------------------------------------------------------ */
+
+type BattleResultPageProps = {
+  params: Promise<{ id: string }>;
+};
+
+export default async function BattleResultPage({ params }: BattleResultPageProps) {
+  // Resolve params here so the client component receives the id.
+  // The Suspense boundary is required because ClientBattleResult
+  // uses React's `use(params)` hook, which suspends until the
+  // promise resolves.
+  await params;
+  return (
+    <Suspense fallback={<ResultSkeleton />}>
+      <ClientBattleResult params={params} />
+    </Suspense>
   );
 }

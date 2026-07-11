@@ -34,6 +34,7 @@ export default function LiveBattlePage() {
           <h1>{demoBattle.title}</h1>
           <div className="meta-row">
             <StatusPill label="Round 2: Cross Attack" />
+            {" "}
             <StatusPill label="LIVE" tone="live" />
           </div>
         </div>
