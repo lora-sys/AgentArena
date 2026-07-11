@@ -227,4 +227,38 @@ describe("POST /api/battles", () => {
     expect(body).not.toHaveProperty("battle");
     expect(body.status).toBe("created");
   });
+
+  /* ----- R18 Critical: DB write failure returns 500, not silent 201 --- */
+
+  it("returns 500 when DB insert fails for a non-unique-violation reason", async () => {
+    mockSelectResults.length = 0;
+    mockSelectResults.push([]); // idempotency check: no existing row
+    mockInsert.mockRejectedValueOnce(new Error("connection refused"));
+
+    const response = await POST(makeRequest({ idea: validIdea }));
+    const body = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(body.error).toMatch(/Internal server error/);
+  });
+
+  it("returns 500 when unique-violation recovery lookup also fails", async () => {
+    mockSelectResults.length = 0;
+    mockSelectResults.push([]); // idempotency check: no existing row
+    mockInsert.mockRejectedValueOnce(
+      new Error("duplicate key value violates unique constraint"),
+    );
+    // Recovery select will also return empty (lookup fails)
+    mockSelectResults.push([]);
+
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const response = await POST(makeRequest({ idea: validIdea }));
+    const body = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(body.error).toMatch(/Internal server error/);
+    expect(errorSpy).toHaveBeenCalled();
+    errorSpy.mockRestore();
+  });
 });

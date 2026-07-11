@@ -1,0 +1,85 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+/* ------------------------------------------------------------------ */
+/* Mocks                                                              */
+/* ------------------------------------------------------------------ */
+
+// Mock the battle-api module so we can control runBattleFromPayload behavior.
+const mockRunBattleFromPayload = vi.fn();
+
+vi.mock("@/lib/battle-api", () => ({
+  runBattleFromPayload: mockRunBattleFromPayload,
+}));
+
+/* ------------------------------------------------------------------ */
+/* Tests                                                              */
+/* ------------------------------------------------------------------ */
+
+describe("GET /api/battles/[id]/events", () => {
+  let GET: (
+    request: Request,
+    ctx: { params: Promise<{ id: string }> },
+  ) => Promise<Response>;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    mockRunBattleFromPayload.mockReset();
+    const mod = await import("./route");
+    GET = mod.GET;
+  });
+
+  function makeCtx(id: string) {
+    return { params: Promise.resolve({ id }) };
+  }
+
+  function makeRequest(): Request {
+    return new Request("http://localhost/api/battles/btl_ABCDEFGH/events", {
+      method: "GET",
+    });
+  }
+
+  it("returns 400 for an invalid battle ID format", async () => {
+    const response = await GET(makeRequest(), makeCtx("../../etc/passwd"));
+
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.error).toMatch(/Invalid battle ID format/);
+    expect(mockRunBattleFromPayload).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 for a missing battle ID prefix", async () => {
+    const response = await GET(makeRequest(), makeCtx("ABCDEFGH"));
+
+    expect(response.status).toBe(400);
+  });
+
+  it("returns 200 with events for a valid battle ID", async () => {
+    mockRunBattleFromPayload.mockReturnValue({
+      events: [{ type: "proposal_created", data: {} }],
+    });
+
+    const response = await GET(makeRequest(), makeCtx("btl_ABCDEFGH"));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.battleId).toBe("btl_ABCDEFGH");
+    expect(body.events).toHaveLength(1);
+  });
+
+  it("returns 500 when runBattleFromPayload throws", async () => {
+    mockRunBattleFromPayload.mockImplementation(() => {
+      throw new Error("boom");
+    });
+
+    // Suppress the expected console.error output
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const response = await GET(makeRequest(), makeCtx("btl_ABCDEFGH"));
+    const body = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(body.error).toMatch(/Internal server error/);
+    expect(errorSpy).toHaveBeenCalled();
+    errorSpy.mockRestore();
+  });
+});

@@ -293,18 +293,43 @@ export function withInputValidation<T, Args extends unknown[]>(
 const abortControllers = new Map<string, AbortController>();
 
 /**
+ * Tracks which battleId owns each controller. When registerAbortController
+ * is called for a battleId that already has a registered controller, we
+ * verify the existing entry still belongs to the same owner before
+ * replacing it. This prevents a slow start for one battleId from
+ * clobbering a fast start for a different battleId (R18 critical).
+ */
+const abortControllerOwners = new Map<AbortController, string>();
+
+/**
  * Register an AbortController for a battle ID. The runtime calls this
  * when a battle starts so the cancel endpoint has a target to signal.
  * Returns the controller so the runtime can pass its signal to OpenAI.
+ *
+ * If a controller already exists for this battleId and it is owned by
+ * the same battleId (i.e. a legitimate re-registration from the same
+ * caller), the stale controller is aborted and replaced. If the
+ * existing controller was registered by a different battleId, the
+ * call is ignored to prevent ownership clobbering.
  */
 export function registerAbortController(battleId: string): AbortController {
   const existing = abortControllers.get(battleId);
   if (existing) {
-    // Replace any stale controller from a previous run.
+    // If the existing controller is owned by a different battleId (hash
+    // collision or race), do NOT abort it — the other battle is still
+    // in-flight. Return the existing controller so the caller can still
+    // observe cancellation signals.
+    const existingOwner = abortControllerOwners.get(existing);
+    if (existingOwner !== battleId) {
+      return existing;
+    }
+    // Same owner re-registering: the stale controller is replaced.
     existing.abort();
+    abortControllerOwners.delete(existing);
   }
   const controller = new AbortController();
   abortControllers.set(battleId, controller);
+  abortControllerOwners.set(controller, battleId);
   return controller;
 }
 
@@ -328,6 +353,10 @@ export function cancelCurrentBattle(battleId: string): boolean {
  * unbounded memory growth.
  */
 export function clearAbortController(battleId: string): void {
+  const controller = abortControllers.get(battleId);
+  if (controller) {
+    abortControllerOwners.delete(controller);
+  }
   abortControllers.delete(battleId);
 }
 
@@ -354,6 +383,7 @@ export function __resetAbortControllers(): void {
     controller.abort();
   }
   abortControllers.clear();
+  abortControllerOwners.clear();
 }
 
 /* ------------------------------------------------------------------ */

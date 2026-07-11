@@ -115,13 +115,19 @@ async function createBattleHandler(request: Request): Promise<Response> {
           );
         }
       } catch {
-        // fall through to in-memory fallback below
+        // fall through to 500 below
       }
     }
 
-    // DB write failed for another reason — log but still return the battle_id
-    // so the client can proceed (Sprint 0 demo: engine runs in-memory).
-    console.warn("[POST /api/battles] DB insert failed, returning in-memory id:", dbErr);
+    // DB write failed for a reason other than unique-violation recovery
+    // (or recovery lookup failed). Return 500 — the client should know
+    // the persistence layer is down rather than proceeding with an
+    // unpersisted battle.
+    console.error("[POST /api/battles] DB insert failed:", dbErr);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 
   // 5. Return the created battle_id.
