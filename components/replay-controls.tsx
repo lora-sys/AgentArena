@@ -8,6 +8,11 @@ export function ReplayControls({ elapsed, duration }: { elapsed: string; duratio
   const [progress, setProgress] = useState(38);
   const [shareOpen, setShareOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [shareUrl, setShareUrl] = useState("http://localhost:3000/battle/demo/replay");
+
+  useEffect(() => {
+    setShareUrl(window.location.href);
+  }, []);
 
   useEffect(() => {
     if (!playing) return undefined;
@@ -16,8 +21,6 @@ export function ReplayControls({ elapsed, duration }: { elapsed: string; duratio
     }, 700);
     return () => window.clearInterval(interval);
   }, [playing]);
-
-  const shareUrl = typeof window === "undefined" ? "http://localhost:3000/battle/demo/replay" : window.location.href;
 
   const copy = async () => {
     await navigator.clipboard.writeText(shareUrl);

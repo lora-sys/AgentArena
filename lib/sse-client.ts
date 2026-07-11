@@ -116,15 +116,17 @@ export function connectSse(options: SseClientOptions): SseClientHandle {
     };
 
     source.onerror = (e: Event) => {
+      if (closed) return;
       onConnectionError?.(e);
       if (source) {
         source.close();
         source = null;
       }
-      if (!closed) {
-        reconnectTimer = setTimeout(open, backoff);
-        backoff = Math.min(backoff * 2, maxBackoffMs);
+      if (reconnectTimer !== null) {
+        clearTimeout(reconnectTimer);
       }
+      reconnectTimer = setTimeout(open, backoff);
+      backoff = Math.min(backoff * 2, maxBackoffMs);
     };
   };
 

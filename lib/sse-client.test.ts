@@ -251,6 +251,50 @@ describe("sse-client", () => {
     expect(MockEventSource.instances.filter((s) => !s.closed)).toHaveLength(0);
   });
 
+  it("does not call onConnectionError after close() (phantom error guard)", () => {
+    const onEvent = vi.fn();
+    const onConnectionError = vi.fn();
+
+    const handle = connectSse({
+      url: "/api/battles/battle-42/events/stream",
+      onEvent,
+      onConnectionError,
+      initialBackoffMs: 500,
+      maxBackoffMs: 5000,
+      EventSourceCtor: MockEventSource as unknown as typeof EventSource,
+    });
+
+    handle.close();
+
+    // Phantom error after close — must not trigger callback
+    MockEventSource.instances[0].emitError();
+    expect(onConnectionError).not.toHaveBeenCalled();
+  });
+
+  it("does not leak duplicate reconnect timers on rapid disconnects", () => {
+    const onEvent = vi.fn();
+
+    connectSse({
+      url: "/api/battles/battle-42/events/stream",
+      onEvent,
+      initialBackoffMs: 500,
+      maxBackoffMs: 5000,
+      EventSourceCtor: MockEventSource as unknown as typeof EventSource,
+    });
+
+    // Trigger first reconnect
+    MockEventSource.instances[0].emitError();
+    vi.advanceTimersByTime(500);
+    // After 500ms, reconnect fires — instance[1] created (backoff doubled to 1000)
+
+    // Second disconnect schedules reconnect at 1000ms backoff
+    MockEventSource.instances[1].emitError();
+    vi.advanceTimersByTime(1000);
+
+    // Should have exactly 3 instances total: original + 2 reconnects
+    expect(MockEventSource.instances.length).toBe(3);
+  });
+
   it("delivers multiple events in order", () => {
     const onEvent = vi.fn();
 

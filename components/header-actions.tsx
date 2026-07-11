@@ -17,6 +17,12 @@ export function HeaderActions() {
   const [loginOpen, setLoginOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  const [shareUrl, setShareUrl] = useState("http://localhost:3000");
+
+  useEffect(() => {
+    setShareUrl(window.location.href);
+  }, []);
+
   useEffect(() => {
     const raw = window.localStorage.getItem(storageKey);
     if (!raw) return;
@@ -27,7 +33,6 @@ export function HeaderActions() {
     }
   }, []);
 
-  const shareUrl = typeof window === "undefined" ? "http://localhost:3000" : window.location.href;
   const initials = useMemo(() => {
     if (!user) return null;
     const parts = user.name.trim().split(/\s+/);
