@@ -247,6 +247,27 @@ describe("MastraRuntime", () => {
     expect(started[1].attempt).toBe(2);
   });
 
+  it("SchemaRepairExhaustedError does not cause a duplicate battle_failed from runWithFallback", async () => {
+    // Critical fix BE-1: the repair loop already emits battle_failed before
+    // throwing SchemaRepairExhaustedError. The fallback handler must NOT
+    // emit a second one for this specific error type, otherwise consumers
+    // see duplicate events.
+    const invalid = { ...validProposal, productName: "" };
+    const fakeClient = makeFakeClient([
+      { content: JSON.stringify(invalid) },
+      { content: JSON.stringify(invalid) },
+      { content: JSON.stringify(invalid) },
+    ]);
+    const runtime = makeRuntime(fakeClient);
+
+    await runtime.runProposal(sampleSpec, validProposal);
+
+    const failed = events.filter((e) => e.type === "battle_failed");
+    // Exactly one battle_failed: from the repair loop, not duplicated by fallback.
+    expect(failed).toHaveLength(1);
+    expect(failed[0].attempt).toBe(3); // repair loop emits with attempt = retryBudget
+  });
+
   it("exhausted repair emits low_confidence_judging event", async () => {
     const invalid = { ...validProposal, productName: "" };
     const fakeClient = makeFakeClient([

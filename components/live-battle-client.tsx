@@ -22,6 +22,7 @@ type AgentStatePayload = {
 type BattleStatus = {
   battleId: string;
   round: number;
+  totalRounds: number;
   progress: number;
   canCancel: boolean;
   agentStates: Record<string, AgentStatePayload>;
@@ -32,8 +33,6 @@ const TEAMS: Array<{ id: string; key: string; name: string }> = [
   { id: "viral-designer", key: "viral-designer", name: "Viral Designer" },
   { id: "infra-hacker", key: "infra-hacker", name: "Infra Hacker" },
 ];
-
-const TOTAL_ROUNDS = 6;
 
 /* ─── SSE state (event timeline) ─────────────────────────────────────────── */
 
@@ -93,6 +92,8 @@ export function LiveBattleClient({ battleId }: LiveBattleClientProps) {
   const [state, dispatch] = useReducer(liveReducer, initialLiveState);
   const handleRef = useRef<SseClientHandle | null>(null);
   const startedAtRef = useRef<number>(Date.now());
+  const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const elapsedIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Poll /api/battles/[id]/status every 2s via SWR
   const { data: status, error: statusError } = useSWR<BattleStatus>(
@@ -111,24 +112,39 @@ export function LiveBattleClient({ battleId }: LiveBattleClientProps) {
       handleRef.current = null;
     }
 
+    if (openTimerRef.current) {
+      clearTimeout(openTimerRef.current);
+      openTimerRef.current = null;
+    }
+
     dispatch({ type: "status", status: "connecting" });
 
     const handle = connectSse({
       url: `/api/battles/${encodeURIComponent(battleId)}/events/stream`,
       onEvent: (event) => dispatch({ type: "event", event }),
       onValidationError: () => dispatch({ type: "invalid" }),
-      onConnectionError: () =>
-        dispatch({ type: "status", status: "reconnecting" }),
+      onConnectionError: () => {
+        // Clear the open timer so it doesn't overwrite "reconnecting" with "open"
+        if (openTimerRef.current) {
+          clearTimeout(openTimerRef.current);
+          openTimerRef.current = null;
+        }
+        dispatch({ type: "status", status: "reconnecting" });
+      },
     });
 
     handleRef.current = handle;
 
-    const openTimer = setTimeout(() => {
+    openTimerRef.current = setTimeout(() => {
+      openTimerRef.current = null;
       dispatch({ type: "status", status: "open" });
     }, 100);
 
     return () => {
-      clearTimeout(openTimer);
+      if (openTimerRef.current) {
+        clearTimeout(openTimerRef.current);
+        openTimerRef.current = null;
+      }
       handle.close();
       handleRef.current = null;
     };
@@ -162,16 +178,27 @@ export function LiveBattleClient({ battleId }: LiveBattleClientProps) {
   const [elapsedSec, setElapsedSec] = useState(0);
 
   // Tick elapsedSec every second so the timer in RoundProgressBar updates
-  // without depending on SWR poll cadence or tab focus.
+  // without depending on SWR poll cadence or tab focus. Uses a single
+  // ref-tracked interval to avoid stacking timers on re-renders.
   useEffect(() => {
-    const interval = setInterval(() => {
+    // Clear any prior interval before starting a new one
+    if (elapsedIntervalRef.current) {
+      clearInterval(elapsedIntervalRef.current);
+    }
+    elapsedIntervalRef.current = setInterval(() => {
       setElapsedSec(Math.floor((Date.now() - startedAtRef.current) / 1000));
     }, 1000);
-    return () => clearInterval(interval);
+    return () => {
+      if (elapsedIntervalRef.current) {
+        clearInterval(elapsedIntervalRef.current);
+        elapsedIntervalRef.current = null;
+      }
+    };
   }, []);
 
   // Use status data when available; fall back to a safe default
   const currentRound = status?.round ?? 1;
+  const totalRounds = status?.totalRounds ?? 6;
   const canCancel = status?.canCancel ?? false;
   const agentStates = status?.agentStates ?? {};
 
@@ -185,7 +212,7 @@ export function LiveBattleClient({ battleId }: LiveBattleClientProps) {
 
       <RoundProgressBar
         round={currentRound}
-        totalRounds={TOTAL_ROUNDS}
+        totalRounds={totalRounds}
         canCancel={canCancel}
         onCancel={handleCancel}
         elapsedSec={elapsedSec}

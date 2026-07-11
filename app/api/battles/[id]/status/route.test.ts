@@ -10,6 +10,7 @@ describe("GET /api/battles/[id]/status", () => {
     const body = await response.json();
     expect(body.battleId).toBe("demo");
     expect(body.round).toBe(6);
+    expect(body.totalRounds).toBe(8);
     expect(body.progress).toBe(1.0);
     expect(body.canCancel).toBe(false);
     expect(body.agentStates["safe-builder"].state).toBe("complete");

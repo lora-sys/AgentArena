@@ -208,13 +208,17 @@ export class MastraRuntime implements ArenaAgentRuntime {
         `[MastraRuntime] ${method} failed, falling back to mock:`,
         err instanceof Error ? err.message : String(err),
       );
-      this.onEvent?.({
-        type: "battle_failed",
-        spec,
-        method,
-        attempt: 0,
-        issues: undefined,
-      });
+      // Skip emitting battle_failed if the repair loop already emitted it
+      // before throwing SchemaRepairExhaustedError. Avoids duplicate events.
+      if (!(err instanceof SchemaRepairExhaustedError)) {
+        this.onEvent?.({
+          type: "battle_failed",
+          spec,
+          method,
+          attempt: 0,
+          issues: undefined,
+        });
+      }
       return fallbackFn();
     }
   }

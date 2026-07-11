@@ -45,7 +45,7 @@ export async function GET(_request: Request, context: RouteContext) {
 
   // Demo battle ID keeps static complete response.
   if (id === "demo" || id === "battle-42") {
-    return NextResponse.json({ battleId: id, ...STATIC_DEMO_STATE });
+    return NextResponse.json({ battleId: id, totalRounds: TOTAL_ROUNDS, ...STATIC_DEMO_STATE });
   }
 
   // Real battle: query DB.
@@ -71,6 +71,7 @@ export async function GET(_request: Request, context: RouteContext) {
 
     return NextResponse.json({
       battleId: id,
+      totalRounds: TOTAL_ROUNDS,
       round: isTerminal ? TOTAL_ROUNDS : currentRound,
       progress: isTerminal ? 1.0 : progress,
       canCancel: !isTerminal && battleRow.status !== "idle",
@@ -88,6 +89,7 @@ export async function GET(_request: Request, context: RouteContext) {
     console.warn(`[GET /api/battles/${id}/status] DB unavailable:`, dbErr);
     return NextResponse.json({
       battleId: id,
+      totalRounds: TOTAL_ROUNDS,
       round: 1,
       progress: 0,
       canCancel: true,

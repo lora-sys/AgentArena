@@ -15,6 +15,7 @@ vi.mock("swr", () => ({
     data: {
       battleId: "battle-42",
       round: 1,
+      totalRounds: 6,
       progress: 0.1,
       canCancel: true,
       agentStates: {
@@ -113,5 +114,14 @@ describe("LiveBattleClient", () => {
 
     warnSpy.mockRestore();
     globalThis.fetch = originalFetch;
+  });
+
+  it("reads totalRounds from the status API response (FE-1 fix)", () => {
+    // Critical fix: totalRounds must come from the API, not be hardcoded.
+    // The RoundProgressBar shows "Round X of Y" where Y = totalRounds.
+    render(<LiveBattleClient battleId="battle-42" />);
+
+    // SWR mock returns totalRounds: 6 — the progress bar should show "of 6".
+    expect(screen.getByText(/Round \d+ of 6/)).toBeDefined();
   });
 });
