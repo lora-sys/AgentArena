@@ -79,7 +79,10 @@ describe("POST /api/battles", () => {
     const body = await response.json();
 
     // Same idea → same battleId (PRD §8: btl_<8-char base32> is a hash).
-    expect(body.battleId).toBe("btl_QQK7CB1C");
+    // R20: the low 8 bits of the hash now include real entropy (length +
+    // index-mixed bytes + alternate FNV prime), so the suffix differs
+    // from the pre-R20 output but is still deterministic.
+    expect(body.battleId).toBe("btl_QQK7CB3D");
   });
 
   it("uses 'full' as the default mode when mode is omitted", async () => {
@@ -168,6 +171,23 @@ describe("POST /api/battles", () => {
     expect(insertArg.title).toBe(validIdea.slice(0, 100));
     expect(insertArg.settingsJson).toEqual({ mode: "quick" });
     expect(insertArg.originalInput).toEqual({ idea: validIdea, mode: "quick" });
+  });
+
+  /* ----- R20 Critical: battle.id is text (btl_ prefix), not UUID ----- */
+
+  it("inserts a btl_ text id, not a UUID (R20 schema fix)", async () => {
+    await POST(makeRequest({ idea: validIdea }));
+    const insertArg = mockInsert.mock.calls[0][0];
+
+    // The id must be a text string with the btl_ prefix, NOT a UUID.
+    // Before R20, the schema expected uuid() which rejected btl_ strings
+    // at the DB layer with a type error. The schema is now text("id").
+    expect(typeof insertArg.id).toBe("string");
+    expect(insertArg.id).toMatch(/^btl_[0-9A-HJKMNP-TV-Z]{8}$/);
+    // Explicitly verify it's NOT a UUID format (8-4-4-4-12 hex pattern)
+    expect(insertArg.id).not.toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+    );
   });
 
   it("trims the idea before length validation — 10 spaces fails validation", async () => {

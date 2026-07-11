@@ -141,10 +141,13 @@ export const trialTemplate = pgTable(
 // ---------------------------------------------------------------------------
 // One full battle run. Top-level entity every other table relates to.
 
+// battle.id is a text column (PRD §8: btl_<8-char base32>), not a UUID.
+// This is the type every FK below references, so changing this column
+// type also requires updating every battle_id FK to text.
 export const battle = pgTable(
   "battle",
   {
-    id: uuid("id").primaryKey().defaultRandom(),
+    id: text("id").primaryKey(),
     trialTemplateId: uuid("trial_template_id").references(
       () => trialTemplate.id,
       { onDelete: "set null" },
@@ -216,7 +219,7 @@ export const battleParticipant = pgTable(
   "battle_participant",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    battleId: uuid("battle_id")
+    battleId: text("battle_id")
       .notNull()
       .references(() => battle.id, { onDelete: "cascade" }),
     agentId: uuid("agent_id")
@@ -248,7 +251,7 @@ export const proposal = pgTable(
   "proposal",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    battleId: uuid("battle_id")
+    battleId: text("battle_id")
       .notNull()
       .references(() => battle.id, { onDelete: "cascade" }),
     agentId: uuid("agent_id")
@@ -276,7 +279,7 @@ export const attack = pgTable(
   "attack",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    battleId: uuid("battle_id")
+    battleId: text("battle_id")
       .notNull()
       .references(() => battle.id, { onDelete: "cascade" }),
     attackerAgentId: uuid("attacker_agent_id")
@@ -309,7 +312,7 @@ export const defense = pgTable(
   "defense",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    battleId: uuid("battle_id")
+    battleId: text("battle_id")
       .notNull()
       .references(() => battle.id, { onDelete: "cascade" }),
     agentId: uuid("agent_id")
@@ -338,7 +341,7 @@ export const score = pgTable(
   "score",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    battleId: uuid("battle_id")
+    battleId: text("battle_id")
       .notNull()
       .references(() => battle.id, { onDelete: "cascade" }),
     judgeId: varchar("judge_id", { length: 200 }).notNull(),
@@ -379,7 +382,7 @@ export const artifact = pgTable(
   "artifact",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    battleId: uuid("battle_id")
+    battleId: text("battle_id")
       .notNull()
       .references(() => battle.id, { onDelete: "cascade" }),
     type: artifactTypeEnum("type").notNull(),
@@ -413,7 +416,7 @@ export const battleEvent = pgTable(
   "battle_event",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    battleId: uuid("battle_id")
+    battleId: text("battle_id")
       .notNull()
       .references(() => battle.id, { onDelete: "cascade" }),
     sequence: bigint("sequence", { mode: "number" }).notNull(),
@@ -445,7 +448,7 @@ export const passportSnapshot = pgTable(
   "passport_snapshot",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    battleId: uuid("battle_id")
+    battleId: text("battle_id")
       .notNull()
       .references(() => battle.id, { onDelete: "cascade" }),
     agentId: uuid("agent_id")
@@ -475,7 +478,7 @@ export const modelCallLog = pgTable(
   "model_call_log",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    battleId: uuid("battle_id").references(() => battle.id, {
+    battleId: text("battle_id").references(() => battle.id, {
       onDelete: "set null",
     }),
     agentId: uuid("agent_id").references(() => agentDefinition.id, {

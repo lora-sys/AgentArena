@@ -113,11 +113,23 @@ async function loadAgentPassport(agentId: string): Promise<{
   passport: AgentPassport;
   battle: BattleSummary;
 } | null> {
+  // R20 fix: validate agentId against a safe pattern before using it
+  // in the URL. Without this, an agentId containing ".." or other path
+  // metacharacters could be used for path traversal even with
+  // encodeURIComponent. The only agentIds that should reach the API
+  // are lowercase alphanumeric + hyphens (e.g. "safe-builder").
+  // "demo" is a special case for the explicit demo fallback.
+  const isValidAgentId =
+    /^[a-z0-9-]+$/.test(agentId) || agentId === "demo";
+  if (!isValidAgentId) {
+    return null;
+  }
   // F-2: fetch from the agent-specific passport endpoint instead of the
-  // hardcoded demo bundle URL.
+  // hardcoded demo bundle URL. R20: encode agentId to prevent
+  // path injection (e.g. ../ traversal).
   try {
     const response = await fetch(
-      `/api/agents/${agentId}/passport`,
+      `/api/agents/${encodeURIComponent(agentId)}/passport`,
       { cache: "no-store" },
     );
     if (!response.ok) {
@@ -257,13 +269,20 @@ export default function PassportPage({
     passport: AgentPassport;
     battle: BattleSummary;
   } | null>(null);
+  // R20 fix: track whether the async fetch has resolved so the page
+  // shows the skeleton during loading instead of flashing the
+  // "not found" branch on first paint (when result is still null
+  // but the fetch hasn't completed yet).
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     setId(paramId);
+    setLoaded(false);
     loadAgentPassport(paramId).then((res) => {
       if (!cancelled) {
         setResult(res);
+        setLoaded(true);
       }
     });
     return () => {
@@ -271,8 +290,11 @@ export default function PassportPage({
     };
   }, [paramId]);
 
-  // First paint: skeleton (B10 fix — e2e always sees .passport-layout)
-  if (!id) {
+  // First paint and loading state: always show skeleton (R20 fix).
+  // Previously the `!result` check fell through to the "not found"
+  // branch before the fetch resolved, causing a visible flash of
+  // the wrong content on every page load.
+  if (!loaded) {
     return (
       <AppShell active="passport" showRail currentRound="passport">
         <PassportSkeleton />
@@ -281,10 +303,14 @@ export default function PassportPage({
   }
 
   if (!result) {
+    // `id` is guaranteed non-null here: the useEffect sets it
+    // synchronously to paramId before the fetch resolves, and this
+    // branch is only reached after `loaded` is true.
+    const displayId = id ?? paramId;
     return (
       <AppShell active="passport">
         <SectionCard title="Passport not found">
-          <p>No passport snapshot exists for agent <code>{id}</code>.</p>
+          <p>No passport snapshot exists for agent <code>{displayId}</code>.</p>
         </SectionCard>
       </AppShell>
     );
@@ -293,12 +319,15 @@ export default function PassportPage({
   const { passport, battle } = result;
   // F-3: compare winnerTeamId against both the raw id and the
   // underscore-normalized form so the champion badge renders correctly.
-  const engineId = id.replace(/-/g, "_");
+  // `id` is guaranteed non-null here: loaded is true, which means
+  // the useEffect has run and set id to paramId.
+  const safeId = id ?? paramId;
+  const engineId = safeId.replace(/-/g, "_");
   const isChampion =
-    battle.winnerTeamId === id ||
+    battle.winnerTeamId === safeId ||
     battle.winnerTeamId === engineId ||
     battle.winnerTeamId === passport.agentId;
-  const shareUrl = `https://agentarena.ai/agent/${id}/passport`;
+  const shareUrl = `https://agentarena.ai/agent/${safeId}/passport`;
 
   const sealInitials = passport.agentName
     .split(/\s+/)

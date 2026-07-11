@@ -179,4 +179,105 @@ describe("passport page — fix verification", () => {
     root.unmount();
     container.remove();
   });
+
+  /* ----- R20 Critical: race fix + path encoding ------------------ */
+
+  it("shows skeleton during loading (R20 race fix: no 'not found' flash)", async () => {
+    // R20: before the fetch resolves, the page must show the skeleton,
+    // NOT the "not found" branch. The old code checked `!result` on first
+    // paint, which flashed "not found" before the fetch completed.
+    // We simulate a slow fetch so we can inspect the intermediate state.
+    let resolveFetch: (value: Response) => void = () => {};
+    vi.spyOn(globalThis, "fetch").mockReturnValue(
+      new Promise<Response>((resolve) => {
+        resolveFetch = resolve;
+      }),
+    );
+
+    const mod = await import("./page");
+    const PassportPage = mod.default;
+
+    const params = Promise.resolve({ id: "some-agent" });
+    const { act } = await import("@testing-library/react");
+    const { createRoot } = await import("react-dom/client");
+    const React = await import("react");
+
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(React.createElement(PassportPage, { params }));
+    });
+
+    // While the fetch is still pending, the skeleton should be visible
+    // and "not found" should NOT be visible.
+    const loadingText = container.textContent ?? "";
+    expect(loadingText).not.toContain("Passport not found");
+    expect(container.querySelector('[data-testid="passport-skeleton"]')).not.toBeNull();
+
+    // Now resolve the fetch with a not-found result.
+    await act(async () => {
+      resolveFetch(
+        new Response(
+          JSON.stringify({
+            battle: { id: "btl_TEST01", title: "Test" },
+            bundle: { passports: [] },
+          }),
+          { status: 200 },
+        ),
+      );
+      // Let the microtask queue drain.
+      await new Promise((r) => setTimeout(r, 10));
+    });
+
+    // After resolution with null result, the "not found" card renders.
+    const resolvedText = container.textContent ?? "";
+    expect(resolvedText).toContain("Passport not found");
+
+    root.unmount();
+    container.remove();
+  });
+
+  it("rejects unsafe agentIds with path-traversal characters (R20 path encoding)", async () => {
+    // R20: the fetch URL must not be built from an unsanitized agentId.
+    // Path traversal characters (.., /, \) must be blocked before the
+    // fetch is even attempted, regardless of encodeURIComponent.
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+
+    const mod = await import("./page");
+    const PassportPage = mod.default;
+
+    // Use an agentId with path-traversal characters.
+    const params = Promise.resolve({ id: "../../etc/passwd" });
+    const { act } = await import("@testing-library/react");
+    const { createRoot } = await import("react-dom/client");
+    const React = await import("react");
+
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(React.createElement(PassportPage, { params }));
+    });
+
+    // Wait for the async load to complete.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+
+    // The fetch must NOT have been called with the traversal path.
+    const calledUrls = fetchSpy.mock.calls.map((c) => c[0] as string);
+    for (const url of calledUrls) {
+      expect(url).not.toContain("..");
+    }
+
+    // The not-found card should render (validation rejected the id).
+    const text = container.textContent ?? "";
+    expect(text).toContain("Passport not found");
+
+    root.unmount();
+    container.remove();
+  });
 });

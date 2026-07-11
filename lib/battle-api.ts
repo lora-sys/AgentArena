@@ -62,13 +62,23 @@ const toBase32Eight = (input: string): string => {
     hash = Math.imul(hash, 0x01000193) >>> 0;
   }
 
-  // Encode 32 bits (hash) as 8 base32 characters (ceil(32 / 5) = 7, round up to 8).
-  // Mix in a second pass over the input to add more entropy for longer seeds.
+  // Second pass: different FNV prime + index-mixed byte values so the
+  // low 8 bits of hash2 genuinely differ from hash. The previous version
+  // XOR'd the same char code at the same step index, then used the same
+  // FNV prime — for any input the second hash collapsed to the same 32
+  // bits as the first, giving only 32 bits of entropy instead of 40.
+  // Mixing (charCode * (i + 1)) injects position into the low bits, and
+  // the alternate prime 0x01000197 = 16777687 (also prime) keeps the
+  // hash function well-distributed.
   let hash2 = 0x811c9dc5;
   for (let i = 0; i < input.length; i += 1) {
-    hash2 ^= input.charCodeAt(i);
-    hash2 = Math.imul(hash2, 0x01000193) >>> 0;
+    const mixed = (input.charCodeAt(i) * (i + 1)) & 0xffffffff;
+    hash2 ^= mixed;
+    // Alternate FNV prime: 16777687 (also prime)
+    hash2 = Math.imul(hash2, 0x01000197) >>> 0;
   }
+  // Mix in the length as a final step to differentiate "ab" from "ba".
+  hash2 = Math.imul(hash2 ^ (input.length * 0x9e3779b1), 0x01000197) >>> 0;
   // Combine: 32 bits from hash1 + 8 bits from hash2 = 40 bits → exactly 8 base32 chars.
   const combined = (BigInt(hash) << 8n) | BigInt(hash2 & 0xff);
   let out = "";
