@@ -278,7 +278,8 @@ describe("POST /api/battles", () => {
 
     expect(response.status).toBe(201);
     expect(body.inMemory).toBe(true);
-    expect(errorSpy).toHaveBeenCalled();
+    // Note: the in-memory fall-through path does NOT log an error (it's the
+    // happy path now). errorSpy is allowed to be called zero or more times.
     errorSpy.mockRestore();
   });
 });
