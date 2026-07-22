@@ -1,0 +1,21 @@
+{
+  "name": "api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@agent-arena/contracts": "workspace:*",
+    "@hono/node-server": "^1.19.6",
+    "hono": "^4.10.7"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.9"
+  }
+}
