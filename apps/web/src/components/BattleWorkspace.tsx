@@ -33,12 +33,22 @@ export function BattleWorkspace({ battleId }: { battleId: string }) {
       </nav>
     </header>
 
-    {view === "result" ? <ResultPanel champion={champion} events={events} /> : <div className="battle-grid">
+    {view === "result" ? <ResultPanel champion={champion} events={events} /> : view === "replay" ? <ReplayWorkspace events={replayEvents} allEvents={events} battleId={battleId} onProgress={handleProgress} onSelect={setSelected} /> : <div className="battle-grid">
       <ArenaStage battleId={battleId} events={replayEvents} onProgress={handleProgress} />
-      <EvidenceLog events={view === "replay" ? events : visibleEvents} onSelect={setSelected} />
+      <EvidenceLog events={visibleEvents} onSelect={setSelected} />
     </div>}
     <EvidenceDrawer event={selected} onClose={() => setSelected(null)} />
   </section>;
+}
+
+function ReplayWorkspace({ events, allEvents, battleId, onProgress, onSelect }: { events: readonly BattleEvent[]; allEvents: readonly BattleEvent[]; battleId: string; onProgress: (events: readonly BattleEvent[]) => void; onSelect: (event: BattleEvent) => void }) {
+  const [inspection, setInspection] = useState<"timeline"|"graph"|"log">("timeline");
+  const attacks = allEvents.filter((event) => event.eventType === "attack_created");
+  const defenses = allEvents.filter((event) => event.eventType === "defense_created");
+  const accepted = defenses.filter((event) => (event.rawPayload as { acceptedAttack?: boolean } | undefined)?.acceptedAttack);
+  const critical = attacks.filter((event) => (event.rawPayload as { severity?: string } | undefined)?.severity === "high");
+  const damage = accepted.reduce((total, defense) => { const attackId = (defense.rawPayload as { attackId?: string }).attackId; const attack = attacks.find((item) => (item.rawPayload as { id?: string } | undefined)?.id === attackId); const severity = (attack?.rawPayload as { severity?: string } | undefined)?.severity; return total + (severity === "high" ? 30 : severity === "medium" ? 15 : 5); },0);
+  return <section className="replay-workspace"><aside className="replay-rounds"><header>REPLAY</header>{["PROPOSAL","ATTACK","DEFENSE","SCORING","CHAMPION"].map((round,index) => <button key={round}><b>0{index+1}</b><span>{round}</span></button>)}</aside><div className="replay-center"><ArenaStage battleId={battleId} events={events} onProgress={onProgress} /><div className="replay-stats">{[["ATTACKS",attacks.length],["ACCEPTED",accepted.length],["REJECTED",defenses.length-accepted.length],["CRITICAL",critical.length],["DAMAGE",damage],["AVG SEVERITY",critical.length ? "HIGH" : "MED"]].map(([label,value]) => <div key={label}><strong>{value}</strong><span>{label}</span></div>)}</div></div><aside className="replay-inspector"><nav>{(["timeline","graph","log"] as const).map((tab) => <button className={inspection===tab?"active":""} onClick={() => setInspection(tab)} key={tab}>{tab.toUpperCase()}</button>)}</nav>{inspection === "timeline" && <EvidenceLog events={allEvents} onSelect={onSelect} />}{inspection === "graph" && <div className="damage-graph">{attacks.map((event,index) => <div key={event.id}><span>{index+1}</span><i style={{height:`${((event.rawPayload as {severity?:string})?.severity === "high" ? 100 : (event.rawPayload as {severity?:string})?.severity === "medium" ? 55 : 24)}%`}} /><b>{(event.rawPayload as {severity?:string})?.severity ?? "low"}</b></div>)}</div>}{inspection === "log" && <div className="raw-log">{allEvents.map((event) => <button key={event.id} onClick={() => onSelect(event)}><span>{event.sequence?.toString().padStart(2,"0")}</span>{event.eventType}</button>)}</div>}</aside></section>;
 }
 
 function EvidenceLog({ events, onSelect }: { events: readonly BattleEvent[]; onSelect: (event: BattleEvent) => void }) {

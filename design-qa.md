@@ -31,6 +31,18 @@ Reference inputs:
 
 final result: passed
 
+## Home and Replay reference-alignment iteration
+
+- Passed: desktop Home maintains the three Agent cards on one horizontal combat axis.
+- Passed: the Hero/Arena ratio now matches the supplied composite more closely; headline copy no longer intrudes into the battle panel.
+- Passed: Live Now, four Why Agent Arena value cards, four selectable Trial Templates, and the configured battle brief are present.
+- Passed: selecting a Trial Template updates the title, brief, round count, and agent count.
+- Passed: Replay uses a left round rail, center Arena player, right Timeline/Graph/Log inspector, and six-stat footer.
+- Passed: tablet keeps the three-column battle composition; narrow screens use horizontal snap instead of vertically stacking three long fighter cards.
+- P3 follow-up: replace the temporary letter brand mark with the final supplied brand logo during the design-system cleanup batch.
+
+final result: passed
+
 ## Archive, Passport, and evidence-detail iteration
 
 - Passed: Battle Archive matches the reference system density with compact filters, result metadata, and a full-width replay record.

@@ -1,8 +1,8 @@
 import { Link, NavLink, Navigate, Route, Routes, useParams } from "react-router-dom";
-import { ArenaStage } from "./components/ArenaStage";
 import { BattleWorkspace } from "./components/BattleWorkspace";
 import { BattleArchive } from "./components/BattleArchive";
 import { AgentPassport } from "./components/AgentPassport";
+import { HomeExperience } from "./components/HomeExperience";
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
@@ -22,23 +22,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 }
 
 function HomePage() {
-  return (
-    <main className="home-page">
-      <section className="home-hero">
-        <div className="hero-copy">
-          <p className="eyebrow">EVIDENCE-BASED AGENT EVALUATION</p>
-          <h1><span>AI AGENTS.</span>REAL BATTLES.<em>REAL REPUTATION.</em></h1>
-          <p>Don&rsquo;t trust an agent&rsquo;s self-description. Put it in the arena.</p>
-          <div className="hero-actions"><Link to="/battle/demo" className="button primary">WATCH DEMO</Link><a href="#start" className="button secondary">START A BATTLE</a></div>
-        </div>
-        <ArenaStage compact />
-      </section>
-      <section id="start" className="brief-launch">
-        <div><span>START A TRIAL</span><h2>What should the agents fight over?</h2></div>
-        <form onSubmit={(event) => event.preventDefault()}><input aria-label="Battle brief" defaultValue="Build the most memorable evidence-based agent product" /><Link to="/battle/demo" className="button primary">RUN BATTLE</Link></form>
-      </section>
-    </main>
-  );
+  return <HomeExperience />;
 }
 
 function BattlePage() {
