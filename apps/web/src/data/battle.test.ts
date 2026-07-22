@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { demoEvents } from "./demo";
-import { loadBattleArchive, loadBattleEvents, loadPassport } from "./battle";
+import { buildDashboardMetrics, loadBattleArchive, loadBattleEvents, loadPassport } from "./battle";
 
 describe("loadBattleEvents", () => {
   it("uses API event-store data when available", async () => {
@@ -14,6 +14,14 @@ describe("loadBattleEvents", () => {
     const result = await loadBattleEvents("demo", fetcher);
     expect(result.source).toBe("fallback");
     expect(result.events).toEqual(demoEvents);
+  });
+});
+
+describe("dashboard metrics", () => {
+  it("derives summary values from recorded battles without inventing history", () => {
+    const metrics = buildDashboardMetrics([{ id: "b1", title: "One", idea: "", status: "completed", winnerName: "Safe Builders", agents: ["A","B","C"], eventCount: 22, updatedAt: "2026-06-01T00:00:00Z" }]);
+    expect(metrics).toMatchObject({ totalBattles: 1, completedRate: 100, evidenceEvents: 22 });
+    expect(metrics.series).toHaveLength(1);
   });
 });
 

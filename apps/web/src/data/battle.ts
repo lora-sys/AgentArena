@@ -21,6 +21,16 @@ export async function loadBattleEvents(battleId: string, fetcher: FetchLike = fe
 }
 
 export type BattleArchiveItem = { id: string; title: string; idea: string; status: string; winnerName: string; agents: string[]; eventCount: number; updatedAt: string };
+export function buildDashboardMetrics(battles: readonly BattleArchiveItem[]) {
+  const completed = battles.filter((battle) => battle.status === "completed").length;
+  return {
+    totalBattles: battles.length,
+    completedRate: battles.length ? Math.round((completed / battles.length) * 100) : 0,
+    evidenceEvents: battles.reduce((total, battle) => total + battle.eventCount, 0),
+    agentsTested: new Set(battles.flatMap((battle) => battle.agents)).size,
+    series: battles.map((battle, index) => ({ label: `B${index + 1}`, evidence: battle.eventCount, completion: battle.status === "completed" ? 100 : 45 })),
+  };
+}
 export type PassportData = {
   agentId: string; agentName: string; role: string; contributionSummary: string; reputation: number;
   strengths: string[]; weaknesses: string[]; acceptedCount: number; rejectedCount: number;

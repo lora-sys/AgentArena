@@ -31,6 +31,17 @@ Reference inputs:
 
 final result: passed
 
+## Dashboard and three-column Passport iteration
+
+- Passed: `/battles` now follows the reference Dashboard composition with four KPIs, period controls, performance signal, recent battles, and the archive in one route.
+- Passed: Dashboard values are derived from recorded battles; a one-battle history remains visibly sparse instead of fabricating trend points.
+- Passed: Passport follows the reference three-column composition: identity/seal, reputation signal, and strengths/weaknesses/history.
+- Passed: Evidence-bound claims remain full-width below the three-column summary and preserve deep links to source events.
+- Passed: desktop comparison shows aligned panel density, cyan/pink/gold status hierarchy, and no clipped portrait or chart content.
+- Passed: tablet collapses Passport to two columns with the detail rail below; mobile uses one column.
+
+final result: passed
+
 ## Home and Replay reference-alignment iteration
 
 - Passed: desktop Home maintains the three Agent cards on one horizontal combat axis.
