@@ -43,4 +43,19 @@ describe("API shell", () => {
     });
     expect(event).toMatchObject({ title: "Stored title", content: "Stored copy", rawPayload: { proposalId: "p1" } });
   });
+
+  it("lists replayable battles for the archive", async () => {
+    const response = await app.request("/api/battles");
+    const body = await response.json() as { battles: Array<{ id: string; winnerName: string; eventCount: number }> };
+    expect(body.battles[0]).toMatchObject({ id: "demo", winnerName: "Safe Builders", eventCount: 22 });
+  });
+
+  it("returns a passport with strengths, weaknesses, and evidence links", async () => {
+    const response = await app.request("/api/agents/infra-hacker/passport");
+    expect(response.status).toBe(200);
+    const body = await response.json() as { passport: { strengths: string[]; weaknesses: string[]; evidence: Array<{ eventId: string }> } };
+    expect(body.passport.strengths.length).toBeGreaterThan(0);
+    expect(body.passport.weaknesses.length).toBeGreaterThan(0);
+    expect(body.passport.evidence[0]?.eventId).toMatch(/^defense_/);
+  });
 });

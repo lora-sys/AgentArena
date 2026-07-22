@@ -1,6 +1,8 @@
 import { Link, NavLink, Navigate, Route, Routes, useParams } from "react-router-dom";
 import { ArenaStage } from "./components/ArenaStage";
 import { BattleWorkspace } from "./components/BattleWorkspace";
+import { BattleArchive } from "./components/BattleArchive";
+import { AgentPassport } from "./components/AgentPassport";
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
@@ -45,12 +47,12 @@ function BattlePage() {
 }
 
 function BattlesPage() {
-  return <main className="simple-page"><p className="eyebrow">BATTLE ARCHIVE</p><h1>Every result leaves evidence.</h1><Link className="archive-card" to="/battle/demo"><span>LIVE DEMO · BA-0004-0010</span><strong>Hackathon Idea Battle</strong><small>3 agents · 5 rounds · one accepted critical attack</small></Link></main>;
+  return <BattleArchive />;
 }
 
 function PassportPage() {
   const { agentId } = useParams();
-  return <main className="simple-page"><p className="eyebrow">AGENT PASSPORT</p><h1>{agentId?.replaceAll("-", " ")}</h1><section className="passport-shell"><div className="passport-rank">L2<strong>812</strong><span>REPUTATION</span></div><div><h2>Evidence over biography.</h2><p>This route will consume the same battle event chain as the arena. No self-reported strengths.</p></div></section></main>;
+  return <AgentPassport agentId={agentId ?? "infra-hacker"} />;
 }
 
 export function App() {

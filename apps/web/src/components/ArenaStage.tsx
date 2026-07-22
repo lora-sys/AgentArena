@@ -1,4 +1,4 @@
-import type { BattleEvent } from "@agent-arena/contracts";
+import { DAMAGE_MAP, type BattleEvent, type Severity } from "@agent-arena/contracts";
 import { demoEvents, teams } from "../data/demo";
 import { useArenaState, useBattleReplay } from "./BattleReplayPlayer";
 import { useEffect } from "react";
@@ -30,12 +30,18 @@ export function ArenaStage({ compact = false, battleId = "demo", events = demoEv
         {teams.map((team) => {
           const event = latestByActor.get(team.id);
           const active = activeActors.has(team.id);
-          const hit = replay.batch?.events.some((item) => item.eventType === "defense_created" && item.actorId === team.id);
-          return <article key={team.id} className={`fighter ${team.color} ${active ? "active" : ""} ${hit ? "hit" : ""}`}><div className="agent-portrait"><img src={team.portrait} alt={`${team.name} combat portrait`} /></div><div className="fighter-name"><span>{team.name}</span><small>{team.role}</small></div><div className="hp-label"><span>HP</span><b>{hp[team.id] ?? 100}/100</b></div><div className="hp-track"><i style={{ width: `${hp[team.id] ?? 100}%` }} /></div><div className="event-copy"><span>{event?.eventType.replace("_created", "").toUpperCase() ?? "STANDING BY"}</span><p key={event?.id} className={active ? "typing" : ""}>{event?.content ?? "Waiting for the round signal…"}</p><small>{active ? "Typing_" : "Evidence locked"}</small></div></article>;
+          const defense = replay.batch?.events.find((item) => item.eventType === "defense_created" && item.actorId === team.id);
+          const defensePayload = defense?.rawPayload as { attackId?: string; acceptedAttack?: boolean } | undefined;
+          const linkedAttack = events.find((item) => item.eventType === "attack_created" && (item.rawPayload as { id?: string } | undefined)?.id === defensePayload?.attackId);
+          const severity = (linkedAttack?.rawPayload as { severity?: Severity } | undefined)?.severity;
+          const hit = Boolean(defensePayload?.acceptedAttack);
+          const damage = hit && severity ? DAMAGE_MAP[severity] : 0;
+          return <article key={team.id} className={`fighter ${team.color} ${active ? "active" : ""} ${hit ? "hit" : ""}`}>{damage > 0 && <b className="damage-pop">-{damage}</b>}<div className="agent-portrait"><img src={team.portrait} alt={`${team.name} combat portrait`} /></div><div className="fighter-name"><span>{team.name}</span><small>{team.role}</small></div><div className="hp-label"><span>HP</span><b>{hp[team.id] ?? 100}/100</b></div><div className="hp-track"><i style={{ width: `${hp[team.id] ?? 100}%` }} /></div><div className="event-copy"><span>{event?.eventType.replace("_created", "").toUpperCase() ?? "STANDING BY"}</span>{defensePayload && <b className={`verdict ${hit ? "accepted" : "rejected"}`}>{hit ? "ACCEPTED" : "REJECTED"}</b>}<p key={event?.id} className={active ? "typing" : ""}>{event?.content ?? "Waiting for the round signal…"}</p><small>{active ? "Typing_" : "Evidence locked"}</small></div></article>;
         })}
       </div>
       <div className="commentary"><b>● LIVE COMMENTARY</b><span>{commentaryFor(replay.batch?.events ?? [])}</span></div>
-      <div className="replay-controls"><button type="button" onClick={replay.toggle}>{replay.playing ? "PAUSE" : "PLAY"}</button><div><i style={{ width: `${((replay.batchIndex + 1) / replay.batchCount) * 100}%` }} /></div><button type="button" onClick={replay.replay}>REPLAY</button></div>
+      <div className="replay-controls"><button type="button" onClick={replay.toggle}>{replay.playing ? "PAUSE" : "PLAY"}</button><div><i style={{ width: `${((replay.batchIndex + 1) / replay.batchCount) * 100}%` }} /></div><button type="button" onClick={replay.cycleSpeed}>{replay.speed}×</button><button type="button" onClick={replay.replay}>REPLAY</button></div>
+      {!compact && <div className="round-jump" aria-label="Jump to round">{Array.from({length: replay.batchCount},(_,index) => <button className={index === replay.batchIndex ? "active" : ""} key={index} onClick={() => replay.seek(index)}>{index + 1}</button>)}</div>}
     </section>
   );
 }

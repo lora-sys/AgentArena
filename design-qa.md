@@ -30,3 +30,15 @@ Reference inputs:
 - Passed: event-array insertion order is covered by a test, including Proposal before Attack.
 
 final result: passed
+
+## Archive, Passport, and evidence-detail iteration
+
+- Passed: Battle Archive matches the reference system density with compact filters, result metadata, and a full-width replay record.
+- Passed: Passport uses the supplied agent portrait, evidence-weighted reputation bars, explicit strengths and weaknesses, evidence-bound claims, and battle history.
+- Passed: trend values are normalized to the visible 0–100 chart range; no chart bars overflow their panel.
+- Passed: Passport evidence links open the exact corresponding Defense event in the unified Battle drawer.
+- Passed: the evidence drawer preserves Battle context behind a blurred modal layer and exposes summary, verdict, revision, and verified payload.
+- Passed: Replay provides pause/play, 1×/1.5×/2× speed cycling, numbered round jumps, and replay restart.
+- Passed: accepted defenses display a verdict, damage number, HP transition, hit flash, and shake; rejected defenses do not apply damage.
+
+final result: passed

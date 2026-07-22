@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { demoEvents } from "./demo";
-import { loadBattleEvents } from "./battle";
+import { loadBattleArchive, loadBattleEvents, loadPassport } from "./battle";
 
 describe("loadBattleEvents", () => {
   it("uses API event-store data when available", async () => {
@@ -14,5 +14,15 @@ describe("loadBattleEvents", () => {
     const result = await loadBattleEvents("demo", fetcher);
     expect(result.source).toBe("fallback");
     expect(result.events).toEqual(demoEvents);
+  });
+});
+
+describe("battle product data", () => {
+  it("loads archive and passport through their public API seams", async () => {
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ battles: [{ id: "demo", title: "Battle", status: "completed" }] }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ passport: { agentId: "infra-hacker", strengths: ["Depth"], weaknesses: ["Clarity"] } }) });
+    expect((await loadBattleArchive(fetcher))[0]?.id).toBe("demo");
+    expect((await loadPassport("infra-hacker", fetcher)).weaknesses).toEqual(["Clarity"]);
   });
 });

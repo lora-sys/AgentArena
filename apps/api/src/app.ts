@@ -8,6 +8,19 @@ app.get("/api/health", (context) =>
   context.json({ status: "ok", service: "agent-arena-api" }),
 );
 
+app.get("/api/battles", (context) => context.json({
+  battles: [{
+    id: "demo",
+    title: fixture.battle.title,
+    idea: fixture.battle.idea,
+    status: fixture.battle.status,
+    winnerName: fixture.teams.find((team) => team.id === fixture.battle.winnerTeamId)?.name ?? "Safe Builders",
+    agents: fixture.teams.map((team) => team.name),
+    eventCount: demoEvents().length,
+    updatedAt: fixture.battle.updatedAt,
+  }],
+}));
+
 app.get("/api/battles/:id", (context) => {
   const battleId = context.req.param("id");
   return context.json({
@@ -25,34 +38,21 @@ const teamIds: Record<string, string> = {
 };
 
 function demoEvents(): BattleEvent[] {
-  const attacks = new Map(fixture.attacks.map((attack) => [attack.id, attack]));
-  let attackCursor = 0;
-  let defenseCursor = 0;
-  return fixture.events.map((event, index) => {
-    let rawPayload: unknown;
-    if (event.eventType === "attack_created") {
-      const attack = fixture.attacks[attackCursor++];
-      if (attack) rawPayload = { ...attack, attackerTeamId: teamIds[attack.attackerTeamId], targetTeamId: teamIds[attack.targetTeamId] };
-    }
-    if (event.eventType === "defense_created") {
-      const defense = fixture.defenses[defenseCursor++];
-      const attack = defense ? attacks.get(defense.attackId) : undefined;
-      if (defense) rawPayload = { ...defense, teamId: teamIds[defense.teamId], targetTeamId: teamIds[defense.targetTeamId], severity: attack?.severity };
-    }
-    return {
+  const base = fixture.events.filter((event) => !["attack_created", "defense_created"].includes(event.eventType)).map((event) => ({
       id: event.id,
       battleId: "demo",
-      sequence: index + 1,
       round: event.round,
       actorId: event.actorId ? (teamIds[event.actorId] ?? event.actorId) : undefined,
       targetId: event.targetId ? (teamIds[event.targetId] ?? event.targetId) : undefined,
       eventType: event.eventType as BattleEvent["eventType"],
       title: event.title,
       content: event.content,
-      rawPayload,
       createdAt: event.createdAt,
-    };
-  });
+  }));
+  const attackEvents: BattleEvent[] = fixture.attacks.map((attack, index) => ({ id: `attack_${attack.id}`, battleId: "demo", round: "cross_attack_round", actorId: teamIds[attack.attackerTeamId], targetId: teamIds[attack.targetTeamId], eventType: "attack_created", title: `Attack: ${attack.attackType}`, content: attack.claim, rawPayload: { ...attack, attackerTeamId: teamIds[attack.attackerTeamId], targetTeamId: teamIds[attack.targetTeamId] }, createdAt: `2026-06-01T11:${String(index).padStart(2,"0")}:00.000Z` }));
+  const defenseEvents: BattleEvent[] = fixture.defenses.map((defense, index) => ({ id: `defense_${defense.id}`, battleId: "demo", round: "defense_round", actorId: teamIds[defense.teamId], targetId: teamIds[defense.targetTeamId], eventType: "defense_created", title: `Defense: ${defense.attackId}`, content: defense.responseToAttack, rawPayload: { ...defense, teamId: teamIds[defense.teamId], targetTeamId: teamIds[defense.targetTeamId] }, createdAt: `2026-06-01T12:${String(index).padStart(2,"0")}:00.000Z` }));
+  const proposalEnd = base.findIndex((event) => event.eventType === "score_created");
+  return [...base.slice(0, proposalEnd), ...attackEvents, ...defenseEvents, ...base.slice(proposalEnd)].map((event, index) => ({ ...event, sequence: index + 1 }));
 }
 
 export function normalizeStoredEvent(event: BattleEvent): BattleEvent {
@@ -82,4 +82,39 @@ app.get("/api/battles/:id/events", async (context) => {
   } catch {
     return context.json({ battleId, source: "fallback", events: [] });
   }
+});
+
+const agentSlugToId: Record<string, string> = {
+  "safe-builder": "agent_safe_builder_lead",
+  "viral-designer": "agent_viral_designer_lead",
+  "infra-hacker": "agent_infra_hacker_lead",
+};
+
+app.get("/api/agents/:id/passport", (context) => {
+  const slug = context.req.param("id");
+  const agentId = agentSlugToId[slug] ?? slug;
+  const passport = fixture.passports.find((candidate) => candidate.agentId === agentId);
+  if (!passport) return context.json({ error: "Passport not found" }, 404);
+  const teamId = fixture.agentDefinitions.find((agent) => agent.id === agentId)?.teamId;
+  const score = fixture.scores.find((candidate) => candidate.teamId === teamId);
+  const reputation = score ? Object.values(score.scores).reduce((sum, value) => sum + value, 0) / Object.values(score.scores).length : passport.contributionScore;
+  const mappedEvents = demoEvents();
+  const evidence = [...passport.acceptedClaims, ...passport.rejectedClaims].map((claim) => {
+    const event = mappedEvents.find((candidate) => candidate.eventType === "defense_created" && (candidate.rawPayload as { attackId?: string } | undefined)?.attackId === claim.attackId);
+    return { eventId: event?.id ?? "evt_001", claim: claim.claim, accepted: claim.acceptedAttack, attackId: claim.attackId, defenseId: claim.defenseId };
+  });
+  return context.json({ passport: {
+    agentId: slug,
+    agentName: passport.agentName,
+    role: passport.role,
+    contributionSummary: passport.contributionSummary,
+    reputation: Math.round(reputation * 100) / 100,
+    strengths: passport.strengths,
+    weaknesses: passport.weaknesses,
+    acceptedCount: passport.acceptedClaims.length,
+    rejectedCount: passport.rejectedClaims.length,
+    evidence,
+    trend: score ? Object.values(score.scores).map((value, index) => ({ label: ["NOV", "FEA", "WOW", "TECH", "VALUE", "LONG"][index], value: Math.round(value * 10) })) : [],
+    battles: [{ id: "demo", title: fixture.battle.title, result: teamId === fixture.battle.winnerTeamId ? "WIN" : "PLACED", date: fixture.battle.updatedAt }],
+  }});
 });

@@ -11,7 +11,8 @@ export type BattleEventType =
   | "passport_created"
   | "artifact_created"
   | "replay_created"
-  | "commentary_created";
+  | "commentary_created"
+  | "error";
 
 export type BattleEvent = {
   id: string;
