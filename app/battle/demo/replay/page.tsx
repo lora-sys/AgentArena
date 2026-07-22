@@ -11,9 +11,15 @@ import {
   TeamAvatar
 } from "@/components/arena-cards";
 import { ReplayControls, ReplayModeTabs } from "@/components/replay-controls";
-import { demoBattle, teams } from "@/lib/demo-data";
+import { getDemoBattle, getProposals, getTeams } from "@/lib/demo-data";
+import { redirect } from "next/navigation";
+import type { Route } from "next";
 
-export default function BattleReplayPage() {
+export function DemoReplaySurface() {
+  const demoBattle = getDemoBattle();
+  const teams = getTeams();
+  const proposals = getProposals();
+
   return (
     <AppShell active="battle" showRail currentRound="cross_attack">
       <div className="replay-header">
@@ -43,13 +49,13 @@ export default function BattleReplayPage() {
             <DefenseList />
           </SectionCard>
           <SectionCard title="Event Log">
-            <EventLog />
+            <EventLog events={demoBattle.events} />
           </SectionCard>
           <ReplayShareCard />
         </div>
         <div>
           <SectionCard title="Judge Scoreboard Snapshot">
-            <Scoreboard compact />
+            <Scoreboard teams={teams} scores={demoBattle.scores} winnerId={demoBattle.winnerId} compact />
           </SectionCard>
           <SectionCard title="Replay Viewer" action={<Link href="/battle/demo/live"><Maximize2 size={16} /> Fullscreen</Link>}>
             <div className="video-card">
@@ -64,4 +70,8 @@ export default function BattleReplayPage() {
       </section>
     </AppShell>
   );
+}
+
+export default function LegacyDemoReplayPage() {
+  redirect("/battle/demo?view=replay" as Route);
 }

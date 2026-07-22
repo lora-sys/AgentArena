@@ -3,15 +3,49 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import useSWR from "swr";
-import {
-  AgentStatusCard,
-  type AgentState,
-} from "@/components/agent-status-card";
+import type { AgentState } from "@/components/agent-status-card";
 import { AppShell } from "@/components/app-shell";
 import { RoundProgressBar } from "@/components/round-progress-bar";
+import { BattleReplayPlayer, type BattlePlayerTeam } from "@/components/battle-replay-player";
 import { connectSse, type SseClientHandle } from "@/lib/sse-client";
 import type { BattleEvent } from "@/arena/schemas/types";
 import type { BattleRound } from "@/lib/types";
+
+/* ─── Event type → color mapping ─────────────────────────────────── */
+
+const EVENT_COLORS: Record<string, { bg: string; text: string }> = {
+  brief_created:       { bg: "bg-sev-info/10", text: "text-sev-info" },
+  team_created:        { bg: "bg-sev-info/10", text: "text-sev-info" },
+  proposal_created:    { bg: "bg-sev-warn/10", text: "text-sev-warn" },
+  attack_created:      { bg: "bg-sev-high/10", text: "text-sev-high" },
+  defense_created:     { bg: "bg-sev-low/10", text: "text-sev-low" },
+  score_created:       { bg: "bg-sev-fatal/10", text: "text-sev-fatal" },
+  champion_selected:   { bg: "bg-sev-fatal/10", text: "text-sev-fatal" },
+  artifact_created:    { bg: "bg-sev-info/10", text: "text-sev-info" },
+  replay_created:      { bg: "bg-sev-fatal/10", text: "text-sev-fatal" },
+  passport_created:    { bg: "bg-sev-fatal/10", text: "text-sev-fatal" },
+};
+
+const EVENT_LABELS: Record<string, string> = {
+  brief_created: "Brief",
+  team_created: "Proposal",
+  proposal_created: "Proposal",
+  attack_created: "Attack",
+  defense_created: "Defense",
+  score_created: "Score",
+  champion_selected: "Champion",
+  artifact_created: "Artifact",
+  replay_created: "Champion",
+  passport_created: "Passport",
+};
+
+function getEventColor(eventType: string): { bg: string; text: string } {
+  return EVENT_COLORS[eventType] ?? { bg: "bg-team-viral/10", text: "text-team-viral" };
+}
+
+function getEventLabel(eventType: string): string {
+  return EVENT_LABELS[eventType] ?? eventType;
+}
 
 /* ─── Status API shape ──────────────────────────────────────────────────── */
 
@@ -23,6 +57,7 @@ type AgentStatePayload = {
 
 type BattleStatus = {
   battleId: string;
+  status: string;
   round: number;
   totalRounds: number;
   progress: number;
@@ -30,10 +65,10 @@ type BattleStatus = {
   agentStates: Record<string, AgentStatePayload>;
 };
 
-const TEAMS: Array<{ id: string; key: string; name: string }> = [
-  { id: "safe-builder", key: "safe-builder", name: "Safe Builder" },
-  { id: "viral-designer", key: "viral-designer", name: "Viral Designer" },
-  { id: "infra-hacker", key: "infra-hacker", name: "Infra Hacker" },
+const PLAYER_TEAMS: BattlePlayerTeam[] = [
+  { id: "safe_builder", name: "Safe Builder", initials: "SB", color: "#49D6C8", subtitle: "FEASIBILITY" },
+  { id: "viral_designer", name: "Viral Designer", initials: "VD", color: "#F5567E", subtitle: "DEMO POWER" },
+  { id: "infra_hacker", name: "Infra Hacker", initials: "IH", color: "#F2B84B", subtitle: "TECHNICAL DEPTH" },
 ];
 
 /* ─── SSE state (event timeline) ─────────────────────────────────────────── */
@@ -61,7 +96,10 @@ const initialLiveState: LiveState = {
 const liveReducer = (state: LiveState, action: LiveAction): LiveState => {
   switch (action.type) {
     case "event":
-      return { ...state, events: [...state.events, action.event] };
+      // Cap at 200 events to prevent unbounded memory growth.
+      const next = [...state.events, action.event];
+      if (next.length > 200) next.splice(0, next.length - 200);
+      return { ...state, events: next };
     case "invalid":
       return { ...state, invalidCount: state.invalidCount + 1 };
     case "status":
@@ -96,6 +134,7 @@ export function LiveBattleClient({ battleId }: LiveBattleClientProps) {
   const startedAtRef = useRef<number>(Date.now());
   const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const elapsedIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [playbackComplete, setPlaybackComplete] = useState(false);
 
   // Poll /api/battles/[id]/status every 2s via SWR
   const { data: status, error: statusError } = useSWR<BattleStatus>(
@@ -103,6 +142,18 @@ export function LiveBattleClient({ battleId }: LiveBattleClientProps) {
     fetchStatus,
     { refreshInterval: 2000, revalidateOnFocus: false },
   );
+
+  // When the engine reports completion, auto-navigate to the result page.
+  // The status API returns `status: "completed"` once `progress: 1.0`.
+  useEffect(() => {
+    if (status?.status === "completed" && status.progress >= 1 && playbackComplete) {
+      const timer = setTimeout(() => {
+        router.push(`/battle/${battleId}?view=result` as Parameters<typeof router.push>[0]);
+      }, 1500); // 1.5s pause so the user sees "winner" briefly
+      return () => clearTimeout(timer);
+    }
+    return undefined;
+  }, [status?.status, status?.progress, playbackComplete, battleId, router]);
 
   // SSE event stream
   useEffect(() => {
@@ -202,7 +253,6 @@ export function LiveBattleClient({ battleId }: LiveBattleClientProps) {
   const currentRound = status?.round ?? 1;
   const totalRounds = status?.totalRounds ?? 6;
   const canCancel = status?.canCancel ?? false;
-  const agentStates = status?.agentStates ?? {};
 
   // R30 fix: derive the rail's currentRound from the last SSE event so
   // the battle flow indicator tracks the actual battle progression
@@ -241,6 +291,21 @@ export function LiveBattleClient({ battleId }: LiveBattleClientProps) {
         </div>
       ) : null}
 
+      {state.status === "connecting" || state.status === "reconnecting" ? (
+        <div className="skeleton-container" aria-live="polite" aria-label="Connecting to battle stream">
+          <div className="skeleton-bar" />
+          <div className="skeleton-bar w-3/4" />
+          <div className="skeleton-bar w-1/2" />
+          <p className="text-fg-muted text-sm mt-s-3">
+            {state.status === "connecting" ? "Connecting to live battle..." : "Reconnecting..."}
+          </p>
+        </div>
+      ) : state.status === "error" ? (
+        <div role="alert" className="error-banner">
+          <span>Connection lost. Unable to receive live events.</span>
+        </div>
+      ) : null}
+
       <RoundProgressBar
         round={currentRound}
         totalRounds={totalRounds}
@@ -249,21 +314,14 @@ export function LiveBattleClient({ battleId }: LiveBattleClientProps) {
         elapsedSec={elapsedSec}
       />
 
-      <section className="agent-status-grid" aria-label="Contestant agent states">
-        {TEAMS.map((team) => {
-          const payload = agentStates[team.id];
-          return (
-            <AgentStatusCard
-              key={team.id}
-              teamId={team.id}
-              teamName={team.name}
-              state={payload?.state ?? "pending"}
-              streamedText={payload?.streamedText ?? ""}
-              score={payload?.score}
-            />
-          );
-        })}
-      </section>
+      <BattleReplayPlayer
+        battleId={battleId}
+        title={`Battle ${battleId}`}
+        teams={PLAYER_TEAMS}
+        events={state.events}
+        connectionState={state.status}
+        onPlaybackComplete={() => setPlaybackComplete(true)}
+      />
 
       <section
         id="event-log"
@@ -289,9 +347,14 @@ export function LiveBattleClient({ battleId }: LiveBattleClientProps) {
                     hour12: false,
                   })}
                 </span>
-                <span className="inline-flex items-center justify-center rounded-full bg-team-viral/10 px-s-3 py-s-1 text-xs font-bold text-team-viral">
-                  {event.eventType}
+                {(() => {
+                  const colors = getEventColor(event.eventType);
+                  return (
+                <span className={`inline-flex items-center justify-center rounded-full ${colors.bg} ${colors.text} px-s-3 py-s-1 text-xs font-bold`}>
+                  {getEventLabel(event.eventType)}
                 </span>
+                  );
+                })()}
                 <strong className="text-sm">
                   {event.actorId ?? event.actorType ?? "engine"}
                 </strong>

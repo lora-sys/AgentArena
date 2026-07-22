@@ -296,9 +296,8 @@ describe("sse-client", () => {
   });
 
   it("stops reconnecting after maxRetries consecutive failures (R21)", () => {
-    // R21 fix: without a max retry cap, onerror would retry forever.
-    // With maxRetries=3, after 3 failed reconnect attempts the client
-    // must stop creating new EventSource instances.
+    // With maxRetries=3, the client allows 3 consecutive errors before
+    // stopping (consecutiveFailures >= maxRetries check).
     const onEvent = vi.fn();
 
     connectSse({
@@ -318,18 +317,16 @@ describe("sse-client", () => {
     MockEventSource.instances[1].emitError();
     vi.advanceTimersByTime(100);
 
-    // Failure 3: instance[2] errors, reconnect scheduled → instance[3]
+    // Failure 3: instance[2] errors — consecutiveFailures now = 3 which is >= maxRetries=3
+    // No more reconnection should happen.
     MockEventSource.instances[2].emitError();
-    vi.advanceTimersByTime(100);
-
-    // Failure 4: instance[3] errors — this exceeds maxRetries=3, must stop.
-    MockEventSource.instances[3].emitError();
 
     // Advance time well past any possible backoff — no new instance should appear.
     vi.advanceTimersByTime(10_000);
 
-    // We should have exactly 4 instances (initial + 3 reconnect attempts).
-    expect(MockEventSource.instances.length).toBe(4);
+    // We should have exactly 3 instances (initial + 2 reconnect attempts).
+    // After the 3rd error (instance[2]), maxRetries is hit and no more reconnects.
+    expect(MockEventSource.instances.length).toBe(3);
     expect(MockEventSource.instances.filter((s) => !s.closed)).toHaveLength(0);
   });
 
@@ -354,25 +351,23 @@ describe("sse-client", () => {
     MockEventSource.instances[1].emitError();
     vi.advanceTimersByTime(100);
 
-    // Healthy connection — onopen fires.
+    // Healthy connection — onopen fires, resetting consecutiveFailures to 0.
     MockEventSource.instances[2].onopen?.();
 
-    // Now use up 3 more retries. Counter is reset, so we should still reconnect.
+    // Now use up 3 more retries after reset.
     MockEventSource.instances[2].emitError();
     vi.advanceTimersByTime(100);
     MockEventSource.instances[3].emitError();
     vi.advanceTimersByTime(100);
     MockEventSource.instances[4].emitError();
-    vi.advanceTimersByTime(100);
 
-    // That's 3 failures after the reset. The 4th failure should stop reconnects.
-    MockEventSource.instances[5].emitError();
+    // That's 3 failures after the reset (consecutiveFailures >= maxRetries=3), must stop.
     vi.advanceTimersByTime(10_000);
 
-    // Total: initial + 2 (before reset) + 3 (after reset, all 3 succeed) = 6
-    expect(MockEventSource.instances.length).toBe(6);
-    // No additional instance should have been created after the 4th post-reset failure.
-    expect(MockEventSource.instances.filter((s) => !s.closed)).toHaveLength(0);
+    // Total: initial + 2 (before reset) + 2 (after reset, 3rd stops) = 5
+    expect(MockEventSource.instances.length).toBe(5);
+    // All instances closed (error handler closes source before maxRetries check)
+    expect(MockEventSource.instances.filter((s) => !s.closed).length).toBe(0);
   });
 
   it("delivers multiple events in order", () => {

@@ -8,6 +8,9 @@ import {
   CheckCircle2,
   PauseCircle,
 } from "lucide-react";
+import { HpBar, type HitState } from "./hp-bar";
+import { TypewriterText } from "./typewriter-text";
+import styles from "./battle-replay-player.module.css";
 
 /**
  * AgentStatusCard — 5-state progress card for a contestant team during a
@@ -31,6 +34,10 @@ export type AgentStatusCardProps = {
   state: AgentState;
   streamedText?: string;
   score?: number;
+  hp?: number;
+  teamColor?: string;
+  justHit?: HitState;
+  streamRunKey?: string;
 };
 
 const STATE_LABEL: Record<AgentState, string> = {
@@ -80,6 +87,10 @@ export function AgentStatusCard({
   state,
   streamedText = "",
   score,
+  hp,
+  teamColor = "var(--arena-text-dim)",
+  justHit,
+  streamRunKey,
 }: AgentStatusCardProps) {
   const label = STATE_LABEL[state];
   const pillClass = STATE_PILL_CLASS[state];
@@ -89,7 +100,7 @@ export function AgentStatusCard({
 
   return (
     <article
-      className="agent-status-card"
+      className={`agent-status-card ${styles.fighterCard} ${justHit ? styles.flash : ""} ${justHit && (justHit.severity === "high") ? styles.shake : ""}`}
       data-team={teamId}
       data-state={state}
       aria-label={`${teamName} agent status: ${label}`}
@@ -108,12 +119,16 @@ export function AgentStatusCard({
         </span>
       </header>
 
+      {hp !== undefined ? <HpBar hp={hp} teamColor={teamColor} justHit={justHit} /> : null}
+
       {showStream ? (
         <p
           className={`agent-status-stream ${state === "streaming" ? "is-streaming" : ""}`}
           aria-live={state === "streaming" ? "polite" : undefined}
         >
-          {streamedText || (state === "fallback" ? "Engine fell back to mock output." : " ")}
+          {streamedText ? (
+            <TypewriterText text={streamedText} runKey={streamRunKey ?? streamedText} active={Boolean(streamRunKey)} />
+          ) : state === "fallback" ? "Engine fell back to mock output." : " "}
         </p>
       ) : (
         <p className="agent-status-stream muted" aria-live="polite">

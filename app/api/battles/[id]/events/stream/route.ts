@@ -1,4 +1,5 @@
-import { runBattleFromPayload } from "@/lib/battle-api";
+import { loadBundle, hasBundle } from "@/lib/battle-store";
+import { getDemoBundle } from "@/lib/demo-data";
 import { withRateLimit, validateBattleId, badRequest } from "@/lib/api/guards";
 
 type BattleEventStreamRouteContext = {
@@ -15,15 +16,48 @@ async function streamHandler(
     return badRequest("Invalid battle ID format");
   }
 
-  // R22 fix: SSE protocol requires a blank line (\n\n) between events.
-  // Without the blank line, EventSource clients concatenate consecutive
-  // events into a single malformed message.
-  const bundle = runBattleFromPayload({}, id);
-  const body = bundle.events
-    .map((event) => `event: ${event.eventType}\ndata: ${JSON.stringify(event)}\n\n`)
-    .join("");
+  // Demo shortcut — never 500 on a valid battle ID.
+  if (id === "demo") {
+    try {
+      const bundle = getDemoBundle();
+      return streamFromEvents(id, bundle.events);
+    } catch (err) {
+      console.error(`[stream] demo bundle failed for ${id}:`, err);
+      return streamFromEvents(id, []);
+    }
+  }
 
-  return new Response(body, {
+  // Real battle — return empty stream if not found.
+  if (!hasBundle(id)) {
+    return streamFromEvents(id, []);
+  }
+
+  const bundle = loadBundle(id);
+  if (!bundle) return streamFromEvents(id, []);
+  return streamFromEvents(id, bundle.events);
+}
+
+function streamFromEvents(battleId: string, events: ReadonlyArray<{ id: string; eventType: string; [key: string]: unknown }>): Response {
+  const encoder = new TextEncoder();
+  const chunks: Uint8Array[] = [];
+  for (const event of events) {
+    const chunk = `event: ${event.eventType}\ndata: ${JSON.stringify({ ...event, battleId })}\n\n`;
+    chunks.push(encoder.encode(chunk));
+  }
+
+  let index = 0;
+  const stream = new ReadableStream({
+    pull(controller) {
+      if (index < chunks.length) {
+        controller.enqueue(chunks[index]);
+        index += 1;
+      } else {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
     headers: {
       "content-type": "text/event-stream; charset=utf-8",
       "cache-control": "no-cache, no-transform",

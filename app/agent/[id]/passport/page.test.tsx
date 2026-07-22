@@ -11,10 +11,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
  *      so the champion badge renders correctly.
  */
 
-// The page module is a client component ("use client") that uses hooks.
-// We only need to verify the module loads and that the loadAgentPassport
-// function correctly handles fetch responses. The pure helper logic is
-// tested indirectly via the demo-bundle path that doesn't require a fetch.
+// Mock next/navigation since AppShell now uses usePathname
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/agent/safe-builder/passport",
+  useSearchParams: () => new URLSearchParams(),
+}));
 
 // @vitest-environment happy-dom
 

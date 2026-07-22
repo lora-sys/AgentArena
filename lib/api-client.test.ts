@@ -352,7 +352,7 @@ describe("URL builders", () => {
   });
 
   it("buildReplayUrl returns the replay page path", () => {
-    expect(buildReplayUrl("battle-8f2a")).toBe("/battle/battle-8f2a/replay");
+    expect(buildReplayUrl("battle-8f2a")).toBe("/battle/battle-8f2a?view=replay");
   });
 
   it("buildPassportUrl returns the agent passport path", () => {

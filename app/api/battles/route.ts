@@ -1,23 +1,20 @@
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { demoBundle } from "@/lib/demo-data";
-import { summarizeBattleBundle, makeBattleId } from "@/lib/battle-api";
+import { runBattleFromPayload, summarizeBattleBundle, makeBattleId } from "@/lib/battle-api";
+import { getDemoBundle } from "@/lib/demo-data";
+import { storeBundle } from "@/lib/battle-store";
 import { getDb } from "@/lib/db/client";
 import { battle } from "@/lib/db/schema";
 import { withRateLimit } from "@/lib/api/guards";
 
 export function GET() {
+  const demo = summarizeBattleBundle(getDemoBundle());
   return NextResponse.json({
-    battles: [summarizeBattleBundle(demoBundle)],
+    battles: [demo],
   });
 }
 
-/* ------------------------------------------------------------------ */
-/* POST /api/battles — create a new battle                            */
-/* ------------------------------------------------------------------ */
-
-// Request body schema: { idea: string (10-2000 chars), mode?: "quick" | "full" }
 const CreateBattleBodySchema = z.object({
   idea: z
     .string()
@@ -28,7 +25,6 @@ const CreateBattleBodySchema = z.object({
 });
 
 async function createBattleHandler(request: Request): Promise<Response> {
-  // 1. Parse and validate body
   let raw: unknown;
   try {
     raw = await request.json();
@@ -52,10 +48,8 @@ async function createBattleHandler(request: Request): Promise<Response> {
 
   const { idea, mode } = parsed.data;
 
-  // 2. Generate deterministic battle_id from idea (PRD §8: btl_<8-char base32>)
   const battleId = makeBattleId(idea);
 
-  // 3. Idempotency: if a battle with this exact idea already exists, return it.
   try {
     const db = getDb();
     const existing = await db
@@ -71,31 +65,25 @@ async function createBattleHandler(request: Request): Promise<Response> {
       );
     }
   } catch (dbErr) {
-    // DB not available (tests, build time, missing DATABASE_URL).
-    // For Sprint 0 demo, fall through to returning the in-memory battle_id.
     console.warn("[POST /api/battles] DB unavailable, skipping idempotency check:", dbErr);
   }
 
-  // 4. Persist the new battle row.
+  const bundle = await runBattleFromPayload({ idea }, battleId, mode);
+  storeBundle(battleId, bundle);
+
   try {
     const db = getDb();
-    const settingsJson = { mode };
-    const originalInput = { idea, mode };
-
     await db.insert(battle).values({
       id: battleId,
       title: idea.slice(0, 100),
       idea,
       type: "hackathon",
-      status: "briefing",
-      originalInput,
-      settingsJson,
+      status: bundle.battle.status,
+      originalInput: { idea, mode },
+      settingsJson: { mode },
       mode,
     });
   } catch (dbErr) {
-    // DB write failed — could be a unique-constraint violation on idea
-    // (TOCTOU race: concurrent POST with same idea won the insert).
-    // Re-fetch the winner's id and return it idempotently.
     const isUniqueViolation =
       dbErr instanceof Error &&
       /unique|duplicate/i.test(dbErr.message);
@@ -115,14 +103,10 @@ async function createBattleHandler(request: Request): Promise<Response> {
           );
         }
       } catch {
-        // fall through to 500 below
+        // fall through to inMemory below
       }
     }
 
-    // DB write failed for a reason other than unique-violation recovery
-    // (or recovery lookup failed). Fall through to in-memory mode instead
-    // of hard-failing with 500 — the demo flow needs to work even without
-    // a live Postgres (PRD §8.3: ENABLE_EXAMPLE_BATTLES).
     console.warn("[POST /api/battles] DB insert failed, falling through to in-memory:", dbErr);
     return NextResponse.json(
       {
@@ -134,7 +118,6 @@ async function createBattleHandler(request: Request): Promise<Response> {
     );
   }
 
-  // 5. Return the created battle_id.
   return NextResponse.json(
     {
       battleId,

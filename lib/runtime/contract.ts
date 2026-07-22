@@ -22,8 +22,15 @@ export type JudgeOutput = JudgeInput;
 export type ArtifactInput = z.infer<typeof ArtifactSchema>;
 export type ArtifactOutput = ArtifactInput;
 
+export type AgentRole =
+  | "contestant"
+  | "judge"
+  | "artifact_writer"
+  | "commentator";
+
 export type AgentSpec = {
   agentId: string;
+  role?: AgentRole;
   teamId?: string;
   model?: string;
   maxRetries?: number;

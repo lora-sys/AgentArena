@@ -9,6 +9,7 @@ type StartBattleRouteContext = {
 
 const StartBattleSchema = z.object({
   idea: z.string(),
+  mode: z.enum(["quick", "full"]),
 });
 
 async function startBattleHandler(
@@ -27,13 +28,14 @@ async function startBattleHandler(
     return badRequest(ideaResult.error);
   }
 
-  // Register an AbortController for this battle so the cancel endpoint
-  // can signal in-flight operations. Cleanup runs in finally to prevent
-  // unbounded growth of the registry map.
   registerAbortController(id);
 
   try {
-    const bundle = runBattleFromPayload({ idea: ideaResult.value }, id);
+    const bundle = await runBattleFromPayload(
+      { idea: ideaResult.value },
+      id,
+      data.mode,
+    );
 
     return NextResponse.json({
       battleId: bundle.battle.id,

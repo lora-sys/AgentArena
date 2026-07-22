@@ -182,11 +182,12 @@ export function withRateLimit<Args extends unknown[]>(
 
     if (tokens < 1) {
       // Not enough tokens — compute retry-after as the time needed
-      // to accrue 1 token.
+      // to accrue 1 token. Do NOT reset lastRefill: resetting causes
+      // the bucket to accumulate zero tokens until the client stops
+      // retrying for a full window, creating a permanent lockout.
       const tokensNeeded = 1 - tokens;
       const msUntilRefill = Math.ceil((tokensNeeded * windowMs) / max);
       const retryAfter = Math.max(1, Math.ceil(msUntilRefill / 1000));
-      bucket.lastRefill = now;
       return NextResponse.json(
         { error: "Rate limit exceeded", retryAfter },
         {

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { runBattleFromPayload, summarizeBattleBundle } from "@/lib/battle-api";
+import { loadBundle, hasBundle } from "@/lib/battle-store";
+import { getDemoBundle } from "@/lib/demo-data";
 import { withRateLimit, validateBattleId, badRequest } from "@/lib/api/guards";
 
 type BattleRouteContext = {
@@ -19,12 +21,29 @@ async function getBattleHandler(
     return badRequest("Invalid battle ID format");
   }
 
-  const bundle = runBattleFromPayload({}, id);
+  // Demo shortcut.
+  if (id === "demo") {
+    const bundle = getDemoBundle();
+    return NextResponse.json({
+      battle: summarizeBattleBundle(bundle),
+      bundle,
+    });
+  }
 
-  return NextResponse.json({
-    battle: summarizeBattleBundle(bundle),
-    bundle,
-  });
+  // Real battle — return the stored bundle if present, else 404.
+  if (hasBundle(id)) {
+    const bundle = loadBundle(id)!;
+    return NextResponse.json({
+      battle: summarizeBattleBundle(bundle),
+      bundle,
+    });
+  }
+
+  // Not found — do NOT re-run the engine (CLAUDE.md §13).
+  return NextResponse.json(
+    { error: `Battle ${id} not found` },
+    { status: 404 },
+  );
 }
 
 export const GET = withRateLimit(getBattleHandler);

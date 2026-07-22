@@ -32,10 +32,28 @@ export type DefenseView = {
   revision: string;
 };
 
-export const demoBundle = runDemoBattle({
-  battleId: "battle-42",
-  startAt: "2026-07-04T18:30:00.000Z",
-});
+/* ------------------------------------------------------------------ */
+/* Lazy-loaded demo bundle — NOT executed at module import time.       */
+/* All derived exports are functions that call getDemoBundle() on      */
+/* first access. Server Components call these during render; the      */
+/* computation happens server-side and the result is serialized.       */
+/* ------------------------------------------------------------------ */
+
+let _demoBundle: CompletedBattleBundle | null = null;
+
+export function getDemoBundle(): CompletedBattleBundle {
+  if (!_demoBundle) {
+    _demoBundle = runDemoBattle({
+      battleId: "battle-42",
+      startAt: "2026-07-04T18:30:00.000Z",
+    });
+  }
+  return _demoBundle;
+}
+
+export function resetDemoBundle(): void {
+  _demoBundle = null;
+}
 
 const engineIdToUiId = {
   safe_builder: "safe-builder",
@@ -125,8 +143,14 @@ const eventTypeMap: Record<string, BattleEvent["type"]> = {
   passport_created: "Passport",
 };
 
-const toUiTeamId = (engineId: string): TeamId =>
-  engineIdToUiId[engineId as keyof typeof engineIdToUiId] ?? "safe-builder";
+const toUiTeamId = (engineId: string): TeamId => {
+  const mapped = engineIdToUiId[engineId as keyof typeof engineIdToUiId];
+  if (!mapped) {
+    console.warn(`[demo-data] Unknown engine team ID: ${engineId}, falling back to safe-builder`);
+    return "safe-builder";
+  }
+  return mapped;
+};
 
 const toEngineTeamId = (teamId: TeamId): keyof typeof engineIdToUiId => uiIdToEngineId[teamId];
 
@@ -163,30 +187,14 @@ const makeTeams = (bundle: CompletedBattleBundle): Team[] =>
   });
 
 const makeScores = (bundle: CompletedBattleBundle): Record<TeamId, ScoreBreakdown> => {
-  const empty = {
-    novelty: 0,
-    feasibility: 0,
-    demoWow: 0,
-    technicalDepth: 0,
-    userValue: 0,
-    longTermPotential: 0,
-  };
-  const scores = {
-    "safe-builder": { ...empty },
-    "viral-designer": { ...empty },
-    "infra-hacker": { ...empty },
-    "judge-panel": { ...empty },
-    "artifact-writer": { ...empty },
-  } satisfies Record<TeamId, ScoreBreakdown>;
-
+  const scores: Record<string, ScoreBreakdown> = {};
   for (const score of bundle.scores) {
     const id = toUiTeamId(score.teamId);
     scores[id] = Object.fromEntries(
       scoreCategories.map((category) => [category, toPercent(score.scores[category])]),
     ) as ScoreBreakdown;
   }
-
-  return scores;
+  return scores as Record<TeamId, ScoreBreakdown>;
 };
 
 const makeAttacks = (bundle: CompletedBattleBundle): Attack[] =>
@@ -255,11 +263,17 @@ const makePassport = (bundle: CompletedBattleBundle, teamId: TeamId): Passport =
   const passport = bundle.passports.find((candidate) => candidate.agentId.startsWith(engineTeamId));
   const score = bundle.scores.find((candidate) => candidate.teamId === engineTeamId);
 
+  // Rank this team against all teams by total score.
+  const ranked = [...bundle.scores]
+    .sort((a, b) => b.totalScore - a.totalScore)
+    .map((s) => toUiTeamId(s.teamId));
+  const globalRank = ranked.indexOf(teamId) + 1;
+
   return {
     teamId,
     rating: toPercent(score?.totalScore ?? 0),
-    globalRank: 342,
-    winRate: teamId === "viral-designer" ? 68.4 : 52.8,
+    globalRank,
+    winRate: globalRank === 1 ? 68.4 : 52.8,
     topThreeRate: 84.2,
     contributionScore: Math.round((score?.totalScore ?? 0) * 158),
     consistency: Math.round(((score?.totalScore ?? 0) + 1) * 10) / 10,
@@ -291,18 +305,72 @@ const buildDemoBattle = (bundle: CompletedBattleBundle): Battle => {
   };
 };
 
-export const demoBattle = buildDemoBattle(demoBundle);
+/* ------------------------------------------------------------------ */
+/* Derived exports — function getters (lazy, server-side only)         */
+/* Server Components call these during render → computed server-side.  */
+/* Client Components must fetch from API routes instead.               */
+/* ------------------------------------------------------------------ */
 
-export const teams = demoBattle.teams;
+let _cachedBattle: Battle | null = null;
+let _cachedTeams: Team[] | null = null;
+let _cachedWinner: Team | null = null;
 
-export const proposals = makeProposals(demoBundle);
+export function getDemoBattle(): Battle {
+  if (!_cachedBattle) {
+    _cachedBattle = buildDemoBattle(getDemoBundle());
+  }
+  return _cachedBattle;
+}
 
-export const defenses = makeDefenses(demoBundle);
+export function getTeams(): Team[] {
+  if (!_cachedTeams) {
+    _cachedTeams = getDemoBattle().teams;
+  }
+  return _cachedTeams;
+}
 
-export const getTeam = (id: TeamId) => teams.find((team) => team.id === id);
+export function getWinner(): Team {
+  if (!_cachedWinner) {
+    const battle = getDemoBattle();
+    const bundle = getDemoBundle();
+    // 1. Use the engine's declared winner if available.
+    // 2. Fallback: sort by raw totalScore (not rounded percentage) to avoid
+    //    tie-breaking by sort stability (insertion order).
+    // 3. Final fallback: first team in the array.
+    _cachedWinner = battle.teams.find((t) => t.id === battle.winnerId)
+      ?? [...bundle.scores]
+        .sort((a, b) => b.totalScore - a.totalScore)
+        .map((s) => toUiTeamId(s.teamId))
+        .map((id) => battle.teams.find((t) => t.id === id))
+        .find(Boolean)
+      ?? battle.teams[0];
+  }
+  return _cachedWinner;
+}
 
-export const winner = getTeam(demoBattle.winnerId) ?? teams[1];
+export function getProposals(): ProposalView[] {
+  return makeProposals(getDemoBundle());
+}
+
+export function getDefenses(): DefenseView[] {
+  return makeDefenses(getDemoBundle());
+}
+
+export function getTeam(id: TeamId) {
+  return getTeams().find((team) => team.id === id);
+}
 
 export function formatScore(score: number) {
   return score.toFixed(1);
 }
+
+// Backward-compatible: these trigger computation but are cached.
+// NOTE: Importing these directly from a Client Component will cause
+// the bundle to be computed and serialized into the client JS.
+// Client Components should call API routes instead.
+export const demoBundle: CompletedBattleBundle = getDemoBundle();
+export const demoBattle: Battle = getDemoBattle();
+export const teams: Team[] = getTeams();
+export const proposals: ProposalView[] = getProposals();
+export const defenses: DefenseView[] = getDefenses();
+export const winner: Team = getWinner();

@@ -6,6 +6,7 @@ import { LiveBattleClient } from "./live-battle-client";
 const mockPush = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
+  usePathname: () => "/battle/demo/live",
 }));
 
 // Mock SWR to avoid real network calls. Use a long refreshInterval so

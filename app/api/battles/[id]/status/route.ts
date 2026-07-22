@@ -4,18 +4,19 @@
 // The live page polls this endpoint every 2s via SWR to update the
 // 5-state agent status cards + round progress bar.
 //
-// Stage 3: reads from the DB for real battle IDs (battle + recent
-// battle_event rows). For the demo battle ID, keeps the static complete
-// response for backward compatibility with the UI.
+// Stage 3: reads from the in-memory battle store for real per-battle
+// data. Falls back to DB. Falls back to demo bundle for the canonical
+// "demo" id.
 
 import { NextResponse } from "next/server";
 import { findById, recentEvents } from "@/lib/db/repo/battle-repo";
+import { loadBundle, hasBundle } from "@/lib/battle-store";
+import { getDemoBundle } from "@/lib/demo-data";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
-// Round ordering for progress calculation.
 const ROUND_ORDER: Record<string, number> = {
   briefing: 1,
   team_generation: 2,
@@ -29,35 +30,60 @@ const ROUND_ORDER: Record<string, number> = {
 
 const TOTAL_ROUNDS = 8;
 
-const STATIC_DEMO_STATE = {
-  round: 6,
-  progress: 1.0,
-  canCancel: false,
-  agentStates: {
-    "safe-builder": { state: "complete", streamedText: "", score: 8.4 },
-    "viral-designer": { state: "complete", streamedText: "", score: 8.2 },
-    "infra-hacker": { state: "complete", streamedText: "", score: 7.9 },
-  },
-} as const;
+function stateFromBundle(bundle: ReturnType<typeof getDemoBundle>) {
+  const latest = bundle.events[bundle.events.length - 1];
+  const currentRound = latest ? ROUND_ORDER[latest.round] ?? 1 : TOTAL_ROUNDS;
+  const progress = Math.min(1.0, currentRound / TOTAL_ROUNDS);
+
+  const perTeam: Record<string, { state: string; streamedText: string; score: number }> = {};
+  for (const team of bundle.teams) {
+    const isEngine = team.id === "judge_panel" || team.id === "artifact_writer";
+    const lastEvent = [...bundle.events].reverse().find((e) => e.actorId === team.id);
+    const state = !lastEvent
+      ? "pending"
+      : ["judging_round", "artifact_generation", "replay_generation"].includes(lastEvent.round)
+        ? "complete"
+        : "complete";
+    perTeam[team.id === "judge_panel" ? "judge" : team.id === "artifact_writer" ? "artifact" : team.id] = {
+      state: isEngine ? "complete" : state,
+      streamedText: lastEvent?.content ?? "",
+      score: Math.round((team.score ?? 0) * 10) / 10,
+    };
+  }
+
+  return {
+    round: currentRound,
+    progress,
+    canCancel: false,
+    status: "completed",
+    agentStates: perTeam,
+  };
+}
 
 export async function GET(_request: Request, context: RouteContext) {
   const { id } = await context.params;
 
-  // Demo battle ID keeps static complete response.
   if (id === "demo" || id === "battle-42") {
-    return NextResponse.json({ battleId: id, totalRounds: TOTAL_ROUNDS, ...STATIC_DEMO_STATE });
+    const bundle = getDemoBundle();
+    return NextResponse.json({
+      battleId: id,
+      totalRounds: TOTAL_ROUNDS,
+      ...stateFromBundle(bundle),
+    });
   }
 
-  // Real battle: query DB.
-  // R26 fix: if the battle row is not found in the DB (which happens for
-  // in-memory battles created when the DB insert failed — see POST /api/battles),
-  // fall through to the same default response as DB-unavailable instead of
-  // returning 404. This preserves the create-then-poll contract: the client
-  // always gets a usable status response for any valid battle ID format.
+  if (hasBundle(id)) {
+    const bundle = loadBundle(id)!;
+    return NextResponse.json({
+      battleId: id,
+      totalRounds: TOTAL_ROUNDS,
+      ...stateFromBundle(bundle),
+    });
+  }
+
   try {
     const battleRow = await findById(id);
     if (!battleRow) {
-      console.warn(`[GET /api/battles/${id}/status] Battle not in DB, using default state (in-memory?)`);
       return NextResponse.json({
         battleId: id,
         totalRounds: TOTAL_ROUNDS,
@@ -74,14 +100,9 @@ export async function GET(_request: Request, context: RouteContext) {
     }
 
     const events = await recentEvents(id, 50);
-
-    // Compute current round from the most recent event's round.
     const latestEvent = events[0];
-    const currentRoundName = latestEvent?.round ?? "briefing";
-    const currentRound = ROUND_ORDER[currentRoundName] ?? 1;
+    const currentRound = latestEvent ? ROUND_ORDER[latestEvent.round] ?? 1 : 1;
     const progress = Math.min(1.0, currentRound / TOTAL_ROUNDS);
-
-    // If battle status is completed or failed, everything is done.
     const isTerminal = battleRow.status === "completed" || battleRow.status === "failed";
 
     return NextResponse.json({
@@ -90,17 +111,20 @@ export async function GET(_request: Request, context: RouteContext) {
       round: isTerminal ? TOTAL_ROUNDS : currentRound,
       progress: isTerminal ? 1.0 : progress,
       canCancel: !isTerminal && battleRow.status !== "idle",
+      status: battleRow.status,
       agentStates: isTerminal
-        ? STATIC_DEMO_STATE.agentStates
+        ? {
+            "safe-builder": { state: "complete", streamedText: "", score: 8.4 },
+            "viral-designer": { state: "complete", streamedText: "", score: 8.2 },
+            "infra-hacker": { state: "complete", streamedText: "", score: 7.9 },
+          }
         : {
             "safe-builder": { state: "pending", streamedText: "", score: 0 },
             "viral-designer": { state: "pending", streamedText: "", score: 0 },
             "infra-hacker": { state: "pending", streamedText: "", score: 0 },
           },
-      status: battleRow.status,
     });
   } catch (dbErr) {
-    // DB unavailable — return a minimal response so polling doesn't break.
     console.warn(`[GET /api/battles/${id}/status] DB unavailable:`, dbErr);
     return NextResponse.json({
       battleId: id,

@@ -85,7 +85,7 @@ export function BattleSetupForm() {
           createdAt: new Date().toISOString(),
         }),
       );
-      router.push(`/battle/${battleId}/live` as Route);
+      router.push(`/battle/${battleId}` as Route);
     } catch (error) {
       setStartError(error instanceof Error ? error.message : "Could not start this battle.");
     } finally {

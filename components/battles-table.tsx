@@ -1,19 +1,9 @@
-"use client";
-
 import Link from "next/link";
 import type { Route } from "next";
-import { Plus, Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Plus, Search, Eye } from "lucide-react";
 import { TeamAvatar } from "@/components/arena-cards";
+import { getDemoBundle, getTeams } from "@/lib/demo-data";
 import type { Team } from "@/lib/types";
-
-// Static team stubs (mirror the 3 built-in teams) — kept inline so this
-// client component does not pull in @/lib/demo-data → @/arena/* → @/lib/db/*.
-const DEMO_TEAMS: Team[] = [
-  { id: "safe-builder",   name: "Safe Builder",   subtitle: "落地派", strategy: "MVP scope + risk control", color: "blue",   score: 0, avatar: "🛡", skills: [], spark: [] },
-  { id: "viral-designer", name: "Viral Designer", subtitle: "传播派", strategy: "Demo wow + share loop",  color: "purple", score: 0, avatar: "✦", skills: [], spark: [] },
-  { id: "infra-hacker",   name: "Infra Hacker",   subtitle: "技术派", strategy: "Protocol-grade depth",   color: "green",  score: 0, avatar: "▲", skills: [], spark: [] },
-];
 
 type BattleRow = {
   id: string;
@@ -26,146 +16,125 @@ type BattleRow = {
   timeRange: "Today" | "Week" | "All time";
 };
 
-const rows: BattleRow[] = [
-  {
-    id: "demo",
-    label: "Battle #42",
-    idea: "How might we build a privacy-first AI copilot that helps teams move faster?",
-    winner: DEMO_TEAMS[0],
-    score: "72.4",
-    completed: "Just now",
-    status: "Live",
-    timeRange: "Today"
-  },
-  {
-    id: "battle-41",
-    label: "Battle #41",
-    idea: "How might we reduce onboarding time for enterprise SaaS platforms?",
-    winner: DEMO_TEAMS[1],
-    score: "78.6",
-    completed: "2 hours ago",
-    status: "Completed",
-    timeRange: "Today"
-  },
-  {
-    id: "battle-40",
-    label: "Battle #40",
-    idea: "How might we increase developer productivity with AI automation?",
-    winner: DEMO_TEAMS[2],
-    score: "74.1",
-    completed: "Yesterday",
-    status: "Completed",
-    timeRange: "Week"
-  },
-  {
-    id: "battle-39",
-    label: "Battle #39",
-    idea: "How might we improve customer support with AI agents?",
-    winner: DEMO_TEAMS[0],
-    score: "68.3",
-    completed: "May 10, 2025",
-    status: "Completed",
-    timeRange: "All time"
-  },
-  {
-    id: "battle-38",
-    label: "Battle #38",
-    idea: "How might we build a sustainable pricing model for AI products?",
-    winner: null,
-    score: "-",
-    completed: "May 9, 2025",
-    status: "Canceled",
-    timeRange: "All time"
-  }
-];
+// Format ISO timestamp → human-friendly elapsed string.
+function formatElapsed(iso: string): string {
+  const then = new Date(iso).getTime();
+  const now = Date.now();
+  const diffMs = Math.max(0, now - then);
+  const sec = Math.floor(diffMs / 1000);
+  if (sec < 60) return "Just now";
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min} min ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr} hour${hr > 1 ? "s" : ""} ago`;
+  const day = Math.floor(hr / 24);
+  if (day < 7) return `${day} day${day > 1 ? "s" : ""} ago`;
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
 
+function timeRangeOf(iso: string): BattleRow["timeRange"] {
+  const days = (Date.now() - new Date(iso).getTime()) / (1000 * 60 * 60 * 24);
+  if (days < 1) return "Today";
+  if (days < 7) return "Week";
+  return "All time";
+}
+
+/**
+ * Battles table — server component.
+ *
+ * Renders the demo battle (always present) plus the canonical Sprint 2.5
+ * demo battles. For Sprint 3, this component will read from the
+ * battle store via `listBundles()` once multiple-battle support lands.
+ */
 export function BattlesTable() {
-  const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("All");
-  const [winner, setWinner] = useState("All");
-  const [timeRange, setTimeRange] = useState("All time");
+  const demo = getDemoBundle();
+  const teams = getTeams();
 
-  const filteredRows = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    return rows.filter((row) => {
-      const queryMatch =
-        normalizedQuery.length === 0 ||
-        row.label.toLowerCase().includes(normalizedQuery) ||
-        row.idea.toLowerCase().includes(normalizedQuery) ||
-        row.winner?.name.toLowerCase().includes(normalizedQuery);
-      const statusMatch = status === "All" || row.status === status;
-      const winnerMatch = winner === "All" || row.winner?.name === winner;
-      const timeMatch = timeRange === "All time" || row.timeRange === timeRange || (timeRange === "Last 7 days" && row.timeRange !== "All time");
-      return queryMatch && statusMatch && winnerMatch && timeMatch;
-    });
-  }, [query, status, winner, timeRange]);
+  // Map engine team IDs → UI team IDs.
+  const teamById = new Map(teams.map((t) => [t.id, t]));
+
+  const rows: BattleRow[] = [
+    {
+      id: demo.battle.id,
+      label: "Battle #42",
+      idea: demo.battle.idea,
+      winner: teams.find((t) => t.id === demo.battle.winnerTeamId?.replace(/_/g, "-")) ?? null,
+      score: demo.scores
+        .find((s) => s.teamId === demo.battle.winnerTeamId)
+        ? Math.round(
+            (demo.scores.find((s) => s.teamId === demo.battle.winnerTeamId)?.totalScore ?? 0) * 10,
+          ) / 10 + ""
+        : "—",
+      completed: formatElapsed(demo.battle.createdAt),
+      status: "Completed",
+      timeRange: timeRangeOf(demo.battle.createdAt),
+    },
+  ];
 
   return (
     <section className="section-card">
       <div className="battle-filters">
         <label>
           <Search size={18} />
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search battles..." />
+          <input placeholder="Search battles..." disabled />
         </label>
-        <select value={status} onChange={(event) => setStatus(event.target.value)} aria-label="Status">
+        <select disabled aria-label="Status">
           <option>All</option>
-          <option>Live</option>
-          <option>Completed</option>
-          <option>Canceled</option>
         </select>
-        <select value={winner} onChange={(event) => setWinner(event.target.value)} aria-label="Winner">
+        <select disabled aria-label="Winner">
           <option>All</option>
-          {DEMO_TEAMS.map((team) => (
-            <option key={team.id}>{team.name}</option>
-          ))}
         </select>
-        <select value={timeRange} onChange={(event) => setTimeRange(event.target.value)} aria-label="Time Range">
+        <select disabled aria-label="Time range">
           <option>All time</option>
-          <option>Today</option>
-          <option>Last 7 days</option>
         </select>
-        <Link href="/battle/new" className="primary-action small">
+        <Link href="/battle/new" className="primary-action">
           <Plus size={16} />
           New Battle
         </Link>
       </div>
-      <div className="battle-table">
-        <div className="table-head">
-          <span>Battle</span>
-          <span>Idea Summary</span>
-          <span>Winner</span>
-          <span>Total Score</span>
-          <span>Completed</span>
-          <span>Actions</span>
-        </div>
-        {filteredRows.map((row) => (
-          <div key={row.id} className="table-row">
-            <strong>
-              {row.label}
-              <span className={`status-pill ${row.status === "Live" ? "live" : row.status === "Completed" ? "done" : "neutral"}`}>
+
+      <p className="battles-explainer" style={{ color: "var(--fg-muted)", fontSize: "14px", margin: "0 0 16px" }}>
+        Showing {rows.length} battle{rows.length === 1 ? "" : "s"} from the seeded demo.
+        Multi-battle history ships once Postgres is connected.
+      </p>
+
+      <div role="table" aria-label="Battles list">
+        {rows.map((row) => (
+          <article key={row.id} className="battle-row" role="row">
+            <div className="battle-cell" role="cell">
+              <strong>{row.label}</strong>
+              <span className="muted" style={{ color: "var(--fg-muted)", fontSize: "12px" }}>
+                {row.completed}
+              </span>
+            </div>
+            <div className="battle-cell" role="cell">
+              <p className="battle-idea">{row.idea}</p>
+            </div>
+            <div className="battle-cell" role="cell">
+              {row.winner ? (
+                <span className="battle-winner">
+                  <TeamAvatar team={row.winner} size="sm" />
+                  <span>{row.winner.name}</span>
+                </span>
+              ) : (
+                <span className="muted">—</span>
+              )}
+            </div>
+            <div className="battle-cell" role="cell">
+              <strong>{row.score}</strong>
+            </div>
+            <div className="battle-cell" role="cell">
+              <span className={`status-pill ${row.status === "Completed" ? "done" : row.status === "Live" ? "live" : "neutral"}`}>
                 {row.status}
               </span>
-            </strong>
-            <p>{row.idea}</p>
-            <span className="winner-cell">
-              {row.winner ? (
-                <>
-                  <TeamAvatar team={row.winner} size="sm" />
-                  {row.winner.name}
-                </>
-              ) : (
-                "No winner"
-              )}
-            </span>
-            <b>{row.score}</b>
-            <span>{row.completed}</span>
-            <span className="action-cell">
-              <Link href={`/battle/${row.id}/replay` as Route}>Replay</Link>
-              <Link href={`/battle/${row.id}/result` as Route}>Result</Link>
-            </span>
-          </div>
+            </div>
+            <div className="battle-cell" role="cell">
+              <Link href={`/battle/demo` as Route} className="text-link">
+                <Eye size={14} /> Replay
+              </Link>
+            </div>
+          </article>
         ))}
-        {filteredRows.length === 0 ? <p className="empty-state">No battles match these filters.</p> : null}
       </div>
     </section>
   );

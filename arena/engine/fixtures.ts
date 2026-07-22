@@ -55,6 +55,7 @@ export function normalizeBattleSettings(settings: Partial<BattleSettings> = {}):
     timeLimit: settings.timeLimit ?? defaultBattleSettings.timeLimit,
     preference: settings.preference ?? defaultBattleSettings.preference,
     outputTargets: settings.outputTargets ?? [...defaultBattleSettings.outputTargets],
+    mode: settings.mode ?? defaultBattleSettings.mode,
   };
 }
 
@@ -253,7 +254,7 @@ export function createDemoAttacks(): Attack[] {
       attackType: "poor_feasibility",
       claim: "Agent Arena could become too theatrical to ship in 48 hours.",
       evidence: "Team entrances, attacks, score reveals, replay, and passports are many surfaces for one hackathon.",
-      severity: "medium",
+      severity: "high",
       suggestedFix: "Use seeded fixtures and limit the live engine to the deterministic battle path.",
     },
     {
@@ -304,7 +305,7 @@ export function createDemoDefenses(attacks: Attack[]): Defense[] {
     },
     "Agent Arena could become too theatrical to ship in 48 hours.": {
       acceptedAttack: true,
-      revision: "Constrain the MVP to seeded teams, one deterministic battle, and generated champion artifacts.",
+      revision: "We concede the core flaw: without a deterministic seeded fallback, the theatrical live demo can collapse under the 48-hour window. Lock the MVP to seeded teams, one replayable battle, and generated champion artifacts.",
     },
     "Agent Arena needs to prove the passport is more than a fun end screen.": {
       acceptedAttack: false,

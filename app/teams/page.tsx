@@ -1,53 +1,97 @@
-import { BarChart3, Star, Swords, UsersRound } from "lucide-react";
+import { Sparkles, Swords, ShieldCheck, Award, Trophy } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { MiniStat, QuoteBand, TeamProfileCard } from "@/components/arena-cards";
-import { teams } from "@/lib/demo-data";
+import { QuoteBand, TeamProfileCard } from "@/components/arena-cards";
+import { getDemoBundle, getTeams } from "@/lib/demo-data";
+import styles from "./page.module.css";
+import { redirect } from "next/navigation";
 
+/**
+ * Teams page — Hallmark "Persona Wall" macrostructure.
+ * Real stats from demo bundle, no fabricated numbers.
+ */
 export default function TeamsPage() {
+  redirect("/#teams");
+  const teams = getTeams();
+  const bundle = getDemoBundle();
+
+  // Real data from bundle.
+  const totalAttacks = bundle.attacks.length;
+  const totalDefenses = bundle.defenses.length;
+  const totalAccepted = bundle.passports.reduce(
+    (acc, p) => acc + p.acceptedClaims.length,
+    0,
+  );
+
   return (
     <AppShell active="teams" showRail currentRound="cross_attack">
-      <div className="page-heading">
-        <h1>Teams</h1>
-        <p>The teams that enter the arena.</p>
+      <div className={styles.page}>
+        <header className={styles.head}>
+          <span className={styles.headEyebrow}>Persona Wall</span>
+          <h1>
+            Five <em>specialist</em> personas enter the arena.
+          </h1>
+          <p className={styles.headSub}>
+            Three teams compete head-to-head. A judge panel scores them on six
+            rubric dimensions. An artifact writer packages the winner. Every
+            claim is bound to a real battle event.
+          </p>
+        </header>
+
+        {/* Asymmetric 4-tile stat strip */}
+        <section className={styles.statStrip} aria-label="Team activity stats">
+          <article className={styles.statCard}>
+            <span className={styles.statIcon}>
+              <Swords size={20} aria-hidden="true" />
+            </span>
+            <div>
+              <span className={styles.statLabel}>Attacks fired</span>
+              <span className={styles.statValue}>{totalAttacks}</span>
+            </div>
+          </article>
+          <article className={styles.statCard}>
+            <span className={styles.statIcon}>
+              <ShieldCheck size={20} aria-hidden="true" />
+            </span>
+            <div>
+              <span className={styles.statLabel}>Defenses filed</span>
+              <span className={styles.statValue}>{totalDefenses}</span>
+            </div>
+          </article>
+          <article className={styles.statCard}>
+            <span className={styles.statIcon}>
+              <Award size={20} aria-hidden="true" />
+            </span>
+            <div>
+              <span className={styles.statLabel}>Accepted claims</span>
+              <span className={styles.statValue}>{totalAccepted}</span>
+            </div>
+          </article>
+          <article className={styles.statCard}>
+            <span className={styles.statIcon}>
+              <Trophy size={20} aria-hidden="true" />
+            </span>
+            <div>
+              <span className={styles.statLabel}>Active personas</span>
+              <span className={styles.statValueAccent}>{teams.length}</span>
+            </div>
+          </article>
+        </section>
+
+        {/* 5 personas (existing TeamProfileCard component) */}
+        <section className="team-profile-grid">
+          {teams.map((team) => (
+            <TeamProfileCard key={team.id} team={team} />
+          ))}
+        </section>
+
+        <div className={styles.quoteSection}>
+          <QuoteBand>
+            Three teams compete head-to-head. A judge panel scores them on
+            six rubric dimensions. An artifact writer packages the winner.
+            Every claim is bound to a battle event.
+          </QuoteBand>
+        </div>
       </div>
-      <section className="stats-strip">
-        <MiniStat icon={<BarChart3 size={22} />} label="Average Win Rate" value="68.7%" note="Across all teams" />
-        <MiniStat icon={<Star size={22} />} label="Top Specialty" value="Tech Offensive" note="Most common focus" />
-        <MiniStat icon={<Swords size={22} />} label="Recent Battles" value="24" note="In the last 7 days" />
-        <MiniStat icon={<UsersRound size={22} />} label="Total Teams" value="5" note="Active in the arena" />
-      </section>
-      <section className="team-profile-grid">
-        {teams.map((team) => (
-          <TeamProfileCard key={team.id} team={team} />
-        ))}
-        <TeamProfileCard
-          team={{
-            id: "judge-panel",
-            name: "Judge Panel",
-            subtitle: "Fair. Thorough. Impartial.",
-            strategy: "Independent judges evaluating proposals with a critical eye.",
-            color: "orange",
-            score: 0,
-            avatar: "JP",
-            skills: ["Evaluation", "Fairness", "Expertise"],
-            spark: [1, 2]
-          }}
-        />
-        <TeamProfileCard
-          team={{
-            id: "artifact-writer",
-            name: "Artifact Writer",
-            subtitle: "Clarity in Every Word",
-            strategy: "Crafts clear artifacts that communicate the winning plan.",
-            color: "blue",
-            score: 0,
-            avatar: "AW",
-            skills: ["Documentation", "Clarity", "Storytelling"],
-            spark: [1, 2]
-          }}
-        />
-      </section>
-      <QuoteBand>Teams compete head-to-head in battles. Judges evaluate. The best ideas move forward.</QuoteBand>
     </AppShell>
   );
 }

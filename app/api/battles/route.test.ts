@@ -64,14 +64,14 @@ describe("POST /api/battles", () => {
     POST = mod.POST;
   });
 
-  it("returns 201 with { battleId, status: 'created' } for a valid idea", async () => {
+  it("returns 201 with { battleId, status: 'ready' } for a valid idea", async () => {
     const response = await POST(makeRequest({ idea: validIdea }));
     const body = await response.json();
 
     expect(response.status).toBe(201);
-    expect(body.status).toBe("created");
+    expect(body.status).toBe("ready");
     expect(body.battleId).toMatch(/^btl_[0-9A-HJKMNP-TV-Z]{8}$/);
-    expect(body).not.toHaveProperty("battle");
+    expect(body.title).toBeTruthy();
   });
 
   it("generates a deterministic battle_id from the idea text", async () => {
@@ -150,7 +150,7 @@ describe("POST /api/battles", () => {
 
     expect(response.status).toBe(200);
     expect(body.battleId).toBe("btl_EXISTING1");
-    expect(body.status).toBe("created");
+    expect(body.status).toBe("ready");
     // Idempotent path must return the same flat shape so the client
     // form can always read data.battleId regardless of code path.
     expect(body).not.toHaveProperty("battle");
@@ -245,7 +245,7 @@ describe("POST /api/battles", () => {
     // Recovery path must return the flat { battleId, status } shape —
     // no legacy `battle` wrapper — so the client form reads it correctly.
     expect(body).not.toHaveProperty("battle");
-    expect(body.status).toBe("created");
+    expect(body.status).toBe("ready");
   });
 
   /* ----- R22: DB write failure falls through to in-memory (201, inMemory: true) --- */

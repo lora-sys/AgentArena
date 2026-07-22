@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Check, ChevronDown, Copy, LogIn, LogOut, Share2, UserRound, X } from "lucide-react";
 
 type MockUser = {
@@ -11,11 +12,16 @@ type MockUser = {
 const storageKey = "agent-arena-user";
 
 export function HeaderActions() {
+  const pathname = usePathname();
   const [user, setUser] = useState<MockUser | null>(null);
   const [accountOpen, setAccountOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Derive current agent from the route, same as AppShell.
+  const agentMatch = pathname.match(/^\/agent\/([^/]+)/);
+  const currentAgentId = agentMatch?.[1] ?? "safe-builder";
 
   const [shareUrl, setShareUrl] = useState("http://localhost:3000");
 
@@ -24,6 +30,7 @@ export function HeaderActions() {
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined" || !window.localStorage) return;
     const raw = window.localStorage.getItem(storageKey);
     if (!raw) return;
     try {
@@ -59,14 +66,18 @@ export function HeaderActions() {
       name: String(formData.get("name") || "Agent Builder"),
       email: String(formData.get("email") || "builder@agentarena.local")
     };
-    window.localStorage.setItem(storageKey, JSON.stringify(nextUser));
+    if (typeof window !== "undefined" && window.localStorage) {
+      window.localStorage.setItem(storageKey, JSON.stringify(nextUser));
+    }
     setUser(nextUser);
     setLoginOpen(false);
     setAccountOpen(false);
   };
 
   const logout = () => {
-    window.localStorage.removeItem(storageKey);
+    if (typeof window !== "undefined" && window.localStorage) {
+      window.localStorage.removeItem(storageKey);
+    }
     setUser(null);
     setAccountOpen(false);
   };
@@ -103,7 +114,7 @@ export function HeaderActions() {
                   <span className="text-xs text-fg-muted">{user.email}</span>
                 </div>
                 <a
-                  href="/agent/viral-designer/passport"
+                  href={`/agent/${currentAgentId}/passport`}
                   className="flex min-h-[38px] items-center gap-s-2 rounded-r-md px-s-2 font-bold hover:bg-bg-sunken"
                 >
                   Open Passport

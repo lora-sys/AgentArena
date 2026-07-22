@@ -1,34 +1,50 @@
-import Link from "next/link";
+"use client";
+
 import type { Route } from "next";
+import Link from "next/link";
 import { BarChart3, Boxes, Compass, Flag, Play, ShieldCheck, Trophy } from "lucide-react";
 import { HeaderActions } from "./header-actions";
+import { usePathname } from "next/navigation";
 import type { BattleRound } from "@/lib/types";
 
+type RailItem = {
+  round: BattleRound;
+  label: string;
+  time: string;
+  icon: typeof Flag;
+  href: Route;
+};
+
 type AppShellProps = {
-  active: "battle" | "teams" | "battles" | "passport" | "explore";
+  active: "battle" | "teams" | "battles" | "passport" | "explore" | "newbattle";
   showRail?: boolean;
   currentRound?: BattleRound;
   children: React.ReactNode;
 };
 
-const nav = [
-  { id: "battle", label: "Battle", href: "/" },
-  { id: "teams", label: "Teams", href: "/teams" },
-  { id: "battles", label: "Battles", href: "/battles" },
-  { id: "passport", label: "Passport", href: "/agent/viral-designer/passport" },
-  { id: "explore", label: "Explore", href: "/battle/demo/replay" }
-] as const;
-
-const rail = [
-  { round: "briefing", label: "Briefing", time: "18:30", icon: Flag, href: "/battle/demo/live" },
-  { round: "proposal", label: "Proposal", time: "18:34", icon: Flag, href: "/battle/demo/live" },
-  { round: "cross_attack", label: "Cross Attack", time: "18:38", icon: Boxes, href: "/battle/demo/live" },
-  { round: "defense", label: "Defense", time: "19:02", icon: ShieldCheck, href: "/battle/demo/live" },
-  { round: "judging", label: "Judging", time: "19:18", icon: BarChart3, href: "/battle/demo/result" },
-  { round: "champion", label: "Replay", time: "19:24", icon: Trophy, href: "/battle/demo/replay" }
-] as const;
-
 export function AppShell({ active, showRail = false, currentRound = "cross_attack", children }: AppShellProps) {
+  const pathname = usePathname();
+
+  // Derive context from current route so navigation adapts automatically.
+  const battleMatch = pathname.match(/^\/battle\/([^/]+)/);
+  const currentBattleId = battleMatch?.[1] ?? null;
+  const nav = [
+    { id: "battle", label: "Home", href: "/" },
+    { id: "battles", label: "Battles", href: "/battles" },
+    { id: "newbattle", label: "Start Battle", href: "/battle/new" },
+  ] as const;
+
+  // Derive rail links from current battle context
+  const currentBattleIdForRoute = (currentBattleId ?? "demo") as Route;
+  const rail: readonly RailItem[] = [
+    { round: "briefing", label: "Briefing", time: "18:30", icon: Flag, href: `/battle/${currentBattleIdForRoute}` as Route },
+    { round: "proposal", label: "Proposal", time: "18:34", icon: Flag, href: `/battle/${currentBattleIdForRoute}` as Route },
+    { round: "cross_attack", label: "Cross Attack", time: "18:38", icon: Boxes, href: `/battle/${currentBattleIdForRoute}` as Route },
+    { round: "defense", label: "Defense", time: "19:02", icon: ShieldCheck, href: `/battle/${currentBattleIdForRoute}` as Route },
+    { round: "judging", label: "Judging", time: "19:18", icon: BarChart3, href: `/battle/${currentBattleIdForRoute}?view=result` as Route },
+    { round: "champion", label: "Evidence", time: "19:24", icon: Trophy, href: `/battle/${currentBattleIdForRoute}?view=evidence` as Route }
+  ] as const;
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -41,7 +57,7 @@ export function AppShell({ active, showRail = false, currentRound = "cross_attac
 
         <nav className="nav-tabs" aria-label="Primary">
           {nav.map((item) => (
-            <Link key={item.id} href={item.href} className={active === item.id ? "active" : ""}>
+            <Link key={item.id} href={item.href as Route} className={active === item.id ? "active" : ""}>
               {item.label}
             </Link>
           ))}
@@ -50,15 +66,23 @@ export function AppShell({ active, showRail = false, currentRound = "cross_attac
         <HeaderActions />
       </header>
 
+      {currentBattleId ? (
+        <nav className="battle-context-nav" aria-label="Battle views">
+          <Link href={`/battle/${currentBattleId}` as Route}>Arena</Link>
+          <Link href={`/battle/${currentBattleId}?view=result` as Route}>Results</Link>
+          <Link href={`/battle/${currentBattleId}?view=evidence` as Route}>Evidence</Link>
+        </nav>
+      ) : null}
+
       <div className={showRail ? "page-with-rail" : "page-no-rail"}>
-        {showRail ? <BattleRail currentRound={currentRound} /> : null}
+        {showRail ? <BattleRail currentRound={currentRound} rail={rail} /> : null}
         <main className="page-main">{children}</main>
       </div>
     </div>
   );
 }
 
-function BattleRail({ currentRound }: { currentRound: BattleRound }) {
+function BattleRail({ currentRound, rail }: { currentRound: BattleRound; rail: readonly RailItem[] }) {
   const activeIndex = rail.findIndex((item) => item.round === currentRound);
 
   return (

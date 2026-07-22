@@ -96,12 +96,19 @@ export const makeBattleId = (idea: string | undefined) => {
   return `btl_${toBase32Eight(seed)}`;
 };
 
-export const runBattleFromPayload = (payload: BattleCreateInput, battleId?: string): CompletedBattleBundle => {
+export const runBattleFromPayload = async (payload: { idea: string }, battleId?: string, mode?: string): Promise<CompletedBattleBundle> => {
   const input = normalizeBattleCreateInput(payload);
+  // Delegate to engine — engine must be async to avoid blocking.
+  // For demo battles this is synchronous (mock), but the API surface
+  // is async so real battles (with OpenAI calls) won't block the server.
+  const engineSettings: Record<string, unknown> = {
+    ...input.settings,
+  };
+  if (mode) engineSettings.mode = mode;
   return runDemoBattle({
     battleId: battleId ?? makeBattleId(input.idea),
     idea: input.idea,
-    settings: input.settings,
+    settings: engineSettings as any,
     startAt: "2026-07-04T18:30:00.000Z",
   });
 };

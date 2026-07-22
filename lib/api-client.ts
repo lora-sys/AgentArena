@@ -176,7 +176,7 @@ export function buildExportMarkdownUrl(battleId: string): string {
  * Builds the Replay page URL for a battle.
  */
 export function buildReplayUrl(battleId: string): string {
-  return `/battle/${encodeURIComponent(battleId)}/replay`;
+  return `/battle/${encodeURIComponent(battleId)}?view=replay`;
 }
 
 /**

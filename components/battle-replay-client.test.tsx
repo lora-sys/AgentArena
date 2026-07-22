@@ -21,6 +21,7 @@ vi.mock("next/navigation", () => ({
       get: (key: string) => url.searchParams.get(key),
     };
   },
+  usePathname: () => "/battle/demo/replay",
 }));
 
 describe("BattleReplayClient — ?event= deep-link (R24 fix)", () => {

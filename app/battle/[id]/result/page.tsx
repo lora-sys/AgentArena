@@ -3,6 +3,7 @@
 import { use, useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { Download, Play, Trophy, FileText, ArrowRight } from "lucide-react";
+import type { Route } from "next";
 import { AppShell } from "@/components/app-shell";
 import {
   fetchBattleResult,
@@ -289,14 +290,7 @@ type BattleResultPageProps = {
 };
 
 export default async function BattleResultPage({ params }: BattleResultPageProps) {
-  // Resolve params here so the client component receives the id.
-  // The Suspense boundary is required because ClientBattleResult
-  // uses React's `use(params)` hook, which suspends until the
-  // promise resolves.
-  await params;
-  return (
-    <Suspense fallback={<ResultSkeleton />}>
-      <ClientBattleResult params={params} />
-    </Suspense>
-  );
+  const { id } = await params;
+  const { redirect } = await import("next/navigation");
+  redirect(`/battle/${encodeURIComponent(id)}?view=result` as Route);
 }

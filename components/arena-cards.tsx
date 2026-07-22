@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import type { Route } from "next";
 import {
@@ -27,6 +25,7 @@ import type {
   BattleEvent,
   ScoreBreakdown,
   Team,
+  TeamId,
 } from "@/lib/types";
 
 /* Team color → token mapping for design system direction B */
@@ -321,7 +320,17 @@ export function JudgeProgress() {
   );
 }
 
-export function Scoreboard({ compact = false }: { compact?: boolean }) {
+export function Scoreboard({
+  teams,
+  scores,
+  winnerId,
+  compact = false,
+}: {
+  teams: Team[];
+  scores: Record<TeamId, ScoreBreakdown>;
+  winnerId?: TeamId;
+  compact?: boolean;
+}) {
   const ordered = [...teams].sort((a, b) => b.score - a.score);
   const columns: Array<[keyof ScoreBreakdown, string]> = [
     ["novelty", "Novelty"],
@@ -329,7 +338,7 @@ export function Scoreboard({ compact = false }: { compact?: boolean }) {
     ["demoWow", "Demo Wow"],
     ["technicalDepth", "Tech Depth"],
     ["userValue", "User Value"],
-    ["longTermPotential", "Long-term"]
+    ["longTermPotential", "Long-term"],
   ];
 
   return (
@@ -343,7 +352,7 @@ export function Scoreboard({ compact = false }: { compact?: boolean }) {
       {ordered.map((team, index) => (
         <div
           key={team.id}
-          className={`grid min-w-[980px] grid-cols-[60px_1fr_120px_repeat(6,1fr)] items-center gap-s-3 border-t border-border p-s-3 ${team.id === demoBattle.winnerId ? "bg-team-viral/5" : ""}`}
+          className={`grid min-w-[980px] grid-cols-[60px_1fr_120px_repeat(6,1fr)] items-center gap-s-3 border-t border-border p-s-3 ${team.id === winnerId ? "bg-team-viral/5" : ""}`}
         >
           <span className="grid h-7 w-7 place-items-center rounded-full bg-bg-sunken text-xs font-bold text-fg">
             {index + 1}
@@ -358,10 +367,10 @@ export function Scoreboard({ compact = false }: { compact?: boolean }) {
           {!compact
             ? columns.map(([key]) => (
                 <span key={key} className="grid gap-s-1">
-                  {demoBattle.scores[team.id][key]}
+                  {scores[team.id]?.[key] ?? 0}
                   <i
                     className={`block h-1 rounded-full ${teamColorMap[team.color].replace("text-", "bg-")}`}
-                    style={{ width: `${demoBattle.scores[team.id][key]}%` }}
+                    style={{ width: `${scores[team.id]?.[key] ?? 0}%` }}
                   />
                 </span>
               ))
@@ -372,7 +381,7 @@ export function Scoreboard({ compact = false }: { compact?: boolean }) {
   );
 }
 
-export function EventLog({ events = demoBattle.events }: { events?: BattleEvent[] }) {
+export function EventLog({ events }: { events: BattleEvent[] }) {
   return (
     <div className="overflow-hidden rounded-r-md border border-border bg-bg-elev">
       {events.map((event) => (
@@ -402,29 +411,37 @@ export function EventLog({ events = demoBattle.events }: { events?: BattleEvent[
 export function ChampionHero() {
   if (!winner) return null;
   return (
-    <section className="grid grid-cols-[240px_1fr_1fr] items-center gap-s-12 rounded-r-md border border-champion bg-bg-elev p-s-12 shadow-shadow-2">
-      <div className="grid place-items-center text-champion">
-        <Trophy size={92} />
+    <section
+      className="champion-hero"
+      aria-label="Champion"
+    >
+      <div className="champion-hero-trophy">
+        <Trophy size={92} aria-hidden="true" />
+        <span className="champion-hero-shine" aria-hidden="true" />
       </div>
-      <div>
-        <p className="flex items-center gap-s-2 font-bold text-team-viral">
-          <Trophy size={18} /> Champion Plan
+      <div className="champion-hero-identity">
+        <p className="champion-hero-eyebrow">
+          <Trophy size={18} aria-hidden="true" /> Champion Plan
         </p>
-        <h1 className="m-0 text-t-2xl font-bold text-fg">{winner.name}</h1>
-        <p className="mt-s-2 flex flex-wrap items-center gap-s-3 text-fg-muted">
-          <strong className="text-2xl text-fg">{formatScore(winner.score)}</strong>
-          <span>/100</span>
-          {" "}
+        <h1 className="champion-hero-name">{winner.name}</h1>
+        <p className="champion-hero-score-row">
+          <strong className="champion-hero-score">{formatScore(winner.score)}</strong>
+          <span className="champion-hero-score-max">/100</span>
           <StatusPill label="Winner" tone="purple" />
         </p>
+        <p className="champion-hero-tags">
+          <span className="soft-pill purple">Most Novel</span>
+          <span className="soft-pill purple">Best Demo Experience</span>
+          <span className="soft-pill purple">Strong Long-term Potential</span>
+        </p>
       </div>
-      <div className="border-l border-border pl-s-12">
+      <div className="champion-hero-reason">
         <h2 className="m-0 font-bold text-fg">Why it won</h2>
         <p className="mt-s-2 text-fg-muted">
           Viral Designer delivered the most compelling, differentiated, and technically credible plan with a strong
           demo story and a clear long-term reputation path.
         </p>
-        <div className="mt-s-4 flex items-center gap-s-3">
+        <div className="mt-s-4 flex flex-wrap items-center gap-s-3">
           <Link
             href="/battle/demo/replay"
             className="inline-flex items-center gap-s-2 rounded-r-md bg-team-safe px-s-6 py-s-2 font-bold text-white"

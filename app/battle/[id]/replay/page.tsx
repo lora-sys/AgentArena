@@ -1,5 +1,5 @@
-import { Suspense } from "react";
-import { BattleReplayClient } from "@/components/battle-replay-client";
+import { redirect } from "next/navigation";
+import type { Route } from "next";
 
 type BattleReplayPageProps = {
   params: Promise<{ id: string }>;
@@ -7,9 +7,5 @@ type BattleReplayPageProps = {
 
 export default async function BattleReplayPage({ params }: BattleReplayPageProps) {
   const { id } = await params;
-  return (
-    <Suspense fallback={null}>
-      <BattleReplayClient battleId={id} />
-    </Suspense>
-  );
+  redirect(`/battle/${encodeURIComponent(id)}?view=replay` as Route);
 }
