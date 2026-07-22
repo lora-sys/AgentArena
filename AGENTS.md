@@ -10,13 +10,13 @@ Product source of truth: [`Agent_Arena_PRD_v0.4_Reputation_Arena_Product_Manual.
 
 ## Current Status
 
-v0.4 (Mastra OSS, Postgres-backed). Sprint 0 and Sprint 1 complete. MVP is demoable end-to-end with deterministic engine. Real Mastra + Postgres end-to-end pending Sprint 2.
+v0.4 visual rewrite (Vite + React + Hono, Postgres-capable). The focused four-route experience is demoable end-to-end with a deterministic fallback. Real Mastra + Postgres battle creation remains future integration work.
 
 **What's new (v0.4 direction):**
 - Replaced Eve framework with **Mastra OSS** (core only) as the AI runtime
 - Backend is Postgres-backed (Drizzle ORM, 12 tables per PRD §19)
 - 5 agents wired through the `ArenaAgentRuntime` contract with Zod validation and a 3-retry repair loop
-- 6 pages, 12 Playwright e2e specs, 167 unit tests passing
+- 4 supported routes with focused Playwright journeys; use the test command for the current count
 
 ## Read Order (v0.4)
 
@@ -31,16 +31,16 @@ v0.4 (Mastra OSS, Postgres-backed). Sprint 0 and Sprint 1 complete. MVP is demoa
 
 ## Role Orchestration
 
-The project uses a **2+2 parallel mode**: Backend and UI/UX run in parallel during Sprint 0-1; Frontend and QA run in parallel during Sprint 2-5.
+Work is split by stable ownership boundaries; parallel work must keep file scopes disjoint.
 
 Four roles:
 
 | Role | Owns | Evidence received from |
 |---|---|---|
-| **Backend (雅座)** | `packages/battle-engine`, `packages/agent-runtime`, `packages/schemas`, `packages/event-store`, `agents/*/spec.yaml`, `apps/web/app/api/*` | PRD, UI/UX contracts |
-| **UI/UX Designer** | `packages/ui-kit`, `docs/design.md`, visual baselines | PRD §16, Backend payload shapes |
-| **Frontend (老师)** | `apps/web/app/**`, `apps/web/components/**`, SSE wiring | UI/UX tokens, Backend API/SSE contracts |
-| **QA** | `docs/test-guidelines.md`, `apps/web/tests/e2e/**`, coverage reports | Backend fixtures, Frontend previews, UI/UX baselines |
+| **Backend (雅座)** | `arena`, `lib/db`, `lib/runtime`, `agents`, `apps/api` | PRD, shared contracts |
+| **UI/UX Designer** | `docs/design.md`, `prototype`, visual baselines | PRD §16, API payload shapes |
+| **Frontend (老师)** | `apps/web/src/**`, replay presentation | UI/UX tokens, API event contracts |
+| **QA** | `docs/test-guidelines.md`, `tests/e2e/**`, coverage reports | Backend fixtures, Frontend previews, UI/UX baselines |
 
 Full details (daily flow, acceptance bar, custom skill prompts, inter-role contracts) are in [`docs/agents.md`](docs/agents.md).
 
@@ -53,6 +53,7 @@ The following docs pre-date the v0.4 Mastra direction and are kept for archaeolo
 - `docs/archive/eve-v0.3/ui-react-bits.md` -- v0.3 UI guide
 
 See [`docs/archive/eve-v0.3/README.md`](docs/archive/eve-v0.3/README.md) for the full archive index and what replaced each doc.
+The removed Next.js presentation layer is archived under `docs/archive/next-v0.4/`; do not use those documents as current instructions.
 
 ## Core invariants (must not violate)
 
@@ -69,34 +70,34 @@ Any PR violating these is rejected.
 
 ## How to work in this repo
 
-1. Pull a ticket from the sprint board. Read the linked PRD section.
-2. Read `docs/CLAUDE.md` §11 "Where to look first" to find the file you need to touch.
+1. Read the linked PRD section and `docs/project-status.md`.
+2. Use the location table in `docs/CLAUDE.md` to find the current module.
 3. If you touch a public API, write the contract first in `docs/adr/NNNN-<topic>.md` and request review.
 4. Write failing tests first (TDD). Coverage bar: ≥80% lines / ≥70% branches for engine, runtime, schemas, store.
 5. Run `pnpm typecheck && pnpm lint && pnpm test` before committing.
-6. Append a learning note to your role file in `docs/learnings/` (backend/frontend/ui/qa).
-7. Hand off via PR description with evidence block (per `docs/agents.md` §3).
+6. Add a dated learning note only when the work produces a reusable engineering lesson.
+7. Hand off with changed modules, contract impact, fallback behavior, and verification evidence.
 
 ## Quick reference
 
 | What | Where |
 |---|---|
-| Battle round logic | `packages/battle-engine/src/rounds/` |
-| Agent output schemas | `packages/schemas/src/` |
-| Database schema | `packages/event-store/src/schema.ts` |
-| Pages and SSE | `apps/web/app/` |
+| Battle round logic | `arena/engine/` |
+| Agent output schemas | `arena/schemas/` |
+| Database schema | `lib/db/schema.ts` |
+| Pages and replay UI | `apps/web/src/` |
 | Agent spec/prompt | `agents/<team>/spec.yaml` + `agents/<team>/prompt.md` |
-| Design tokens | `packages/ui-kit/src/tokens.css` |
+| Design tokens | `apps/web/src/styles.css` |
 | Example battle data | `examples/fixtures/` |
 | Why a decision was made | `docs/adr/NNNN-*.md` |
-| Sprint plan | `docs/agents.md` §4 |
-| Cross-role handoff | `docs/agents.md` §3 |
+| Current status | `docs/project-status.md` |
+| Cross-role handoff | `docs/agents.md` |
 
 ## Development Commands
 
 ```bash
 pnpm install          # install dependencies
-pnpm dev              # Next.js dev server on :3000
+pnpm dev              # Vite :5188 + Hono :8787
 pnpm test             # vitest run (all unit tests)
 pnpm test:coverage    # vitest run --coverage
 pnpm e2e              # Playwright end-to-end journeys

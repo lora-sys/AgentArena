@@ -58,8 +58,8 @@ Core invariants remain unchanged: every score cites evidence, replay and Passpor
 
 ## Source documents
 
-- [Visual upgrade engineering specification](Agent_Arena_视觉升级_工程实施说明书.md)
-- [Interactive reference prototype](agent_arena_prototype.html)
+- [Visual upgrade engineering specification](prototype/Agent_Arena_视觉升级_工程实施说明书.md)
+- [Interactive reference prototype](prototype/agent_arena_prototype.html)
 - [PRD v0.4](Agent_Arena_PRD_v0.4_Reputation_Arena_Product_Manual.md)
 - [Project fact sheet](docs/CLAUDE.md)
 - [Visual language](docs/design.md)

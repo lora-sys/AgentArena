@@ -88,12 +88,12 @@ Per `docs/CLAUDE.md` §9 and `docs/test-guidelines.md`:
 | Package | Coverage floor |
 |---|---|
 | `battle-engine`, `agent-runtime`, `schemas`, `event-store` | ≥80% lines, ≥70% branches |
-| `ui-kit` | ≥60% lines (visual via Storybook) |
+| `apps/web` | public data/reducer contracts plus browser journeys |
 
 - Tests colocated with source as `*.test.ts` / `*.test.tsx`
 - Integration tests under `<pkg>/tests/`
-- E2E lives in `apps/web/tests/e2e/` (Playwright)
-- Visual regression baselines in `docs/qa/visual-baselines/`
+- E2E lives in `tests/e2e/` (Playwright)
+- Reviewed visual references live in `docs/visual-reference/current/`
 - Every example battle fixture lives in `examples/fixtures/`
 
 Run before pushing:

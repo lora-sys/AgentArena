@@ -3,7 +3,7 @@ import { defineConfig, devices } from "@playwright/test";
 /**
  * Playwright E2E configuration for Agent Arena.
  *
- * Browser matrix: Chromium + WebKit (mobile profile).
+ * Browser matrix: Chromium desktop + mobile profile.
  * Viewport matrix: 1440x900 (desktop) + 390x844 (mobile).
  * Firefox deferred to P1 per docs/test-guidelines.md §3.4.
  *
@@ -13,7 +13,7 @@ import { defineConfig, devices } from "@playwright/test";
  * the spec file itself.
  */
 
-const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
+const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:5188";
 // Override to use system Chromium when bundled browser is unavailable.
 // CI: leave undefined so pnpm e2e:install downloads the right version.
 // Local dev: set PLAYWRIGHT_CHROMIUM_PATH=/usr/bin/chromium
@@ -66,25 +66,6 @@ export default defineConfig({
         hasTouch: true,
         deviceScaleFactor: 3,
         launchOptions: CHROMIUM_PATH ? { executablePath: CHROMIUM_PATH } : undefined,
-      },
-    },
-    // WebKit desktop (Safari parity)
-    {
-      name: "webkit-desktop",
-      use: {
-        ...devices["Desktop Safari"],
-        viewport: { width: 1440, height: 900 },
-      },
-    },
-    // WebKit mobile
-    {
-      name: "webkit-mobile",
-      use: {
-        ...devices["Desktop Safari"],
-        viewport: { width: 390, height: 844 },
-        isMobile: true,
-        hasTouch: true,
-        deviceScaleFactor: 3,
       },
     },
   ],

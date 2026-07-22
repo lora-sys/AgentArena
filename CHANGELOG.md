@@ -6,6 +6,15 @@ All notable changes to Agent Arena are documented here. The format follows [Keep
 
 ## [Unreleased]
 
+### Vite/Hono visual rewrite — 2026-07-22
+
+- Replaced the duplicated Next.js presentation layer with a focused Vite + React frontend and Hono API adapter.
+- Consolidated the product into four routes: landing, battle workspace, archive/dashboard, and Agent Passport.
+- Added event-array replay with parallel same-round actors, HP damage, typewriter copy, round transitions, commentary, evidence inspection, result, replay, and mobile layouts.
+- Preserved the Battle Engine, schemas, event store, database, fixtures, and Mastra-compatible runtime boundaries.
+- Added deterministic fallback behavior, three-run Example Battle validation, current-route E2E coverage, and refreshed project memory.
+- Stopped tracking generated frontend builds and archived the removed Next.js implementation guidance.
+
 ---
 
 ## Sprint 1 — Real Battle + Hardening (2026-07-10)

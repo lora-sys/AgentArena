@@ -2,6 +2,8 @@
 .next/
 out/
 build/
+apps/web/dist/
+*.tsbuildinfo
 
 # Dependencies
 node_modules/
@@ -17,15 +19,14 @@ coverage/
 playwright-report/
 test-results/
 
+# OS/editor artifacts
+.DS_Store
+
 # Agent runtime state (not coordination docs)
 docs/sessions/agents/*/status.md
 docs/qa/daily/
 artifacts/e2e/
 .codegraph
 .playwright-cli
---viewport
-artifacts/e2e
 .playwright-mcp
 .hallmark
-tests
-.DS_Store

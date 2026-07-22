@@ -46,7 +46,8 @@ if [[ -f package.json ]]; then
   check_dir agents
   check_file apps/web/src/App.tsx
   check_file apps/api/src/app.ts
-  check_file packages/contracts/src/index.ts
+check_file packages/contracts/src/index.ts
+  check_file tests/e2e/core-journeys.spec.ts
   check_file arena/index.ts
   if node -e "const p=require('./package.json'); process.exit(p.scripts && p.scripts.dev ? 0 : 1)" >/dev/null 2>&1; then
     echo "ok npm script: dev"
