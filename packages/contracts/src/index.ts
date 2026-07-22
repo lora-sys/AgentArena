@@ -2,12 +2,15 @@ export type Severity = "low" | "medium" | "high";
 
 export type BattleEventType =
   | "brief_created"
+  | "team_created"
   | "proposal_created"
   | "attack_created"
   | "defense_created"
   | "score_created"
   | "champion_selected"
   | "passport_created"
+  | "artifact_created"
+  | "replay_created"
   | "commentary_created";
 
 export type BattleEvent = {
@@ -20,6 +23,7 @@ export type BattleEvent = {
   title: string;
   content: string;
   rawPayload?: unknown;
+  sequence?: number;
   createdAt: string;
 };
 
@@ -73,7 +77,8 @@ export function buildPlaybackBatches(events: readonly BattleEvent[]): PlaybackBa
   const batches: PlaybackBatch[] = [];
   for (const event of events) {
     const current = batches[batches.length - 1];
-    if (!current || current.round !== event.round) {
+    const startsRevealPhase = event.eventType === "champion_selected";
+    if (!current || current.round !== event.round || startsRevealPhase) {
       batches.push({ round: event.round, events: [event] });
       continue;
     }

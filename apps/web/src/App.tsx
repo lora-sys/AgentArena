@@ -1,5 +1,6 @@
 import { Link, NavLink, Navigate, Route, Routes, useParams } from "react-router-dom";
 import { ArenaStage } from "./components/ArenaStage";
+import { BattleWorkspace } from "./components/BattleWorkspace";
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
@@ -40,7 +41,7 @@ function HomePage() {
 
 function BattlePage() {
   const { battleId = "demo" } = useParams();
-  return <main className="battle-page"><ArenaStage battleId={battleId} /></main>;
+  return <main className="battle-page"><BattleWorkspace battleId={battleId} /></main>;
 }
 
 function BattlesPage() {

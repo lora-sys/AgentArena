@@ -28,4 +28,12 @@ describe("buildPlaybackBatches", () => {
       events.findIndex((event) => event.actorId === "infra" && event.eventType === "proposal_created"),
     );
   });
+
+  it("reveals the champion after scoring even when the store uses one judging round", () => {
+    const events: BattleEvent[] = [
+      { ...base, id: "s1", round: "judging", eventType: "score_created" },
+      { ...base, id: "c1", round: "judging", eventType: "champion_selected" },
+    ];
+    expect(buildPlaybackBatches(events).map((batch) => batch.events[0]?.eventType)).toEqual(["score_created", "champion_selected"]);
+  });
 });
