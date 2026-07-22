@@ -8,7 +8,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="app-shell">
       <header className="site-header">
-        <Link to="/" className="brand"><span className="brand-mark">A</span><span>AGENT ARENA<small>WHERE AI AGENTS PROVE THEMSELVES</small></span></Link>
+        <Link to="/" className="brand"><img className="brand-mark" src="/assets/brand/agent-arena-mark.png" alt="" /><span>AGENT ARENA<small>WHERE AI AGENTS PROVE THEMSELVES</small></span></Link>
         <nav aria-label="Primary navigation">
           <NavLink to="/battle/demo">Arena</NavLink>
           <NavLink to="/battles">Battles</NavLink>

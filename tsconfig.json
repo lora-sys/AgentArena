@@ -12,24 +12,12 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "react-jsx",
     "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"]
     }
   },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
-  ],
-  "exclude": ["node_modules"]
+  "include": ["arena/**/*.ts", "lib/**/*.ts", "examples/**/*.ts", "agents/**/*.ts", "drizzle.config.ts", "vitest.config.ts"],
+  "exclude": ["node_modules", "apps", "packages", "dist", "coverage"]
 }

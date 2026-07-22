@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import type { ZodSchema } from "zod";
 import PQueue from "p-queue";
 
@@ -6,7 +5,7 @@ import PQueue from "p-queue";
  * API guards — rate limiting, input validation, and path-param format checks.
  *
  * Addresses reviewer-3 HIGH findings #2 (no rate limiting) and #3 (SSE accepts
- * arbitrary `id` without format validation). All guards return NextResponse
+ * arbitrary `id` without format validation). All guards return standard Response
  * directly so route handlers can early-return without wrapping.
  */
 
@@ -188,7 +187,7 @@ export function withRateLimit<Args extends unknown[]>(
       const tokensNeeded = 1 - tokens;
       const msUntilRefill = Math.ceil((tokensNeeded * windowMs) / max);
       const retryAfter = Math.max(1, Math.ceil(msUntilRefill / 1000));
-      return NextResponse.json(
+      return Response.json(
         { error: "Rate limit exceeded", retryAfter },
         {
           status: 429,
@@ -262,7 +261,7 @@ export function withInputValidation<T, Args extends unknown[]>(
     try {
       raw = await request.json();
     } catch {
-      return NextResponse.json({ error: "Request body must be valid JSON" }, { status: 400 });
+      return Response.json({ error: "Request body must be valid JSON" }, { status: 400 });
     }
 
     const result = schema.safeParse(raw);
@@ -270,7 +269,7 @@ export function withInputValidation<T, Args extends unknown[]>(
       const issues = result.error.issues.map(
         (issue) => `${issue.path.join(".")}: ${issue.message}`,
       );
-      return NextResponse.json(
+      return Response.json(
         { error: "Input validation failed", issues },
         { status: 400 },
       );
@@ -395,6 +394,6 @@ export function __resetAbortControllers(): void {
 /* ------------------------------------------------------------------ */
 
 /** Returns a 400 JSON response with a structured error. */
-export function badRequest(message: string, issues?: string[]): NextResponse {
-  return NextResponse.json({ error: message, issues }, { status: 400 });
+export function badRequest(message: string, issues?: string[]): Response {
+  return Response.json({ error: message, issues }, { status: 400 });
 }

@@ -8,8 +8,7 @@ echo "Agent Arena startup"
 echo "root: $ROOT_DIR"
 
 if [[ ! -f package.json ]]; then
-  echo "No package.json found. This repo is currently docs-first."
-  echo "Next implementation step: scaffold a Next.js + TypeScript app, then rerun ./scripts/start.sh."
+  echo "No package.json found. Run this script from the Agent Arena repository root."
   exit 0
 fi
 
@@ -40,6 +39,6 @@ if node -e "const p=require('./package.json'); process.exit(p.scripts && p.scrip
   "$PM" run dev
 else
   echo "package.json exists, but no dev script was found."
-  echo "Add a dev script, for example: next dev"
+  echo "Add the Vite and Hono workspace dev scripts."
   exit 1
 fi
