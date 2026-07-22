@@ -21,3 +21,11 @@ test-results/
 docs/sessions/agents/*/status.md
 docs/qa/daily/
 artifacts/e2e/
+.codegraph
+.playwright-cli
+--viewport
+artifacts/e2e
+.playwright-mcp
+.hallmark
+tests
+.DS_Store

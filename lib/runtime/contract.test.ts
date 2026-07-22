@@ -171,4 +171,9 @@ describe("ArenaAgentRuntime contract", () => {
     expect(minimal.teamId).toBeUndefined();
     expect(minimal.model).toBeUndefined();
   });
+
+  it("supports the optional commentator role without changing existing specs", () => {
+    const commentator: AgentSpec = { agentId: "arena_commentator_v1", role: "commentator" };
+    expect(commentator.role).toBe("commentator");
+  });
 });

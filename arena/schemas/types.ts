@@ -69,6 +69,7 @@ export const battleEventTypes = [
   "artifact_created",
   "replay_created",
   "passport_created",
+  "commentary_created",
   "error",
 ] as const;
 
@@ -90,6 +91,7 @@ export type BattleSettings = {
   timeLimit: TimeLimit;
   preference: Preference;
   outputTargets: OutputTarget[];
+  mode?: string;
 };
 
 export const defaultBattleSettings: BattleSettings = {
@@ -97,6 +99,7 @@ export const defaultBattleSettings: BattleSettings = {
   timeLimit: "48h",
   preference: "balanced",
   outputTargets: ["product_brief", "prd", "architecture", "demo_script", "pitch_outline", "todo"],
+  mode: "full",
 };
 
 export type BattleBrief = {
@@ -239,6 +242,16 @@ export type BattleEvent = {
   rawPayload?: unknown;
   createdAt: string;
 };
+
+export type CommentaryLine = {
+  round: string;
+  text: string;
+};
+
+export const CommentaryLineSchema = z.object({
+  round: z.string().min(1),
+  text: z.string().min(1),
+});
 
 export type BattleReplaySegment = {
   id: string;

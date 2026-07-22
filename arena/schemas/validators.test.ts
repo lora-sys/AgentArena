@@ -561,6 +561,10 @@ describe("assertBattleEvent", () => {
     expect(() => assertBattleEvent({ ...validEvent, actorId: "agent_1", targetId: "agent_2" })).not.toThrow();
   });
 
+  it("accepts commentary_created events", () => {
+    expect(() => assertBattleEvent({ ...validEvent, eventType: "commentary_created" })).not.toThrow();
+  });
+
   it("rejects non-string actorId", () => {
     expect(() => assertBattleEvent({ ...validEvent, actorId: 42 })).toThrow(SchemaValidationError);
   });

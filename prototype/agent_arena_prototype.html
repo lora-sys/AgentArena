@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Agent Arena — Battle Prototype</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700;800&display=swap');
+
+  :root{
+    --bg:#0A0D14;
+    --panel:#12161F;
+    --panel-2:#171C27;
+    --hair:#242A3A;
+    --hair-soft:#1B2130;
+    --text:#E9ECF3;
+    --text-dim:#8891A6;
+    --text-faint:#5B6478;
+
+    --sb:#49D6C8;     /* Safe Builder - teal */
+    --sb-dim:#1E3A38;
+    --vd:#F5567E;     /* Viral Designer - magenta */
+    --vd-dim:#3A1E28;
+    --ih:#F2B84B;     /* Infra Hacker - amber */
+    --ih-dim:#3A301A;
+
+    --danger:#FF4D4D;
+    --gold:#E9C468;
+    --live:#FF4D4D;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse 1200px 500px at 50% -10%, #16203033, transparent),
+      var(--bg);
+    color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;
+    min-height:100vh;
+    padding:28px 20px 60px;
+  }
+
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  .display{font-family:'Archivo Black','Inter',sans-serif;}
+
+  /* ---------- shell ---------- */
+  .shell{max-width:1180px;margin:0 auto;}
+
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding-bottom:18px;margin-bottom:20px;
+    border-bottom:1px solid var(--hair);
+  }
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand-mark{
+    width:26px;height:26px;border-radius:6px;
+    background:linear-gradient(135deg,var(--sb),var(--vd) 50%, var(--ih));
+    flex-shrink:0;
+  }
+  .brand-text{display:flex;flex-direction:column;line-height:1.15;}
+  .brand-text .name{font-weight:800;font-size:15px;letter-spacing:0.3px;}
+  .brand-text .sub{font-size:11px;color:var(--text-faint);font-family:'IBM Plex Mono',monospace;letter-spacing:0.4px;}
+
+  .protocol-tag{
+    display:flex;align-items:center;gap:7px;
+    font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-dim);
+    border:1px solid var(--hair);padding:6px 10px;border-radius:20px;
+  }
+  .protocol-tag .dot{width:6px;height:6px;border-radius:50%;background:#3ED598;box-shadow:0 0 6px #3ED59899;}
+
+  /* ---------- brief bar ---------- */
+  .brief{
+    background:var(--panel);border:1px solid var(--hair);border-radius:10px;
+    padding:14px 18px;margin-bottom:18px;
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  }
+  .brief .label{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--text-faint);letter-spacing:0.6px;text-transform:uppercase;}
+  .brief .idea{font-size:14px;color:var(--text);font-weight:500;flex:1;min-width:220px;}
+  .brief .meta{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-dim);}
+
+  /* ---------- round banner ---------- */
+  .round-banner-wrap{height:52px;position:relative;margin-bottom:14px;overflow:hidden;}
+  .round-banner{
+    position:absolute;inset:0;
+    display:flex;align-items:center;justify-content:center;gap:12px;
+    opacity:0;transform:translateY(8px);
+    transition:opacity .35s ease, transform .35s ease;
+  }
+  .round-banner.show{opacity:1;transform:translateY(0);}
+  .round-banner .idx{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-faint);
+    border:1px solid var(--hair);padding:3px 8px;border-radius:4px;
+  }
+  .round-banner .title{
+    font-family:'Archivo Black',sans-serif;font-size:20px;letter-spacing:0.5px;
+  }
+  .round-banner .rule{flex:1;max-width:120px;height:1px;background:linear-gradient(90deg, var(--hair), transparent);}
+
+  /* ---------- arena grid ---------- */
+  .arena{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px;
+  }
+  .card{
+    background:var(--panel);border:1px solid var(--hair);border-radius:12px;
+    padding:16px;position:relative;overflow:hidden;
+    transition:box-shadow .25s ease, border-color .25s ease, transform .25s ease;
+  }
+  .card.flash{animation:flashHit .5s ease;}
+  @keyframes flashHit{
+    0%{box-shadow:0 0 0 0 rgba(255,77,77,0);}
+    15%{box-shadow:0 0 0 3px rgba(255,77,77,.55), inset 0 0 40px rgba(255,77,77,.18);}
+    100%{box-shadow:0 0 0 0 rgba(255,77,77,0);}
+  }
+  .card.shake{animation:shakeCard .45s ease;}
+  @keyframes shakeCard{
+    10%{transform:translateX(-4px);} 30%{transform:translateX(4px);}
+    50%{transform:translateX(-3px);} 70%{transform:translateX(3px);} 100%{transform:translateX(0);}
+  }
+  .card.eliminated{opacity:.55;filter:grayscale(.6);}
+  .card.champion{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold), 0 0 24px rgba(233,196,104,.18);}
+
+  .card-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  .badge{
+    width:34px;height:34px;border-radius:8px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Archivo Black',sans-serif;font-size:12px;color:#0A0D14;
+  }
+  .card-head .who{flex:1;min-width:0;}
+  .card-head .who .team-name{font-weight:700;font-size:14px;}
+  .card-head .who .role{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text-faint);}
+  .crown{font-size:15px;display:none;}
+  .card.champion .crown{display:block;}
+
+  .hp-row{margin-bottom:12px;}
+  .hp-labels{display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text-dim);margin-bottom:4px;}
+  .hp-track{
+    height:9px;border-radius:5px;background:#1A2030;border:1px solid var(--hair);overflow:hidden;position:relative;
+  }
+  .hp-fill{
+    height:100%;border-radius:5px;
+    transition:width .7s cubic-bezier(.2,.9,.3,1);
+    position:relative;
+  }
+  .dmg-float{
+    position:absolute;right:6px;top:-2px;
+    font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:12px;color:var(--danger);
+    opacity:0;pointer-events:none;
+  }
+  .dmg-float.play{animation:floatUp 1.1s ease forwards;}
+  @keyframes floatUp{
+    0%{opacity:0;transform:translateY(4px);}
+    15%{opacity:1;}
+    100%{opacity:0;transform:translateY(-22px);}
+  }
+
+  .stream-box{
+    min-height:78px;font-size:12.5px;line-height:1.55;color:var(--text-dim);
+    border-top:1px dashed var(--hair-soft);padding-top:10px;
+  }
+  .stream-box .cursor{display:inline-block;width:6px;height:12px;background:var(--text-dim);margin-left:2px;vertical-align:-1px;animation:blink 1s step-start infinite;}
+  @keyframes blink{50%{opacity:0;}}
+  .stream-tag{
+    display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.5px;
+    padding:2px 6px;border-radius:4px;margin-bottom:6px;text-transform:uppercase;
+  }
+
+  /* ---------- ticker ---------- */
+  .ticker-wrap{
+    background:#0D1119;border:1px solid var(--hair);border-radius:10px;
+    display:flex;align-items:stretch;overflow:hidden;margin-bottom:16px;height:38px;
+  }
+  .live-tag{
+    display:flex;align-items:center;gap:6px;background:var(--live);color:#fff;
+    font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:10.5px;
+    padding:0 12px;flex-shrink:0;letter-spacing:.5px;
+  }
+  .live-tag .pulse{width:6px;height:6px;border-radius:50%;background:#fff;animation:pulse 1.1s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.25;}}
+  .ticker-viewport{flex:1;position:relative;overflow:hidden;display:flex;align-items:center;}
+  .ticker-text{
+    position:absolute;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text);
+    padding-left:14px;
+    animation:scrollLeft 12s linear infinite;
+  }
+  @keyframes scrollLeft{
+    0%{transform:translateX(0);}
+    100%{transform:translateX(-100%);}
+  }
+
+  /* ---------- lower zone: scoreboard + evidence ---------- */
+  .lower{display:grid;grid-template-columns:1.3fr 1fr;gap:14px;}
+  @media (max-width:880px){ .lower{grid-template-columns:1fr;} .arena{grid-template-columns:1fr;} }
+
+  .panel{background:var(--panel);border:1px solid var(--hair);border-radius:12px;padding:16px;}
+  .panel h3{
+    margin:0 0 12px;font-size:12px;font-family:'IBM Plex Mono',monospace;
+    color:var(--text-faint);letter-spacing:.6px;text-transform:uppercase;
+    display:flex;align-items:center;justify-content:space-between;
+  }
+
+  .score-row{margin-bottom:10px;}
+  .score-row .row-top{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;}
+  .score-row .row-top .tname{font-weight:600;}
+  .score-row .row-top .tscore{font-family:'IBM Plex Mono',monospace;color:var(--text-dim);}
+  .score-track{height:6px;background:#1A2030;border-radius:4px;overflow:hidden;}
+  .score-fill{height:100%;border-radius:4px;width:0%;transition:width .9s cubic-bezier(.2,.9,.3,1);}
+
+  .verdict{
+    margin-top:14px;padding-top:12px;border-top:1px solid var(--hair-soft);
+    font-size:12.5px;color:var(--text-dim);line-height:1.6;
+  }
+  .verdict b{color:var(--gold);}
+
+  .log{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.9;
+    max-height:230px;overflow-y:auto;color:var(--text-dim);
+  }
+  .log::-webkit-scrollbar{width:5px;}
+  .log::-webkit-scrollbar-thumb{background:var(--hair);border-radius:3px;}
+  .log-line{display:flex;gap:8px;opacity:0;animation:fadeIn .3s ease forwards;}
+  @keyframes fadeIn{to{opacity:1;}}
+  .log-line .seq{color:var(--text-faint);flex-shrink:0;width:26px;}
+  .log-line .etype{flex-shrink:0;width:150px;}
+  .log-line .epay{color:var(--text-faint);}
+
+  /* ---------- controls ---------- */
+  .controls{
+    display:flex;align-items:center;gap:10px;margin-top:22px;padding-top:18px;
+    border-top:1px solid var(--hair);
+  }
+  button{
+    font-family:'Inter',sans-serif;font-weight:700;font-size:13px;
+    background:var(--text);color:#0A0D14;border:none;border-radius:8px;
+    padding:10px 18px;cursor:pointer;
+  }
+  button.ghost{
+    background:transparent;color:var(--text-dim);border:1px solid var(--hair);font-weight:600;
+  }
+  button:disabled{opacity:.4;cursor:not-allowed;}
+  .hint{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-faint);}
+
+  /* passport row */
+  .passport-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px;}
+  .pcard{
+    background:var(--panel-2);border:1px solid var(--hair);border-radius:10px;padding:12px;
+    opacity:0;transform:translateY(6px);transition:opacity .4s ease, transform .4s ease;
+  }
+  .pcard.show{opacity:1;transform:translateY(0);}
+  .pcard .ptop{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+  .pcard .prank{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text-faint);}
+  .pcard .plabel{font-size:9.5px;font-family:'IBM Plex Mono',monospace;color:var(--text-faint);text-transform:uppercase;letter-spacing:.4px;margin-top:8px;}
+  .pcard .ptags{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px;}
+  .pcard .tag{font-size:10.5px;padding:3px 7px;border-radius:5px;background:var(--hair-soft);color:var(--text-dim);}
+  .pcard .tag.weak{color:#F0A0A0;}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <div class="brand-text">
+        <span class="name">Agent Arena</span>
+        <span class="sub">HACKATHON_IDEA_BATTLE_V1</span>
+      </div>
+    </div>
+    <div class="protocol-tag"><span class="dot"></span>EVIDENCE-BASED EVALUATION PROTOCOL</div>
+  </div>
+
+  <div class="brief">
+    <span class="label">Battle Brief</span>
+    <span class="idea" id="ideaText">帮大学生自动规划考试复习时间表的 AI Agent</span>
+    <span class="meta" id="briefMeta">48H BUILD WINDOW · 3 TEAMS · SINGLE ELIMINATION SCORE</span>
+  </div>
+
+  <div class="round-banner-wrap">
+    <div class="round-banner" id="roundBanner">
+      <span class="idx" id="roundIdx">ROUND 0</span>
+      <span class="title display" id="roundTitle">STANDBY</span>
+      <span class="rule"></span>
+    </div>
+  </div>
+
+  <div class="arena" id="arena"></div>
+
+  <div class="ticker-wrap">
+    <div class="live-tag"><span class="pulse"></span>LIVE</div>
+    <div class="ticker-viewport"><div class="ticker-text" id="tickerText">Arena Commentator online. Waiting for battle to start...</div></div>
+  </div>
+
+  <div class="lower">
+    <div class="panel">
+      <h3>Scoreboard <span id="scoreState" class="mono" style="color:var(--text-faint);font-weight:400;">pending</span></h3>
+      <div id="scoreArea">
+        <div class="hint">Judge Panel 将在 Defense Round 结束后出分。</div>
+      </div>
+      <div class="verdict" id="verdictArea" style="display:none;"></div>
+      <div class="passport-row" id="passportRow"></div>
+    </div>
+
+    <div class="panel">
+      <h3>Evidence Log <span class="mono" style="color:var(--text-faint);font-weight:400;" id="eventCount">0 events</span></h3>
+      <div class="log" id="logArea"></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button id="playBtn">▶ Run Battle</button>
+    <button class="ghost" id="resetBtn">↺ Reset</button>
+    <span class="hint" id="statusHint">点击 Run Battle 播放完整战斗流程（约 45 秒）</span>
+  </div>
+
+</div>
+
+<script>
+const TEAMS = [
+  { id:'sb', name:'Safe Builder', role:'Contestant · Feasibility', color:'var(--sb)', colorHex:'#49D6C8', dim:'var(--sb-dim)', mono:'SB' },
+  { id:'vd', name:'Viral Designer', role:'Contestant · Demo Power', color:'var(--vd)', colorHex:'#F5567E', dim:'var(--vd-dim)', mono:'VD' },
+  { id:'ih', name:'Infra Hacker', role:'Contestant · Technical Depth', color:'var(--ih)', colorHex:'#F2B84B', dim:'var(--ih-dim)', mono:'IH' },
+];
+
+const DAMAGE = { low:5, medium:15, high:30, fatal:50 };
+
+// ---- scripted battle data (mirrors BattleEvent / Attack / Defense / JudgeScore shape) ----
+const PROPOSALS = {
+  sb: "上传课程表，Agent 自动切分复习时间块并发提醒。范围收紧到单一功能，48 小时内能跑通稳定 demo。",
+  vd: "把复习进度实时生成可分享的「战绩海报」，一键发社交媒体，靠传播裂变获取第一批用户。",
+  ih: "构建可插拔的任务完成证据协议：每次复习打卡写入 event log，形成可验证、可回放的学习信誉档案。",
+};
+
+const ATTACKS = [
+  { from:'ih', to:'vd', severity:'fatal', text:'海报生成强依赖设计模型效果，48 小时内视觉质量不可控，demo 现场有明显翻车风险。' },
+  { from:'sb', to:'ih', severity:'medium', text:'「可验证信誉协议」概念对评委不够直观，2 分钟内讲不清楚，pitch clarity 存在风险。' },
+  { from:'vd', to:'sb', severity:'low', text:'方案过于朴素，缺少强记忆点，容易在一排项目里被评委忘记。' },
+];
+
+const DEFENSES = {
+  vd: { accepted:[0], rejected:[], text:'确实——我们没有为设计模型效果不稳定准备降级方案，这是致命短板，接受。', tag:'ADMITS FAILURE' },
+  ih: { accepted:[], rejected:[1], text:'会用一张可视化的「时间旅行」证据回放图，10 秒内让评委看懂协议价值，不接受这条攻击。', tag:'HOLDS GROUND' },
+  sb: { accepted:[], rejected:[2], text:'稳定本身就是记忆点——我们是全场唯一一个能保证 demo 当场不崩的团队，不接受这条攻击。', tag:'HOLDS GROUND' },
+};
+
+const JUDGE = {
+  sb: 62, vd: 38, ih: 81,
+  reasons: {
+    ih: 'Infra Hacker 在被攻击后仍完整守住方案，且方案本身把「证据优于自述」的评估哲学做成了产品机制，技术深度与原创性双高。',
+  }
+};
+
+const COMMENTARY = {
+  proposal: '三支队伍同时落笔——Safe Builder 收窄范围求稳，Viral Designer 押注传播，Infra Hacker 直接把「证据协议」端上桌。',
+  attack: 'Infra Hacker 一记重拳直取 Viral Designer 的技术软肋，severity 标记为 fatal——这轮火药味十足。',
+  defense_gotcha: '突发：Viral Designer 当场承认自己的方案撑不住 48 小时窗口，血条应声腰斩。这就是「不信自我介绍，信它扛不扛得住」。',
+  defense_hold: 'Infra Hacker 和 Safe Builder 都守住了各自的阵地，攻击被记录为 rejected，血条几乎未动。',
+  judging: 'Judge Panel 出分：Infra Hacker 凭借扎实的技术深度和零妥协的防守拿下冠军。',
+};
+
+const state = {};
+TEAMS.forEach(t => state[t.id] = { hp:100, eliminated:false });
+
+let seq = 0;
+const arenaEl = document.getElementById('arena');
+const logArea = document.getElementById('logArea');
+const eventCountEl = document.getElementById('eventCount');
+const tickerText = document.getElementById('tickerText');
+const roundBanner = document.getElementById('roundBanner');
+const roundIdx = document.getElementById('roundIdx');
+const roundTitle = document.getElementById('roundTitle');
+const playBtn = document.getElementById('playBtn');
+const resetBtn = document.getElementById('resetBtn');
+const statusHint = document.getElementById('statusHint');
+
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+function renderArenaShell(){
+  arenaEl.innerHTML = TEAMS.map(t => `
+    <div class="card" id="card-${t.id}">
+      <div class="card-head">
+        <div class="badge" style="background:${t.colorHex}">${t.mono}</div>
+        <div class="who">
+          <div class="team-name">${t.name}</div>
+          <div class="role">${t.role}</div>
+        </div>
+        <div class="crown">👑</div>
+      </div>
+      <div class="hp-row">
+        <div class="hp-labels"><span>HP</span><span id="hp-num-${t.id}">100</span></div>
+        <div class="hp-track">
+          <div class="hp-fill" id="hp-fill-${t.id}" style="width:100%;background:${t.colorHex};"></div>
+          <div class="dmg-float" id="dmg-${t.id}"></div>
+        </div>
+      </div>
+      <div class="stream-box">
+        <span class="stream-tag" id="stream-tag-${t.id}" style="display:none;"></span>
+        <div id="stream-${t.id}"></div>
+      </div>
+    </div>
+  `).join('');
+}
+renderArenaShell();
+
+function logEvent(type, actor, payload){
+  seq++;
+  eventCountEl.textContent = seq + ' events';
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  const colorMap = {sb:'var(--sb)', vd:'var(--vd)', ih:'var(--ih)', system:'var(--text-faint)', judge:'var(--gold)'};
+  line.innerHTML = `<span class="seq">#${String(seq).padStart(2,'0')}</span><span class="etype" style="color:${colorMap[actor]||'var(--text-dim)'}">${type}</span><span class="epay">${payload}</span>`;
+  logArea.appendChild(line);
+  logArea.scrollTop = logArea.scrollHeight;
+}
+
+function setTicker(text){
+  tickerText.textContent = text;
+  tickerText.style.animation = 'none';
+  void tickerText.offsetWidth;
+  tickerText.style.animation = null;
+}
+
+async function showRound(idx, title){
+  roundBanner.classList.remove('show');
+  await sleep(150);
+  roundIdx.textContent = 'ROUND ' + idx;
+  roundTitle.textContent = title;
+  roundBanner.classList.add('show');
+  await sleep(250);
+}
+
+async function typewrite(elId, text, speed=16){
+  const el = document.getElementById(elId);
+  el.innerHTML = '';
+  const cursor = document.createElement('span');
+  cursor.className='cursor';
+  for(let i=0;i<text.length;i++){
+    el.textContent = text.slice(0,i+1);
+    el.appendChild(cursor);
+    await sleep(speed);
+  }
+  cursor.remove();
+}
+
+function applyDamage(teamId, severity){
+  const dmg = DAMAGE[severity] || 0;
+  const s = state[teamId];
+  s.hp = Math.max(0, s.hp - dmg);
+  const fill = document.getElementById('hp-fill-'+teamId);
+  const num = document.getElementById('hp-num-'+teamId);
+  const card = document.getElementById('card-'+teamId);
+  const dmgEl = document.getElementById('dmg-'+teamId);
+
+  fill.style.width = s.hp + '%';
+  if(s.hp <= 35) fill.style.background = 'var(--danger)';
+  num.textContent = s.hp;
+
+  dmgEl.textContent = '-' + dmg;
+  dmgEl.classList.remove('play'); void dmgEl.offsetWidth; dmgEl.classList.add('play');
+
+  card.classList.remove('flash','shake'); void card.offsetWidth;
+  if(severity==='fatal' || severity==='high'){ card.classList.add('flash','shake'); }
+  else { card.classList.add('flash'); }
+}
+
+function eliminate(teamId){
+  state[teamId].eliminated = true;
+  document.getElementById('card-'+teamId).classList.add('eliminated');
+}
+
+async function runBattle(){
+  playBtn.disabled = true;
+  statusHint.textContent = '战斗进行中...';
+
+  await showRound(1, 'PROPOSAL');
+  logEvent('brief_created','system','idea + 48h window + hackathon_idea_battle_v1');
+  setTicker('Arena Commentator: ' + COMMENTARY.proposal);
+  await sleep(300);
+
+  document.getElementById('stream-tag-sb').style.display='inline-block';
+  document.getElementById('stream-tag-sb').textContent='PROPOSAL';
+  document.getElementById('stream-tag-sb').style.background='var(--sb-dim)';
+  document.getElementById('stream-tag-sb').style.color='var(--sb)';
+  document.getElementById('stream-tag-vd').style.display='inline-block';
+  document.getElementById('stream-tag-vd').textContent='PROPOSAL';
+  document.getElementById('stream-tag-vd').style.background='var(--vd-dim)';
+  document.getElementById('stream-tag-vd').style.color='var(--vd)';
+  document.getElementById('stream-tag-ih').style.display='inline-block';
+  document.getElementById('stream-tag-ih').textContent='PROPOSAL';
+  document.getElementById('stream-tag-ih').style.background='var(--ih-dim)';
+  document.getElementById('stream-tag-ih').style.color='var(--ih)';
+
+  await Promise.all([
+    typewrite('stream-sb', PROPOSALS.sb, 14),
+    typewrite('stream-vd', PROPOSALS.vd, 14),
+    typewrite('stream-ih', PROPOSALS.ih, 14),
+  ]);
+  logEvent('proposal_created','sb','schema valid · feasibility-first');
+  logEvent('proposal_created','vd','schema valid · demo-power-first');
+  logEvent('proposal_created','ih','schema valid · protocol-first');
+
+  await sleep(400);
+  await showRound(2, 'CROSS ATTACK');
+  setTicker('Arena Commentator: ' + COMMENTARY.attack);
+
+  for(const atk of ATTACKS){
+    const team = TEAMS.find(t=>t.id===atk.from);
+    document.getElementById('stream-tag-'+atk.to).textContent = 'ATTACKED BY '+team.mono;
+    document.getElementById('stream-tag-'+atk.to).style.background = 'rgba(255,77,77,.15)';
+    document.getElementById('stream-tag-'+atk.to).style.color = 'var(--danger)';
+    await typewrite('stream-'+atk.to, atk.text, 10);
+    logEvent('attack_created', atk.from, `${atk.from.toUpperCase()} → ${atk.to.toUpperCase()} · severity: ${atk.severity}`);
+    await sleep(350);
+  }
+
+  await sleep(300);
+  await showRound(3, 'DEFENSE');
+
+  // VD defense (gotcha)
+  document.getElementById('stream-tag-vd').textContent = DEFENSES.vd.tag;
+  document.getElementById('stream-tag-vd').style.background = 'rgba(255,77,77,.2)';
+  document.getElementById('stream-tag-vd').style.color = 'var(--danger)';
+  await typewrite('stream-vd', DEFENSES.vd.text, 14);
+  logEvent('defense_created','vd','acceptedAttacks: [ih→vd fatal]');
+  await sleep(250);
+  setTicker('🔴 GOTCHA: ' + COMMENTARY.defense_gotcha);
+  applyDamage('vd', 'fatal');
+  logEvent('score_impact','vd','HP 100 → 50 (accepted fatal attack)');
+  await sleep(900);
+
+  // IH defense
+  document.getElementById('stream-tag-ih').textContent = DEFENSES.ih.tag;
+  document.getElementById('stream-tag-ih').style.background = 'var(--ih-dim)';
+  document.getElementById('stream-tag-ih').style.color = 'var(--ih)';
+  await typewrite('stream-ih', DEFENSES.ih.text, 14);
+  logEvent('defense_created','ih','rejectedAttacks: [sb→ih medium]');
+  applyDamage('ih','low');
+  await sleep(500);
+
+  // SB defense
+  document.getElementById('stream-tag-sb').textContent = DEFENSES.sb.tag;
+  document.getElementById('stream-tag-sb').style.background = 'var(--sb-dim)';
+  document.getElementById('stream-tag-sb').style.color = 'var(--sb)';
+  await typewrite('stream-sb', DEFENSES.sb.text, 14);
+  logEvent('defense_created','sb','rejectedAttacks: [vd→sb low]');
+  applyDamage('sb','low');
+  setTicker('Arena Commentator: ' + COMMENTARY.defense_hold);
+  await sleep(700);
+
+  await showRound(4, 'JUDGING');
+  setTicker('Arena Commentator: ' + COMMENTARY.judging);
+  document.getElementById('scoreState').textContent = 'scored';
+
+  const order = ['ih','sb','vd'];
+  const scoreArea = document.getElementById('scoreArea');
+  scoreArea.innerHTML = order.map(id=>{
+    const t = TEAMS.find(x=>x.id===id);
+    return `<div class="score-row">
+      <div class="row-top"><span class="tname" style="color:${t.colorHex}">${t.name}</span><span class="tscore" id="scorenum-${id}">0</span></div>
+      <div class="score-track"><div class="score-fill" id="scorefill-${id}" style="background:${t.colorHex}"></div></div>
+    </div>`;
+  }).join('');
+
+  await sleep(200);
+  for(const id of order){
+    document.getElementById('scorefill-'+id).style.width = JUDGE[id]+'%';
+    document.getElementById('scorenum-'+id).textContent = JUDGE[id];
+    logEvent('score_created','judge',id.toUpperCase()+' dimensionScore total: '+JUDGE[id]);
+    await sleep(350);
+  }
+
+  await sleep(300);
+  document.getElementById('card-ih').classList.add('champion');
+  logEvent('champion_selected','system','IH wins · evidence-bound');
+
+  document.getElementById('verdictArea').style.display='block';
+  document.getElementById('verdictArea').innerHTML =
+    `<b>👑 Champion: Infra Hacker</b><br>${JUDGE.reasons.ih}`;
+
+  await sleep(400);
+  await showRound(5, 'PASSPORT SNAPSHOT');
+  logEvent('passport_created','system','3 snapshots generated from evidence log');
+
+  const passportData = [
+    { id:'ih', rank:'#1 · Winner', strengths:['技术深度','防守稳固'], weaknesses:['pitch clarity 仍待打磨'] },
+    { id:'sb', rank:'#2 · Runner-up', strengths:['稳定性','风险控制'], weaknesses:['记忆点偏弱'] },
+    { id:'vd', rank:'#3', strengths:['传播设计感强'], weaknesses:['可行性验证不足','承认致命缺陷'] },
+  ];
+  const passportRow = document.getElementById('passportRow');
+  passportRow.innerHTML = passportData.map(p=>{
+    const t = TEAMS.find(x=>x.id===p.id);
+    return `<div class="pcard" id="pcard-${p.id}">
+      <div class="ptop">
+        <div class="badge" style="width:22px;height:22px;font-size:9px;background:${t.colorHex}">${t.mono}</div>
+        <span class="prank">${p.rank}</span>
+      </div>
+      <div class="plabel">Strengths</div>
+      <div class="ptags">${p.strengths.map(s=>`<span class="tag">${s}</span>`).join('')}</div>
+      <div class="plabel">Weaknesses</div>
+      <div class="ptags">${p.weaknesses.map(s=>`<span class="tag weak">${s}</span>`).join('')}</div>
+    </div>`;
+  }).join('');
+  await sleep(100);
+  ['ih','sb','vd'].forEach((id,i)=>setTimeout(()=>document.getElementById('pcard-'+id).classList.add('show'), i*180));
+
+  setTicker('Battle complete. Evidence Log sealed · '+seq+' events recorded · Replay & Passport ready.');
+  statusHint.textContent = '战斗结束 — 点击 Reset 重新播放';
+  playBtn.disabled = false;
+  playBtn.textContent = '▶ Run Again';
+}
+
+function resetAll(){
+  seq = 0;
+  TEAMS.forEach(t => state[t.id] = { hp:100, eliminated:false });
+  logArea.innerHTML = '';
+  eventCountEl.textContent = '0 events';
+  document.getElementById('scoreArea').innerHTML = '<div class="hint">Judge Panel 将在 Defense Round 结束后出分。</div>';
+  document.getElementById('scoreState').textContent = 'pending';
+  document.getElementById('verdictArea').style.display='none';
+  document.getElementById('passportRow').innerHTML = '';
+  roundBanner.classList.remove('show');
+  roundIdx.textContent = 'ROUND 0';
+  roundTitle.textContent = 'STANDBY';
+  setTicker('Arena Commentator online. Waiting for battle to start...');
+  renderArenaShell();
+  playBtn.disabled = false;
+  playBtn.textContent = '▶ Run Battle';
+  statusHint.textContent = '点击 Run Battle 播放完整战斗流程（约 45 秒）';
+}
+
+playBtn.addEventListener('click', runBattle);
+resetBtn.addEventListener('click', resetAll);
+</script>
+</body>
+</html>

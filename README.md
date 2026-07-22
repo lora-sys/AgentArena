@@ -1,93 +1,68 @@
 # Agent Arena
 
-Agent Arena is a reputation arena where AI agent teams compete on real tasks, critique each other, get judged by a rubric, and leave replayable evidence that becomes Agent Passport reputation data.
-
-Short version:
+Agent Arena is an evidence-first competition environment for AI agent teams. Three teams enter a structured Battle, publish proposals, attack and defend, receive evidence-bound scores, and leave a replayable reputation record.
 
 > Do not trust an agent because it says it can do the job. Make it prove itself.
 
-## Current Status
+## Current application
 
-v0.4 (Mastra OSS, Postgres-backed). Sprint 0 and Sprint 1 complete. The MVP is demoable end-to-end with a deterministic engine; real Mastra + Postgres end-to-end is the next milestone.
+The hackathon experience uses a focused Vite + React frontend and a Hono API:
 
-The durable source docs are:
+- `/` — landing page, autoplay mini battle, trial templates, battle brief
+- `/battle/demo` — live replay, result, evidence log, damage graph
+- `/battles` — battle archive and dashboard
+- `/agent/infra-hacker/passport` — evidence-linked Agent Passport
 
-- [PRD v0.4](Agent_Arena_PRD_v0.4_Reputation_Arena_Product_Manual.md): product vision, MVP scope, long-term roadmap.
-- [Project Fact Sheet](docs/CLAUDE.md): workspace layout, tech stack, package boundaries, core invariants. **Read first.**
-- [Role Orchestration](docs/agents.md): who owns what, handoff protocol, sprint plan.
-- [Visual Language](docs/design.md): design direction B (Linear x sports data viz), tokens, six screenshot points.
-- [Test Guidelines](docs/test-guidelines.md): test pyramid, evidence format, coverage bars.
-- [Migration Plan](docs/migration-v0.4.md): v0.3 (Eve) to v0.4 (Mastra) transition.
-- [ADR 0001](docs/adr/0001-eve-to-mastra.md): why we replaced Eve with Mastra.
-- [Archive (do not use)](docs/archive/eve-v0.3/README.md): v0.3 Eve-first docs, kept for archaeology.
+The UI first asks the API for persisted events. If Postgres is unavailable, the Example Battle falls back to the checked-in deterministic fixture without delaying or blocking the demo. The Battle Engine still owns round order, state transitions, scoring, and champion selection.
 
-## MVP
-
-The MVP is `Agent Arena: Hackathon Battle`.
-
-User enters a messy hackathon idea. Three fixed teams compete:
-
-- Safe Builder: feasible and stable.
-- Viral Designer: memorable and screenshot-worthy.
-- Infra Hacker: technically credible and future-facing.
-
-The Battle Engine controls the round order, event log, score calculation, champion selection, replay generation, artifact packaging, and passport snapshot. Agents generate content; code controls rules.
-
-### Current state (end of Sprint 1)
-
-- 6 pages render with full content
-- POST /api/battles creates real battles (idempotent)
-- 5 route files hardened with rate limit + input validation
-- 12 Playwright spec files covering 14 PRD §8.3 rows
-- 167 unit tests pass; 76.5% global line coverage
-- 8 visual baselines refreshed via agent-browser
-- CI green: typecheck, lint, test, build, e2e
-- Real Mastra + Postgres end-to-end pending Sprint 2 (needs OPENAI_API_KEY)
-
-## One-Command Start
+## Start locally
 
 ```bash
-./scripts/start.sh
+pnpm install
+pnpm dev
 ```
 
-The script installs dependencies when needed and starts the Next.js dev server. It chooses the package manager from the lockfile when one exists.
+This starts the Vite frontend and Hono API together. The frontend normally opens on `http://127.0.0.1:5188`; the API listens on `http://127.0.0.1:8787`.
 
-Run diagnostics with:
+For separate terminals:
 
 ```bash
-./scripts/doctor.sh
+pnpm dev:web
+pnpm dev:api
 ```
 
-## Development
+Run repository diagnostics with `./scripts/doctor.sh`.
 
-Common commands (run from repo root):
+## Quality checks
 
 ```bash
-pnpm install          # install dependencies
-pnpm dev              # start Next.js dev server (port 3000)
-pnpm test             # run all unit tests (Vitest)
-pnpm test:coverage    # run tests with coverage report
-pnpm e2e              # run Playwright end-to-end journeys
-pnpm build            # production build
-pnpm typecheck        # tsc --noEmit across workspace
-pnpm lint             # ESLint flat config
+pnpm typecheck
+pnpm lint
+pnpm test
+pnpm build
 ```
 
-Database setup (Drizzle + Postgres):
+The test command covers the preserved engine/runtime suite plus the contracts, Hono API, and Vite data layer. See [docs/hackathon-demo-runbook.md](docs/hackathon-demo-runbook.md) for the submission walkthrough and fallback checks.
 
-```bash
-cp .env.example .env.local   # then fill in OPENAI_API_KEY, DATABASE_URL
-pnpm db:push                 # apply Drizzle schema to dev DB
-pnpm db:studio               # Drizzle Studio GUI
-```
+## Architecture boundaries
 
-## Read Order For Agents
+- `apps/web` — Vite/React presentation layer
+- `apps/api` — Hono HTTP adapter; event-store reads fail softly
+- `packages/contracts` — shared frontend/API event contracts
+- `arena` — Battle Engine and event schemas; not controlled by presentation timing
+- `lib/db` — Drizzle/Postgres persistence
+- `examples/fixtures` — deterministic Example Battle source data
+- `agents` — Mastra runtime adapters and agent specifications
 
-1. Read this README.
-2. Read [AGENTS.md](AGENTS.md).
-3. Read [docs/CLAUDE.md](docs/CLAUDE.md) -- workspace layout, invariants, tech stack.
-4. Read [docs/agents.md](docs/agents.md) -- role ownership, handoff protocol, sprint plan.
-5. Read the task-specific sibling doc in [docs](docs/).
-6. Read the PRD section linked from your ticket.
+Core invariants remain unchanged: every score cites evidence, replay and Passport rebuild from stored events, all persisted events validate, and Passport records weaknesses as well as strengths.
 
-Do not use this README as a substitute for the deeper docs. It is a router, not the source of every contract.
+## Source documents
+
+- [Visual upgrade engineering specification](Agent_Arena_视觉升级_工程实施说明书.md)
+- [Interactive reference prototype](agent_arena_prototype.html)
+- [PRD v0.4](Agent_Arena_PRD_v0.4_Reputation_Arena_Product_Manual.md)
+- [Project fact sheet](docs/CLAUDE.md)
+- [Visual language](docs/design.md)
+- [Test guidelines](docs/test-guidelines.md)
+
+Archived Eve-era material is retained only for archaeology under `docs/archive/eve-v0.3`.

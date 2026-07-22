@@ -197,3 +197,127 @@ Do NOT implement these in P0 even if they seem small:
 - Real-money badges / paid trials
 
 If a task feels like it's drifting into these, stop and re-read PRD §8.5.
+
+## 13. Battle Engine architectural rules (CRITICAL — from 2026-07-20 review)
+
+These rules were violated and caused systemic failures. They are now project invariants.
+
+- **Battle Engine MUST NOT run synchronously in request handlers.** `runDemoBattle()` and `runBattleFromPayload()` must be async or offloaded. A synchronous engine blocks the server thread, makes `withGlobalConcurrency` ineffective, and breaks SSE streaming entirely.
+- **AbortController cancel MUST work.** If `registerAbortController` is called before battle execution, the battle engine MUST periodically check `signal.aborted` and stop early. Clearing the controller in `finally` before async work completes means cancel is a no-op.
+- **Demo data MUST be lazy-loaded.** `runDemoBattle()` at module top-level (`lib/demo-data.ts`) executes on every cold start and bloats client JS bundles. Wrap in a `getDemoBundle()` function that caches on first call, or mark the module `server-only`.
+- **No battle re-execution on every request.** `GET /api/battles/:id/events` must not call `runBattleFromPayload` — it must read from an event store or in-memory cache. Re-running the entire battle per poll is O(n²) waste.
+- **SSE streaming requires actual async iteration or a polling fallback.** If SSE cannot deliver events progressively, remove the SSE endpoint and use `GET /api/battles/:id/events` with polling only. A broken SSE that delivers all events in one shot is worse than polling — it gives false confidence.
+
+## 14. API route rules
+
+- **Passport API must filter by agent ID.** `GET /api/agents/:id/passport` must return passport data for the requested agent, not always return demo data. The `id` parameter must be validated against the event store or demo bundle.
+- **Route schemas must match what the client sends.** If `components/battle-setup-form.tsx` sends `{ idea, battleType, timeLimit, preference, outputTargets }`, the start route schema must validate all fields. Silently dropping settings is a UI lie — the setup form has zero effect.
+
+## 15. UI/UX rules (from 2026-07-20 visual review)
+
+- **Event badges must use type-specific colors.** Every event using `bg-team-viral/10 text-team-viral` (purple) regardless of type is a UX failure. Proposals, attacks, defenses, scores, and cancellations must each have a distinct color.
+- **Navigation must adapt to context.** Hardcoded links to `/agent/viral-designer/passport` and `/battle/demo/live` in `app-shell.tsx` make the app feel broken when viewing a different agent or battle. Navigation hrefs must be derived from the current route context.
+- **Mobile responsiveness is mandatory.** Nav tabs, setup form chips, and proposal columns must not overflow on 390px viewports. Test all pages at 375px and 390px widths.
+- **Loading and empty states must be designed.** Components must render gracefully when SSE data is delayed, events are empty, or an agent has no passport data. No blank screens or unmapped errors.
+
+## 16. E2E test rules
+
+### 16.1 基础规则（来自 `docs/test-guidelines.md`，必须遵守）
+
+- **Tests must not depend on SSE timing.** SSE-dependent tests (live battle, replay, event drawer) must use explicit wait conditions or mock the SSE source. 18-20s timeouts from `toBeVisible()` failures indicate a test/data problem, not a slow browser.
+- **WebKit compatibility must be verified or excluded.** If WebKit tests all fail immediately (0-3ms), either fix the compatibility issues or exclude WebKit from the default test suite with a documented reason.
+- **Rate limiting tests must be deterministic.** Flaky rate-limit tests indicate the token-bucket implementation or test setup is unreliable. Fix before considering the guard production-ready.
+- **No `waitForTimeout`.** Always `waitForFunction` or `expect(locator).toBeVisible()` with explicit timeout. Network waits use route interception, not real network.
+- **SSE tests use deterministic event injector.** Tests must not depend on the live engine's timing. Use a mock SSE source that emits events on demand.
+
+### 16.2 Sprint 2 E2E Gate（Sprint 2 期间强制执行）
+
+以下门禁是 Sprint 2 的硬性条件，不满足则不能进入 demo 阶段：
+
+- **全量 E2E 通过率 ≥ 90% on chromium-desktop.** After all CRITICAL + HIGH fixes land, run the full suite. Target: ≥90% pass rate (currently 148/324 = 45.7%). Every failing test must be fixed or formally quarantined with a documented reason.
+- **chromium-mobile pass rate ≥ 80%.** Mobile viewport (390x844) is a first-class target. Tests that fail on mobile due to CSS issues must be fixed, not quarantined.
+- **SSE-dependent tests must use mock SSE.** Any test that exercises the live battle, replay, or event drawer pages must use a deterministic event injector (`lib/sse-client.test.ts` pattern). Tests that depend on real SSE timing are flaky by definition and must be rewritten.
+- **Every new E2E test must pass on both viewports.** Before merging any PR that adds or modifies an E2E test, verify it passes on desktop (1440x900) AND mobile (390x844). No exceptions.
+- **Flaky test quarantine SLA.** Any test that fails 3 times in a row on CI must be moved to `tests/e2e/quarantine/` within 1 sprint. The owner is whoever last touched the affected code. Quarantined tests do not count toward the 90% gate.
+
+### 16.3 Sprint 2 E2E 必过测试清单
+
+These are the journeys that MUST be green on chromium-desktop before demo:
+
+| # | Journey | File | What it proves |
+|---|---|---|---|
+| 1 | Home page loads | `home.spec.ts` | First impression works |
+| 2 | Battle setup form | `battle-setup.spec.ts` | User can create a battle |
+| 3 | Battle setup edge cases | `battle-setup-edge-cases.spec.ts` | Form validation works |
+| 4 | Smoke routes | `smoke-routes.spec.ts` | All pages render without crash |
+| 5 | API status | `api-status.spec.ts` | API routes respond |
+| 6 | Agent passport | `agent-passport.spec.ts` | Passport page renders correctly |
+| 7 | Attack matrix | `attack-matrix-coverage.spec.ts` | Attack matrix displays |
+| 8 | Live battle with cards | `live-page-with-cards.spec.ts` | Live page renders all components |
+| 9 | Battle replay | `battle-replay.spec.ts` | Replay page renders |
+| 10 | Event drawer | `event-drawer.spec.ts` | Event drawer opens and displays |
+| 11 | Judge scores | `judge-scores.spec.ts` | Scoreboard renders |
+| 12 | Defense round | `defense-round.spec.ts` | Defense cards render |
+| 13 | Battle result | `battle-result.spec.ts` | Result page renders champion |
+| 14 | Print stylesheet | `print-stylesheet.spec.ts` | Print CSS works |
+| 15 | API validators | `api-validators.spec.ts` | API rejects invalid input |
+
+## 17. Current known issues (tracked, not blocking demo)
+
+| Priority | Issue | File(s) | Status |
+|---|---|---|---|
+| CRITICAL | Battle engine sync in request handlers | `app/api/battles/[id]/start/route.ts`, `events/stream/route.ts` | Must fix before demo |
+| CRITICAL | Demo data executes at module import | `lib/demo-data.ts:35` | Must fix before demo |
+| CRITICAL | Passport API ignores agent ID | `app/api/agents/[id]/passport/route.ts` | Must fix before demo |
+| HIGH | Events route re-runs battle on every poll | `app/api/battles/[id]/events/route.ts` | Must fix before demo |
+| HIGH | Setup form settings silently dropped | `components/battle-setup-form.tsx`, start route | Must fix before demo |
+| HIGH | Event badge colors all identical | `components/live-battle-client.tsx:292` | Must fix before demo |
+| MEDIUM | Hardcoded navigation links | `components/app-shell.tsx` | Fix in Sprint 2 |
+| MEDIUM | SSE client silent failure on max retries | `lib/sse-client.ts` | Fix in Sprint 2 |
+| MEDIUM | In-memory rate limiting ineffective on multi-instance | `lib/api/guards.ts` | Fix in Sprint 2 |
+---
+
+## 17. Frontend narrative rhythm (from 2026-07-21 redesign)
+
+**Awwwards-style narrative — every page tells a story.**
+
+- **Hero copy must earn the first 3 seconds.** No "Welcome to X. We are Y." Pattern interrupts. Use a counter-narrative headline that names a tension ("Don't ask one AI / Make three teams fight").
+- **One focal element per page.** A page that tries to do everything does nothing. Identify the hero block (a score, a quote, a trophy, a passport seal) and treat surrounding content as supporting cast.
+- **Cinema, not dashboard.** Use full-bleed background glows, gradient borders, asymmetric grid. Never center-aligned three-card heroes.
+- **Type is the hero.** Display sizes start at 40px and scale to `clamp(40px, 6vw, 76px)`. Weights ≥ 800. Negative letter-spacing −0.02 to −0.04em on display.
+- **Real data > mock copy.** Live ticker pulls real events from `bundle.events`. Podium shows actual scores. Passport shows actual strengths. Never use "24", "15", "62%" invented stats.
+- **Animation in layers, not everywhere.** 500–800ms entrance on hero block, light micro-motion (1–2s pulse) on live states. Slow ticker scroll (50s loop). Stagger delays via `--i` index for cards.
+
+## 18. Agent product experience (PRD §1 — "what an agent product must do")
+
+- **Show AI doing work, not promise it.** When a team "Streams", show monospace streamed text in real time. When an attack fires, show severity color + claim + evidence. Hide nothing behind spinners longer than 200ms.
+- **Live events must feel live.** SSE must actually push events progressively. The battle stream UI mirrors this with a `ticker-scroll` 50s infinite loop and a `live-pulse` red dot.
+- **No empty states that are just spinners.** Skeleton shapes (event-feed rows, score cards) are required during initial load. A blank screen for >500ms is a product failure.
+- **Cancellation must be honored.** The cancel button must optimistically reflect the user's intent, even if the server takes time to respond. R26: never 500 on cancel.
+- **Evidence must be searchable.** Every claim in the UI is bound to a battle event ID. The "View in replay" deep link is the product's single source of truth.
+
+## 19. Real backend, not mock
+
+The demo currently runs entirely off a deterministic `runDemoBattle()` from `arena/engine/demo-battle.ts`. The P0 demo path is acceptable, but the product promise is "real AI agents". The next iteration must:
+
+- **Replace `runDemoBattle()` with a real async path** that streams events from the battle engine (already async). The current SSE route reads from cached `bundle.events` synchronously.
+- **Wire the Mastra runtime** to a real LLM provider (OpenAI/Anthropic). Each team becomes a streaming LLM call that emits typed events.
+- **Persist real events to Postgres** instead of an in-memory bundle. The event store is already scaffolded in `lib/db/`.
+- **Show real progress** — when an LLM call is in flight, show "Streaming tokens…" in the agent status card with the actual model output.
+
+## 20. Pages still to fix (Sprint 2.5)
+
+- `/battles` (list) — currently a static table, needs hero stats + filter
+- `/teams` (list) — currently static, needs interactive comparison
+- `/explore` (top-nav link) — currently 404. Should be a Battle Replay exploration hub
+- `app/battle/[id]/live` — current dynamic route uses client component with SWR but never tested in production
+- `app/agent/[id]/passport` — works for known IDs only; "not found" path needs polish
+
+## 21. Design system extraction (planned)
+
+All page-specific CSS classes are currently in `app/globals.css` (one giant file). This is acceptable for a single-page demo but does not scale. The next iteration must extract a proper token system into `packages/ui-kit`:
+
+- **Tokens** — colors, spacing, type, shadows, radii, motion (already exist as CSS variables — keep)
+- **Primitives** — Button, Card, Pill, Score, Seal, Avatar (extract from `arena-cards.tsx`)
+- **Patterns** — HeroBlock, StageCard, PodiumCeremony, PassportDocument, BattleStream
+- **A11y** — all interactive elements must be keyboard-navigable; visible focus rings; `aria-live="polite"` on event streams; reduced-motion media query applied to all CSS animations

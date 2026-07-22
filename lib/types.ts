@@ -96,7 +96,7 @@ export type Battle = {
   elapsed: string;
   duration: string;
   teams: Team[];
-  winnerId: TeamId;
+  winnerId?: TeamId;
   scores: Record<TeamId, ScoreBreakdown>;
   attacks: Attack[];
   events: BattleEvent[];

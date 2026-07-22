@@ -30,37 +30,23 @@ check_dir() {
 }
 
 check_file README.md
-check_file docs/prd.md
-check_file docs/mvp-spec.md
-check_file docs/eve-agents.md
-check_file docs/development-plan.md
-check_file docs/validation-goals.md
-check_file docs/ui-react-bits.md
-check_file docs/coverage-map.md
-check_file docs/change-control.md
-check_file docs/debugging-manual.md
-check_file docs/failure-archaeology.md
-check_file docs/architecture-contracts.md
-check_file docs/diagnostic-tools.md
-check_file docs/acceptance-standards.md
-check_file docs/skills/project-skill-guide.md
-check_file docs/skills/review-skill-guide.md
-check_dir ui
-
-for image in landingpage.png battle-settingup.png battle.png battle-1.png battle-2.png teams.png battles.png passport.png; do
-  check_file "ui/$image"
-done
+check_file prototype/Agent_Arena_视觉升级_工程实施说明书.md
+check_file prototype/agent_arena_prototype.html
+check_file docs/CLAUDE.md
+check_file docs/design.md
+check_file docs/hackathon-demo-runbook.md
+check_dir apps/web
+check_dir apps/api
+check_dir packages/contracts
 
 if [[ -f package.json ]]; then
   echo "ok app scaffold: package.json"
-  check_dir app
-  check_dir components
   check_dir lib
   check_dir arena
   check_dir agents
-  check_file app/layout.tsx
-  check_file app/page.tsx
-  check_file app/battle/new/page.tsx
+  check_file apps/web/src/App.tsx
+  check_file apps/api/src/app.ts
+  check_file packages/contracts/src/index.ts
   check_file arena/index.ts
   if node -e "const p=require('./package.json'); process.exit(p.scripts && p.scripts.dev ? 0 : 1)" >/dev/null 2>&1; then
     echo "ok npm script: dev"

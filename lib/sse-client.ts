@@ -134,7 +134,7 @@ export function connectSse(options: SseClientOptions): SseClientHandle {
         source = null;
       }
       // Stop reconnecting after maxRetries consecutive failures.
-      if (consecutiveFailures > maxRetries) {
+      if (consecutiveFailures >= maxRetries) {
         return;
       }
       if (reconnectTimer !== null) {

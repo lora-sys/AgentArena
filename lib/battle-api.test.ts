@@ -57,20 +57,20 @@ describe("normalizeBattleCreateInput", () => {
 });
 
 describe("runBattleFromPayload", () => {
-  it("uses the provided battleId when given", () => {
-    const bundle = runBattleFromPayload({ idea: "test" }, "btl_a1b2c3d4");
+  it("uses the provided battleId when given", async () => {
+    const bundle = await runBattleFromPayload({ idea: "test" }, "btl_a1b2c3d4");
     expect(bundle.battle.id).toBe("btl_a1b2c3d4");
   });
 
-  it("generates a btl_ ID when none is provided", () => {
-    const bundle = runBattleFromPayload({ idea: "test" });
+  it("generates a btl_ ID when none is provided", async () => {
+    const bundle = await runBattleFromPayload({ idea: "test" });
     expect(bundle.battle.id).toMatch(/^btl_[0-9A-HJKMNPQRSTVWXYZ]{8}$/);
   });
 });
 
 describe("summarizeBattleBundle", () => {
-  it("returns summary fields from a completed bundle", () => {
-    const bundle = runBattleFromPayload({ idea: "test" }, "btl_00000000");
+  it("returns summary fields from a completed bundle", async () => {
+    const bundle = await runBattleFromPayload({ idea: "test" }, "btl_00000000");
     const summary = summarizeBattleBundle(bundle);
     expect(summary.id).toBe("btl_00000000");
     expect(summary.eventCount).toBeGreaterThan(0);

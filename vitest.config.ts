@@ -28,17 +28,11 @@ export default defineConfig({
       "lib/**/*.test.ts",
       "arena/**/*.test.ts",
       "examples/**/*.test.ts",
-      "components/**/*.test.tsx",
       "agents/**/*.test.ts",
-      "app/**/*.test.ts",
-      "app/**/*.test.tsx",
     ],
     environment: "node",
     pool: "forks",
     testTimeout: 30_000,
-    environmentMatchGlobs: [
-      ["components/**/*.test.tsx", "happy-dom"],
-    ],
     coverage: {
       provider: "v8",
       reporter: ["text", "html", "lcov", "json-summary"],
@@ -104,11 +98,6 @@ export default defineConfig({
         "lib/sse-client.ts": {
           lines: 70,
           branches: 60,
-        },
-        "components/**/*.tsx": {
-          lines: 60,
-          branches: 50,
-          functions: 60,
         },
         // Global floor — every covered file must clear this.
         lines: 40,
