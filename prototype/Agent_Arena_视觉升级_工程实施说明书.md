@@ -1,4 +1,4 @@
-# Agent Arena — Battle Arena 视觉升级 · 工程实施说明书
+![alt text](image.png)# Agent Arena — Battle Arena 视觉升级 · 工程实施说明书
 
 **面向执行者**：本文档为可直接交给编码 Agent（如 Codex）执行的任务包，不需要额外澄清即可开工。所有设计决策已锁定，执行者只需在现有代码库结构内落地。
 

@@ -125,4 +125,19 @@ Prefer subagents for bounded parallel work, especially:
 - Documentation consistency review.
 - Final audit.
 
+## development rule
+→ Plan
+→ Code
+→ Test
+→ Playwright
+→ Screenshot
+→ Review
+→ PR
+→ Merge
+开发时候
+每一个流程，必须解决一个产品闭环
+每个闭环必须经过浏览器和截图验证
+不能只看代码说完成
+
+
 Keep write scopes disjoint. Tell subagents they are not alone in the codebase and must not revert others' work. The main agent owns integration, final review, and docs/status synchronization.
