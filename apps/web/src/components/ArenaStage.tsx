@@ -2,15 +2,8 @@ import { DAMAGE_MAP, type BattleEvent, type Severity } from "@agent-arena/contra
 import { demoEvents, teams } from "../data/demo";
 import { useArenaState, useBattleReplay } from "./BattleReplayPlayer";
 import { TypewriterText } from "./typewriter-text";
+import { RoundBanner } from "./round-banner";
 import { useEffect } from "react";
-
-const roundNames: Record<string, string> = {
-  proposal_round: "PROPOSAL ROUND",
-  cross_attack_round: "ATTACK ROUND",
-  defense_round: "DEFENSE ROUND",
-  scoring_round: "SCORING ROUND",
-  champion_round: "CHAMPION REVEAL",
-};
 
 export function ArenaStage({ compact = false, battleId = "demo", events = demoEvents, onProgress }: { compact?: boolean; battleId?: string; events?: readonly BattleEvent[]; onProgress?: (events: readonly BattleEvent[]) => void }) {
   const replay = useBattleReplay(events);
@@ -18,15 +11,16 @@ export function ArenaStage({ compact = false, battleId = "demo", events = demoEv
   const { hp, latestByActor } = useArenaState(events, teamIds, replay.visibleEvents);
   useEffect(() => onProgress?.(replay.visibleEvents), [onProgress, replay.visibleEvents]);
   const activeActors = new Set(replay.batch?.events.map((event) => event.actorId));
-  const roundTitle = replay.batch?.events.some((event) => event.eventType === "champion_selected")
-    ? "CHAMPION REVEAL"
+  // 展示层回合 key：优先识别冠军 / 评分事件，否则用 batch 的 Engine 回合
+  const effectiveRound = replay.batch?.events.some((event) => event.eventType === "champion_selected")
+    ? "champion_round"
     : replay.batch?.events.some((event) => event.eventType === "score_created")
-      ? "SCORING ROUND"
-      : roundNames[replay.batch?.round ?? "proposal_round"];
+      ? "scoring_round"
+      : replay.batch?.round ?? "proposal_round";
   return (
     <section className={`arena-stage ${compact ? "compact" : ""}`} aria-label="Live agent battle" data-battle-id={battleId}>
       <header className="arena-header"><div><span className="live-label">LIVE BATTLE</span><strong>AGENT ARENA</strong><small>BATTLE ID · {battleId.toUpperCase()}</small></div><div className="round-meta"><span>ROUND {replay.batchIndex + 1} / {replay.batchCount}</span><b>02:14</b></div></header>
-      <div className="round-banner" key={roundTitle}><span>ROUND {replay.batchIndex + 1} / {replay.batchCount}</span><h2>{roundTitle}</h2></div>
+      <RoundBanner round={effectiveRound} roundIndex={replay.batchIndex} roundCount={replay.batchCount} />
       <div className="fighters">
         {teams.map((team) => {
           const event = latestByActor.get(team.id);

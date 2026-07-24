@@ -92,7 +92,21 @@ button, input { font: inherit; }
 .replay-controls div { overflow: hidden; height: 2px; background: var(--arena-hair); }
 .replay-controls i { display: block; height: 100%; background: linear-gradient(90deg,var(--cyan),var(--pink)); transition: width .5s ease; }
 .round-jump { display: flex; justify-content: center; gap: 6px; margin-top: 10px; }.round-jump button { width: 22px; height: 22px; border: 1px solid var(--arena-hair); border-radius: 4px; color: var(--arena-faint); background: transparent; font: 7px/1 IBM Plex Mono,monospace; }.round-jump button.active { border-color: var(--pink); color: var(--pink); box-shadow: 0 0 9px rgba(243,56,112,.2); }
-.round-banner { animation: banner-in .5s ease-out both; }
+.round-banner { animation: banner-in var(--motion-round-banner, 350ms) var(--ease-out, ease-out) both; }
+
+/* 七段展示进度条（#31）—— 展示层，Engine 仅四段。消费 tokens，禁止硬编码色值 */
+.round-banner-wrap { display: grid; gap: 6px; }
+.round-progress { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 0; padding: 0 2px; list-style: none; }
+.round-seg { position: relative; display: grid; justify-items: center; gap: 5px; }
+.round-seg::before { position: absolute; top: 4px; left: calc(50% + 6px); width: calc(100% - 12px); height: 2px; background: var(--ink-5); content: ""; }
+.round-seg:last-child::before { display: none; }
+.round-seg-dot { z-index: 1; width: 9px; height: 9px; border: 1.5px solid var(--ink-4); border-radius: 99px; background: var(--surface-1); transition: background var(--motion-round-banner, 350ms) var(--ease-out), border-color var(--motion-round-banner, 350ms) var(--ease-out), box-shadow var(--motion-round-banner, 350ms) var(--ease-out); }
+.round-seg b { color: var(--ink-4); font: 600 8px/1 var(--font-mono); letter-spacing: var(--ls-mono); transition: color var(--motion-round-banner, 350ms) var(--ease-out); }
+.round-seg.done .round-seg-dot { border-color: var(--vd); background: var(--vd); }
+.round-seg.done::before { background: rgba(var(--vd-rgb), .5); }
+.round-seg.done b { color: var(--ink-3); }
+.round-seg.active .round-seg-dot { border-color: var(--vd); background: var(--vd); box-shadow: 0 0 10px rgba(var(--vd-rgb), .7); }
+.round-seg.active b { color: var(--vd); }
 
 @keyframes banner-in { from { opacity: 0; transform: translateY(-8px) scale(.98); } }
 @keyframes copy-reveal { from { opacity: 0; clip-path: inset(0 100% 0 0); } to { opacity: 1; clip-path: inset(0); } }
