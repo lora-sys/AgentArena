@@ -77,7 +77,19 @@ button, input { font: inherit; }
 .hp-label { display: flex; justify-content: space-between; color: var(--arena-faint); font: 8px/1 IBM Plex Mono, monospace; }
 .hp-label b { color: var(--arena-dim); font-weight: 500; }
 .hp-track { height: 7px; margin: 6px 0 14px; border-radius: 99px; background: #1a2230; }
-.hp-track i { display: block; height: 100%; border-radius: inherit; background: var(--team); box-shadow: 0 0 9px rgba(var(--team-rgb),.42); transition: width .75s cubic-bezier(.2,.8,.2,1); }
+.hp-track i { display: block; height: 100%; border-radius: inherit; background: var(--team); box-shadow: 0 0 9px rgba(var(--team-rgb),.42); transition: width var(--motion-hp-drain, 700ms) cubic-bezier(.2,.8,.2,1); }
+
+/* ── HpBar 组件（#29）· 动画时长全部走 tokens.css ───────────────────────── */
+.hp-bar { position: relative; }
+.hp-bar.hit { animation: hit-shake var(--motion-hit-flash, 500ms) ease-out; }
+.hp-bar.fatal { animation: hit-shake var(--motion-fatal-shake, 450ms) cubic-bezier(.36,.07,.19,.97) 2; }
+.hp-bar.danger .hp-track i { background: var(--danger); box-shadow: 0 0 12px rgba(var(--danger-rgb, 255,77,77),.6); }
+.hp-bar.danger .hp-label b { color: var(--danger); }
+.hp-bar .hp-track { position: relative; overflow: hidden; }
+.hp-flash { position: absolute; inset: 0; border-radius: inherit; background: var(--danger); opacity: 0; pointer-events: none; animation: hit-flash var(--motion-hit-flash, 500ms) ease-out both; }
+.hp-bar.fatal .hp-flash { animation-duration: var(--motion-fatal-shake, 450ms); }
+.hp-damage-pop { position: absolute; z-index: 3; top: -4px; right: 4px; color: var(--danger); font: 400 20px/1 var(--font-heading, "Archivo Black"), sans-serif; text-shadow: 0 0 15px rgba(var(--danger-rgb, 255,77,77),.8); pointer-events: none; animation: damage-rise var(--motion-damage-float, 1100ms) ease-out both; }
+.hp-bar.fatal .hp-damage-pop { font-size: 28px; text-shadow: 0 0 22px rgba(var(--danger-rgb, 255,77,77),.95); }
 .event-copy { min-height: 108px; padding-top: 12px; border-top: 1px dashed var(--arena-hair); }
 .event-copy > span { color: var(--team); font: 600 8px/1 IBM Plex Mono, monospace; }
 .verdict { float: right; padding: 3px 5px; border: 1px solid currentColor; border-radius: 3px; font: 600 6px/1 IBM Plex Mono,monospace; }.verdict.accepted { color: var(--danger); }.verdict.rejected { color: var(--arena-faint); }
