@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { BattleEvent } from "@agent-arena/contracts";
 import { loadBattleEvents, type BattleEventsResult } from "../data/battle";
 import { ArenaStage } from "./ArenaStage";
+import { RuntimeModeBadge, modeFromSource, normalizeMode } from "./runtime-mode-badge";
 import { useSearchParams } from "react-router-dom";
 
 type BattleView = "live" | "result" | "replay";
@@ -25,9 +26,12 @@ export function BattleWorkspace({ battleId }: { battleId: string }) {
 
   if (!battle) return <section className="battle-loading"><span>CONNECTING TO EVENT STORE</span><i /></section>;
 
+  // 运行时模式：优先 URL ?mode=，否则由数据源推导
+  const runtimeMode = searchParams.get("mode") ? normalizeMode(searchParams.get("mode")) : modeFromSource(battle.source);
+
   return <section className="battle-workspace">
     <header className="workspace-bar">
-      <div><span className={`source-dot ${battle.source}`} />{battle.source === "event-store" ? "EVENT STORE" : battle.source === "fixture" ? "VERIFIED FIXTURE" : "DEMO FALLBACK"}</div>
+      <div><RuntimeModeBadge mode={runtimeMode} /></div>
       <nav aria-label="Battle view">
         {(["live", "result", "replay"] as const).map((item) => <button key={item} className={view === item ? "active" : ""} onClick={() => setView(item)}>{item.toUpperCase()}</button>)}
       </nav>

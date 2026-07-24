@@ -57,6 +57,16 @@ export const zh = {
     } as Record<string, string>,
     degraded: "证据不足",
   },
+
+  /**
+   * RuntimeModeBadge 三态徽标（#33）
+   * verified_replay（已验证演示）/ live_runtime（实时 AI 竞技）/ demo_fallback（演示兜底）
+   */
+  runtimeMode: {
+    verified_replay: { label: "已验证演示", sub: "Verified Replay" },
+    live_runtime: { label: "实时 AI 竞技", sub: "Live Runtime" },
+    demo_fallback: { label: "演示兜底", sub: "Demo Fallback" },
+  } as Record<string, { label: string; sub: string }>,
 } as const;
 
 export type Zh = typeof zh;
