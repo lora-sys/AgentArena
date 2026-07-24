@@ -250,6 +250,21 @@ button, input { font: inherit; }
   .why-arena > div,.trial-strip { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; }.why-arena article,.trial-strip > button { flex: 0 0 min(78vw,310px); scroll-snap-align: center; }.replay-workspace { grid-template-columns: 1fr; }.replay-rounds { display: flex; overflow-x: auto; }.replay-rounds header { display: none; }.replay-rounds > button { min-width: 95px; border-top: 0; border-right: 1px solid var(--arena-hair); }.replay-stats { grid-template-columns: repeat(3,1fr); }.replay-stats div:nth-child(3) { border-right: 0; }.brief-launch textarea { width: 100%; }
 }
 
+/* TypewriterText (#30)：逐字呈现 + 闪烁光标，消费 tokens.css，不硬编码色值 */
+.typewriter { display: inline; }
+.typewriter-cursor {
+  display: inline-block;
+  width: 0.5ch;
+  height: 1em;
+  margin-left: 1px;
+  transform: translateY(0.12em);
+  background: var(--sb);
+  border-radius: 1px;
+  animation: typewriter-blink 1s steps(2, start) infinite;
+}
+@keyframes typewriter-blink { 0%, 50% { opacity: 1; } 50.01%, 100% { opacity: 0; } }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+  .typewriter-cursor { animation: none; opacity: 1; }
 }
