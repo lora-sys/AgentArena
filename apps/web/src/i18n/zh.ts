@@ -67,6 +67,18 @@ export const zh = {
     live_runtime: { label: "实时 AI 竞技", sub: "Live Runtime" },
     demo_fallback: { label: "演示兜底", sub: "Demo Fallback" },
   } as Record<string, { label: string; sub: string }>,
+
+  /** Arena Host 主持人解说（#32） */
+  host: {
+    name: "解说 AI",
+    nameEn: "Arena Host",
+    label: "现场解说",
+    standby: "竞技场系统待命中。",
+    proposal: "三支队伍同时落笔，每一句主张都会成为可回放的证据。",
+    scoring: "评委正在把分数绑定到已记录的证据链上。",
+    attack: (title: string) => `${title}。目标方现在必须正面回应这条证据。`,
+    champion: (title: string) => `${title}。声誉已依据本场证据更新。`,
+  },
 } as const;
 
 export type Zh = typeof zh;
