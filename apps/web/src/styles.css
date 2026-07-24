@@ -1,22 +1,21 @@
-@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700;800&display=swap');
-
+/* 字体与设计 Token 由 styles/tokens.css 统一提供（#26 唯一权威表）。
+ * 以下为遗留变量名到权威 token 的别名映射，保证既有组件平滑迁移，禁止再新增硬编码色值。 */
 :root {
   color-scheme: dark;
-  --arena-bg: #080c13;
-  --arena-panel: #101620;
-  --arena-panel-2: #151c27;
-  --arena-hair: #263142;
-  --arena-text: #e9f1f5;
-  --arena-dim: #84909f;
-  --arena-faint: #526071;
-  --cyan: #35e4e0;
-  --pink: #f33870;
-  --amber: #f2a932;
-  --danger: #ff365f;
-  --gold: #f2c45d;
-  font-family: Inter, system-ui, sans-serif;
-  background: var(--arena-bg);
-  color: var(--arena-text);
+  --arena-bg: var(--bg-void);
+  --arena-panel: var(--surface-1);
+  --arena-panel-2: var(--surface-2);
+  --arena-hair: var(--ink-5);
+  --arena-text: var(--ink-1);
+  --arena-dim: var(--ink-2);
+  --arena-faint: var(--ink-3);
+  --cyan: var(--sb);
+  --pink: var(--vd);
+  --amber: var(--ih);
+  --gold: var(--champion);
+  font-family: var(--font-body);
+  background: var(--bg-void);
+  color: var(--ink-1);
 }
 
 * { box-sizing: border-box; }

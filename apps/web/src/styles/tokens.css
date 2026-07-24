@@ -1,0 +1,107 @@
+/* =====================================================================
+ * Agent Arena · 设计 Token 唯一权威表 (v0.5.2)
+ * Design System single source of truth — 颜色 / 字体 / 字号 / 动效
+ * Issue: #26 (计划 #05) · owner P1 · workstream E
+ *
+ * 硬规矩：所有工作线组件必须消费这份 tokens，禁止硬编码颜色 / 字号 / 动画时长。
+ * 权威来源：ui/design.png 设计系统面板 · docs/DEV-STANDARDS.md §7 · docs/BROWSER-VERIFICATION.md §2
+ * ===================================================================== */
+
+/* 字体 CDN（display=swap 避免 FOIT，中文回退到系统黑体防止降级为宋体） */
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  color-scheme: dark;
+
+  /* ---------------------------------------------------------------
+   * 1. 品牌主色（权威 6 色 · 亮度差 ≤ 5 硬门）
+   * ------------------------------------------------------------- */
+  --bg-void: #0A0D14;          /* 全局最底色 */
+  --sb: #49D6C8;               /* 稳健构建者 Safe Builder Team（青） */
+  --vd: #F5567E;               /* 传播设计师 Viral Designer Team（品红） */
+  --ih: #F2B84B;               /* 架构黑客 Infra Hacker Team（琥珀） */
+  --danger: #FF4D4D;           /* 致命 / 危险警报（fatal） */
+  --champion: #E9C468;         /* 冠军金 Champion Verified */
+  --success: #49D6C8;          /* 通过 / 已验证（复用青，与 SB 同源） */
+
+  /* RGB 三元组：供 rgba() 发光 / 描边使用，避免每处重复硬编码 */
+  --bg-void-rgb: 10, 13, 20;
+  --sb-rgb: 73, 214, 200;
+  --vd-rgb: 245, 86, 126;
+  --ih-rgb: 242, 184, 75;
+  --danger-rgb: 255, 77, 77;
+  --champion-rgb: 233, 196, 104;
+
+  /* ---------------------------------------------------------------
+   * 2. 中性阶 --ink-1..5（前景 → 分隔线）+ 表面层
+   * ------------------------------------------------------------- */
+  --ink-1: #E9F1F6;            /* 主文字 / 高亮 */
+  --ink-2: #AAB6C3;            /* 次要文字 */
+  --ink-3: #71808F;            /* 弱化说明 dim */
+  --ink-4: #3A4759;            /* 更弱 faint / 图标线 */
+  --ink-5: #263142;            /* 分隔线 hairline */
+
+  --surface-1: #101620;        /* 卡片 / 面板 */
+  --surface-2: #151C27;        /* 次级面板 / 悬浮 */
+  --surface-3: #1A2230;        /* HP 轨道底 / 输入框底 */
+
+  /* ---------------------------------------------------------------
+   * 3. 字体族
+   * ------------------------------------------------------------- */
+  --font-heading: 'Archivo Black', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  /* ---------------------------------------------------------------
+   * 4. 字号阶梯（与设计稿对齐 · rem 基于 16px）
+   * ------------------------------------------------------------- */
+  --fs-caption: 0.75rem;                       /* 12px · 标签 / 元信息（多为 mono） */
+  --fs-body: 0.9375rem;                        /* 15px · 正文 */
+  --fs-title: 1.5rem;                          /* 24px · 卡片 / 分区标题（Archivo） */
+  --fs-hero: clamp(2.5rem, 5vw, 3.75rem);      /* 40–60px · 页面主标题 */
+  --fs-mega: clamp(3.5rem, 7vw, 5.5rem);       /* 56–88px · 冠军揭晓 / 巨型数字 */
+
+  /* 行高与字距 */
+  --lh-tight: 1;
+  --lh-heading: 1.08;
+  --lh-body: 1.6;
+  --ls-mono: 0.06em;
+  --ls-heading: -0.04em;
+
+  /* ---------------------------------------------------------------
+   * 5. 动效时长（docs/DEV-STANDARDS.md §7 · 精确匹配硬门）
+   * ------------------------------------------------------------- */
+  --motion-hp-drain: 700ms;          /* HP 掉血 ease-out */
+  --motion-hit-flash: 500ms;         /* 命中闪红 */
+  --motion-fatal-shake: 450ms;       /* 致命命中震动 */
+  --motion-damage-float: 1100ms;     /* 浮动伤害数字 */
+  --motion-round-banner: 350ms;      /* Round Banner 转场 */
+  --motion-victory-reveal: 1200ms;   /* 冠军揭晓 */
+  --motion-kill-cam: 1500ms;         /* Kill Cam（P3） */
+
+  --ease-hp: cubic-bezier(.2, .8, .2, 1);   /* HP 掉血缓动 */
+  --ease-out: cubic-bezier(.16, 1, .3, 1);
+
+  /* ---------------------------------------------------------------
+   * 6. 圆角 / 阴影（辅助 token）
+   * ------------------------------------------------------------- */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 13px;
+  --shadow-panel: 0 30px 100px rgba(0, 0, 0, .45), inset 0 1px rgba(255, 255, 255, .025);
+
+  /* 危险血量阈值（HP < 35 变红）· 供 JS/CSS 引用 */
+  --hp-danger-threshold: 35;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-hp-drain: 1ms;
+    --motion-hit-flash: 1ms;
+    --motion-fatal-shake: 1ms;
+    --motion-damage-float: 1ms;
+    --motion-round-banner: 1ms;
+    --motion-victory-reveal: 1ms;
+    --motion-kill-cam: 1ms;
+  }
+}
