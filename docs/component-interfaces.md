@@ -121,14 +121,38 @@ import { ArenaHost, commentaryFor } from "../components/arena-host";
 
 ---
 
-## 5. 待交付（阻塞中，接口预告）
+## 5. HpBar（#29）
+
+`apps/web/src/components/hp-bar.tsx` — Proof HP 血条 + 掉血 / 命中 / 致命动画。
+
+```tsx
+import { HpBar, type HpSeverity } from "../components/hp-bar";
+
+<HpBar teamId={team.id} hp={hp} prevHp={prevHp} severity={hit ? severity : undefined} onFatal={openEvidenceLens} />
+```
+
+| Prop | 类型 | 默认 | 说明 |
+|---|---|---|---|
+| `teamId` | `string` | 必填 | 队伍 id（主题色由父级 `.fighter.<color>` 提供） |
+| `hp` | `number` | 必填 | 当前 HP（0..100，内部 clamp） |
+| `prevHp` | `number` | — | 上一帧 HP，用于计算掉血量并触发闪红/浮伤/震动；首帧可省略 |
+| `severity` | `HpSeverity` | — | 本次命中严重度 `low\|medium\|high\|fatal`；驱动浮伤数字与致命态 |
+| `onFatal` | `() => void` | — | `severity==="fatal"` 或 `hp≤0` 时触发一次（供 #34 Live Arena 接管 Evidence Lens） |
+
+**动画**（时长全部走 token · 精确匹配 DEV-STANDARDS §7）：掉血 700ms · 闪红 500ms · fatal 震动 450ms · 浮伤 1100ms。
+**降级**：`prefers-reduced-motion` 下时长塌缩为 1ms（继承 tokens.css）。HP < 35（`--hp-danger-threshold`）切危险红。
+
+**前向兼容说明**：契约 #28 尚未落地 `fatal`。组件当前用本地 `HpSeverity = Severity | "fatal"` 与本地 `DAMAGE_BY_SEVERITY`（含 fatal=50）；#28 合并后改用契约 `DAMAGE_MAP`，**公开接口不变**。C 线可按上表签名直接接入。
+
+---
+
+## 6. 待交付（阻塞中，接口预告）
 
 | 组件 | Issue | 阻塞原因 | 预计接口 |
 |---|---|---|---|
-| **HpBar** | #29 | 等 P2 #28 contracts v2 的 `fatal` severity（现 `Severity` 无 `fatal`，`DAMAGE_MAP` 无 `fatal=50`） | `<HpBar teamId hp prevHp severity? onFatal? />`，700ms 掉血 / 500ms 闪红 / 450ms fatal 震动 / 1100ms 浮伤 / HP<35 危险色 |
-| **Live Arena 致命攻击接管** | #34 | 等 #29 + #23 fixture（现仅 `hackathon-001.json`，无 `BA-2026-0024` / `verified-showcase.json`） | 暴露 `onFatalAttack` 回调触发 Evidence Lens（内容由 C 线负责） |
+| **Live Arena 致命攻击接管** | #34 | 等 #23 fixture（现仅 `hackathon-001.json`，无 `BA-2026-0024` / `verified-showcase.json`） | 消费 HpBar `onFatal` 触发 Evidence Lens（内容由 C 线负责） |
 
-> HpBar 接口冻结前会先在 issue @B/@C 同步。B/C 若需提前接入占位，可先按上表签名 mock。
+> HpBar 已交付（见 §5），接口与此前预告一致。B/C 接入如需调整请 @P1。
 
 ---
 
