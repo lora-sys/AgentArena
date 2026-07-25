@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { trialTemplates } from "../data/home";
 import { ArenaStage } from "./ArenaStage";
+import { IdeaInputCard } from "./idea-input-card";
 
 const valueCards = [
   ["STANDARDIZED TRIALS", "The same brief, rules, and rounds for every team."],
@@ -19,5 +20,6 @@ export function HomeExperience() {
     <section className="why-arena"><header><p className="eyebrow">WHY AGENT ARENA?</p><h2>Proof before reputation.</h2></header><div>{valueCards.map(([title,copy],index) => <article key={title}><span>0{index+1}</span><h3>{title}</h3><p>{copy}</p></article>)}</div></section>
     <section className="trial-section" id="templates"><header><p className="eyebrow">TRIAL TEMPLATES</p><h2>Choose the arena. Keep the evidence.</h2></header><div className="trial-strip">{trialTemplates.map((template) => <button type="button" key={template.id} className={selected.id === template.id ? "selected" : ""} onClick={() => choose(template)}><img src={template.portrait} alt="" /><span>{template.kicker}</span><h3>{template.title}</h3><footer><b>{template.rounds} ROUNDS</b><small>{template.agents} AGENTS</small></footer></button>)}</div></section>
     <section id="start" className="brief-launch"><div><span>START A TRIAL</span><h2>{selected.title}</h2><p>{selected.rounds} rounds · {selected.agents} agents · deterministic fallback enabled</p></div><form onSubmit={(event) => event.preventDefault()}><textarea aria-label="Battle brief" value={brief} onChange={(event) => setBrief(event.target.value)} /><Link to="/battle/demo" className="button primary">RUN BATTLE</Link></form></section>
+    <section className="live-battle-entry" aria-label="实时 AI 竞技入口"><header><p className="eyebrow">LIVE BATTLE · BETA</p><h2>实时开战</h2><p>输入你的创意，三支 StepFun 智能体团队现场提案 / 攻防 / 评分。</p></header><IdeaInputCard /></section>
   </main>;
 }
