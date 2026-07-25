@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { zh } from "../i18n/zh";
+import { liveArenaZh as zh } from "../i18n/zh";
 
 /**
  * FatalTakeover — 致命攻击全屏接管态（Issue #34 / 计划 #13 · 设计稿画面 03）
@@ -19,8 +19,10 @@ export interface FatalTakeoverProps {
   open: boolean;
   /** 攻击方队名 */
   attacker: string;
+  attackerPortrait?: string;
   /** 目标队名 */
   target: string;
+  targetPortrait?: string;
   /** 致命攻击事件标题，如 attack_031 */
   attackTitle: string;
   /** 致命载荷摘要（一句话） */
@@ -85,7 +87,9 @@ function useCountDown(from: number, to: number, active: boolean, durationMs: num
 export function FatalTakeover({
   open,
   attacker,
+  attackerPortrait,
   target,
+  targetPortrait,
   attackTitle,
   attackSummary,
   hpBefore,
@@ -153,6 +157,7 @@ export function FatalTakeover({
         {/* 攻击方 vs 目标 双面板 */}
         <div className="fatal-duel">
           <section className="fatal-side attacker">
+            {attackerPortrait && <img className="fatal-portrait" src={attackerPortrait} alt="" />}
             <span className="fatal-side-label">{zh.fatal.attacker}</span>
             <strong>{attacker}</strong>
             <div className="fatal-attack-event">
@@ -181,6 +186,7 @@ export function FatalTakeover({
           </section>
 
           <section className="fatal-side target">
+            {targetPortrait && <img className="fatal-portrait" src={targetPortrait} alt="" />}
             <span className="fatal-side-label">{zh.fatal.target}</span>
             <strong>{target}</strong>
             {onViewEvidence && (

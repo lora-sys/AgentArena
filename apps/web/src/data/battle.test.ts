@@ -3,6 +3,20 @@ import { demoEvents } from "./demo";
 import { buildDashboardMetrics, loadBattleArchive, loadBattleEvents, loadPassport } from "./battle";
 
 describe("loadBattleEvents", () => {
+  it("loads the verified BA-2026-0024 storyline without calling the API", async () => {
+    const fetcher = vi.fn();
+    const result = await loadBattleEvents("BA-2026-0024", fetcher);
+    const fatal = result.events.find((event) => (event.rawPayload as { id?: string } | undefined)?.id === "attack_031");
+    const champion = result.events.find((event) => event.eventType === "champion_selected");
+
+    expect(fetcher).not.toHaveBeenCalled();
+    expect(result.source).toBe("fixture");
+    expect((fatal?.rawPayload as { severity?: string }).severity).toBe("fatal");
+    expect(fatal?.actorId).toBe("infra_hacker");
+    expect(champion?.targetId).toBe("viral_designer");
+    expect(champion?.title).toContain("传播设计师 87/100");
+  });
+
   it("uses API event-store data when available", async () => {
     const remote = [{ ...demoEvents[0], id: "remote-1" }];
     const fetcher = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ source: "event-store", events: remote }) });

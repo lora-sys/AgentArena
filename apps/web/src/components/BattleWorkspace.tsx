@@ -4,6 +4,7 @@ import { loadBattleEvents, type BattleEventsResult } from "../data/battle";
 import { ArenaStage } from "./ArenaStage";
 import { RuntimeModeBadge, modeFromSource, normalizeMode } from "./runtime-mode-badge";
 import { useSearchParams } from "react-router-dom";
+import { t } from "../i18n/zh";
 
 type BattleView = "live" | "result" | "replay";
 
@@ -17,14 +18,14 @@ export function BattleWorkspace({ battleId }: { battleId: string }) {
   useEffect(() => { void loadBattleEvents(battleId).then(setBattle); }, [battleId]);
   const handleProgress = useCallback((events: readonly BattleEvent[]) => setVisibleEvents(events), []);
   const events = battle?.events ?? [];
-  const replayEvents = useMemo(() => events.filter((event) => ["proposal_created", "attack_created", "defense_created", "score_created", "champion_selected"].includes(event.eventType)), [events]);
+  const replayEvents = useMemo(() => events.filter((event) => ["proposal_created", "attack_created", "defense_created", "artifact_created", "score_created", "champion_selected"].includes(event.eventType)), [events]);
   const champion = useMemo(() => events.find((event) => event.eventType === "champion_selected"), [events]);
   useEffect(() => {
     const eventId = searchParams.get("event");
     if (eventId && events.length) setSelected(events.find((event) => event.id === eventId) ?? null);
   }, [events, searchParams]);
 
-  if (!battle) return <section className="battle-loading"><span>CONNECTING TO EVENT STORE</span><i /></section>;
+  if (!battle) return <section className="battle-loading"><span>{t("arena.loading")}</span><i /></section>;
 
   // 运行时模式：优先 URL ?mode=，否则由数据源推导
   const runtimeMode = searchParams.get("mode") ? normalizeMode(searchParams.get("mode")) : modeFromSource(battle.source);
@@ -32,13 +33,13 @@ export function BattleWorkspace({ battleId }: { battleId: string }) {
   return <section className="battle-workspace">
     <header className="workspace-bar">
       <div><RuntimeModeBadge mode={runtimeMode} /></div>
-      <nav aria-label="Battle view">
-        {(["live", "result", "replay"] as const).map((item) => <button key={item} className={view === item ? "active" : ""} onClick={() => setView(item)}>{item.toUpperCase()}</button>)}
+      <nav aria-label="战斗视图">
+        {(["live", "result", "replay"] as const).map((item) => <button key={item} className={view === item ? "active" : ""} onClick={() => setView(item)}>{t(`arena.view.${item}` as "arena.view.live" | "arena.view.result" | "arena.view.replay")}</button>)}
       </nav>
     </header>
 
     {view === "result" ? <ResultPanel champion={champion} events={events} /> : view === "replay" ? <ReplayWorkspace events={replayEvents} allEvents={events} battleId={battleId} onProgress={handleProgress} onSelect={setSelected} /> : <div className="battle-grid">
-      <ArenaStage battleId={battleId} events={replayEvents} onProgress={handleProgress} />
+      <ArenaStage battleId={battleId} events={replayEvents} onProgress={handleProgress} onFatalEvidence={setSelected} />
       <EvidenceLog events={visibleEvents} onSelect={setSelected} />
     </div>}
     <EvidenceDrawer event={selected} onClose={() => setSelected(null)} />
@@ -56,7 +57,7 @@ function ReplayWorkspace({ events, allEvents, battleId, onProgress, onSelect }: 
 }
 
 function EvidenceLog({ events, onSelect }: { events: readonly BattleEvent[]; onSelect: (event: BattleEvent) => void }) {
-  return <aside className="evidence-log"><header><span>EVIDENCE CHAIN</span><b>{events.length.toString().padStart(2, "0")}</b></header><div className="evidence-list">
+  return <aside className="evidence-log"><header><span>{t("arena.evidence_chain.title")}</span><b>{events.length.toString().padStart(2, "0")}</b></header><div className="evidence-list">
     {[...events].reverse().map((event) => <button type="button" onClick={() => onSelect(event)} key={event.id}><i /><div><span>{event.eventType.replaceAll("_", " ")}</span><strong>{event.title}</strong><small>{event.actorId ?? "arena system"} · {event.round}</small></div></button>)}
     {events.length === 0 && <p>Waiting for the first verified event…</p>}
   </div></aside>;
@@ -69,7 +70,7 @@ function EvidenceDrawer({ event, onClose }: { event: BattleEvent | null; onClose
   }, [onClose]);
   if (!event) return null;
   const payload = event.rawPayload as { severity?: string; acceptedAttack?: boolean; evidence?: string; responseToAttack?: string; revision?: string } | undefined;
-  return <div className="evidence-backdrop" onMouseDown={(e) => { if (e.currentTarget === e.target) onClose(); }}><section role="dialog" aria-modal="true" aria-labelledby="evidence-title" className="evidence-drawer"><header><div><span>{event.id} · {event.round}</span><h2 id="evidence-title">{event.title}</h2></div><button onClick={onClose}>ESC</button></header><div className="drawer-content"><section><h3>EVENT SUMMARY</h3><p>{event.content}</p></section>{payload?.severity && <section><h3>ATTACK SIGNAL</h3><p><b>{payload.severity.toUpperCase()}</b>{payload.evidence ?? "Evidence recorded in the battle chain."}</p></section>}{typeof payload?.acceptedAttack === "boolean" && <section><h3>DEFENSE VERDICT</h3><p><b>{payload.acceptedAttack ? "ACCEPTED" : "REJECTED"}</b>{payload.responseToAttack}<br />{payload.revision}</p></section>}<section><h3>VERIFIED PAYLOAD</h3><pre>{event.rawPayload ? JSON.stringify(event.rawPayload,null,2) : "No additional payload."}</pre></section></div></section></div>;
+  return <div className="evidence-backdrop" onMouseDown={(e) => { if (e.currentTarget === e.target) onClose(); }}><section role="dialog" aria-modal="true" aria-labelledby="evidence-title" className="evidence-drawer"><header><div><span>{event.id} · {event.round}</span><h2 id="evidence-title">{event.title}</h2></div><button onClick={onClose}>{t("common.close")}</button></header><div className="drawer-content"><section><h3>{t("evidence.event_summary")}</h3><p>{event.content}</p></section>{payload?.severity && <section><h3>{t("evidence.attack_signal")}</h3><p><b>{payload.severity.toUpperCase()}</b>{payload.evidence ?? t("evidence.recorded")}</p></section>}{typeof payload?.acceptedAttack === "boolean" && <section><h3>{t("evidence.defense_verdict")}</h3><p><b>{payload.acceptedAttack ? "已接受" : "已驳回"}</b>{payload.responseToAttack}<br />{payload.revision}</p></section>}<section><h3>{t("evidence.verified_payload")}</h3><pre>{event.rawPayload ? JSON.stringify(event.rawPayload,null,2) : t("evidence.no_payload")}</pre></section></div></section></div>;
 }
 
 function ResultPanel({ champion, events }: { champion?: BattleEvent; events: readonly BattleEvent[] }) {

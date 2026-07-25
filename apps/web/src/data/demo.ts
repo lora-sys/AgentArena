@@ -1,9 +1,9 @@
 import type { BattleEvent } from "@agent-arena/contracts";
 
 export const teams = [
-  { id: "safe_builder", code: "SB", name: "SAFE BUILDER", role: "FEASIBILITY", color: "cyan", hp: 72, portrait: "/assets/agents/safe-builder.png" },
-  { id: "viral_designer", code: "VD", name: "VIRAL DESIGNER", role: "DEMO POWER", color: "pink", hp: 28, portrait: "/assets/agents/viral-designer.png" },
-  { id: "infra_hacker", code: "IH", name: "INFRA HACKER", role: "TECHNICAL DEPTH", color: "amber", hp: 81, portrait: "/assets/agents/infra-hacker.png" },
+  { id: "safe_builder", code: "SB", name: "稳健构建者", role: "Safe Builder", color: "cyan", hp: 72, portrait: "/assets/agents/safe-builder.png" },
+  { id: "viral_designer", code: "VD", name: "传播设计师", role: "Viral Designer", color: "pink", hp: 88, portrait: "/assets/agents/viral-designer.png" },
+  { id: "infra_hacker", code: "IH", name: "架构黑客", role: "Infra Hacker", color: "amber", hp: 81, portrait: "/assets/agents/infra-hacker.png" },
 ] as const;
 
 const common = { battleId: "demo", createdAt: "2026-07-04T12:04:00Z" };
@@ -15,7 +15,9 @@ const common = { battleId: "demo", createdAt: "2026-07-04T12:04:00Z" };
  */
 export const goldenFatalDemo = {
   attacker: "架构黑客队",
+  attackerPortrait: "/assets/agents/infra-hacker.png",
   target: "传播设计师队",
+  targetPortrait: "/assets/agents/viral-designer.png",
   attackTitle: "attack_031",
   attackSummary: "空状态恢复失败：当输入为空时演示崩溃，暴露潜在问题。",
   hpBefore: 88,

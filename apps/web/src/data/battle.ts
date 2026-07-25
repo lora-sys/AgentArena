@@ -1,5 +1,6 @@
 import type { BattleEvent } from "@agent-arena/contracts";
 import { demoEvents } from "./demo";
+import { VERIFIED_SHOWCASE_ID, verifiedShowcaseEvents } from "./verified-showcase";
 
 export type BattleEventsResult = {
   source: "event-store" | "fixture" | "fallback";
@@ -9,6 +10,9 @@ export type BattleEventsResult = {
 type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Pick<Response, "ok" | "json">>;
 
 export async function loadBattleEvents(battleId: string, fetcher: FetchLike = fetch): Promise<BattleEventsResult> {
+  if (battleId === VERIFIED_SHOWCASE_ID) {
+    return { source: "fixture", events: verifiedShowcaseEvents() };
+  }
   try {
     const response = await fetcher(`/api/battles/${encodeURIComponent(battleId)}/events`);
     if (!response.ok) throw new Error("Battle event request failed");

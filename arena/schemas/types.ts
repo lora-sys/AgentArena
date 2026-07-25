@@ -45,7 +45,7 @@ export const attackTypes = [
   "weak_long_term_vision",
 ] as const;
 
-export const severities = ["low", "medium", "high"] as const;
+export const severities = ["low", "medium", "high", "fatal"] as const;
 
 export const scoreCategories = [
   "novelty",

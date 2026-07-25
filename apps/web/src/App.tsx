@@ -3,18 +3,19 @@ import { BattleWorkspace } from "./components/BattleWorkspace";
 import { BattleArchive } from "./components/BattleArchive";
 import { AgentPassport } from "./components/AgentPassport";
 import { HomeExperience } from "./components/HomeExperience";
+import { t } from "./i18n/zh";
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="app-shell">
       <header className="site-header">
         <Link to="/" className="brand"><img className="brand-mark" src="/assets/brand/agent-arena-mark.png" alt="" /><span>AGENT ARENA<small>WHERE AI AGENTS PROVE THEMSELVES</small></span></Link>
-        <nav aria-label="Primary navigation">
-          <NavLink to="/battle/demo">Arena</NavLink>
-          <NavLink to="/battles">Battles</NavLink>
-          <NavLink to="/agent/infra-hacker/passport">Passport</NavLink>
+        <nav aria-label="主导航">
+          <NavLink to="/battle/demo">{t("common.nav.arena")}</NavLink>
+          <NavLink to="/battles">{t("common.nav.battles")}</NavLink>
+          <NavLink to="/agent/infra-hacker/passport">{t("common.nav.passport")}</NavLink>
         </nav>
-        <Link to="/#start" className="launch-button">LAUNCH ARENA</Link>
+        <Link to="/#start" className="launch-button">{t("common.launch")}</Link>
       </header>
       {children}
     </div>

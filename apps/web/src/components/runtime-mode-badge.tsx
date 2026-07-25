@@ -1,4 +1,4 @@
-import { zh } from "../i18n/zh";
+import { liveArenaZh as zh } from "../i18n/zh";
 
 /**
  * RuntimeModeBadge — 运行时模式徽标（Issue #33 / 计划 #12）

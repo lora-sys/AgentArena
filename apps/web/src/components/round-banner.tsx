@@ -1,4 +1,4 @@
-import { zh } from "../i18n/zh";
+import { liveArenaZh as zh } from "../i18n/zh";
 
 /**
  * RoundBanner — 回合横幅 + 七段展示进度条（Issue #31 / 计划 #10）

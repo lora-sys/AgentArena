@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Severity } from "@agent-arena/contracts";
-import { zh } from "../i18n/zh";
+import { liveArenaZh as zh } from "../i18n/zh";
 
 /**
  * HpBar — Proof HP 血条 + 掉血 / 命中 / 致命动画（Issue #29 / 计划 #08）
@@ -43,11 +43,16 @@ export interface HpBarProps {
 
 const DANGER_THRESHOLD = 35;
 
+export function isFatalHpHit(previousHp: number | undefined, currentHp: number, severity?: HpSeverity): boolean {
+  const tookDamage = previousHp !== undefined && currentHp < previousHp;
+  return tookDamage && (severity === "fatal" || currentHp <= 0);
+}
+
 export function HpBar({ teamId, hp, prevHp, severity, onFatal, className = "" }: HpBarProps) {
   const clampedHp = Math.max(0, Math.min(100, hp));
   const damage = prevHp !== undefined ? Math.max(0, prevHp - clampedHp) : 0;
   const took = damage > 0;
-  const isFatal = severity === "fatal" || (took && clampedHp <= 0);
+  const isFatal = isFatalHpHit(prevHp, clampedHp, severity);
   const danger = clampedHp < DANGER_THRESHOLD;
 
   // 每次掉血生成一个 hit key，驱动闪红 / 浮伤 / 震动重播（React 用 key 重挂）

@@ -266,7 +266,11 @@ describe("assertAttack", () => {
   });
 
   it("rejects invalid severity", () => {
-    expect(() => assertAttack({ ...validAttack, severity: "fatal" })).toThrow(SchemaValidationError);
+    expect(() => assertAttack({ ...validAttack, severity: "catastrophic" })).toThrow(SchemaValidationError);
+  });
+
+  it("accepts fatal severity (v0.5.2 contracts v2)", () => {
+    expect(() => assertAttack({ ...validAttack, severity: "fatal" })).not.toThrow();
   });
 
   it("rejects missing id", () => {

@@ -1,5 +1,5 @@
 import type { BattleEvent } from "@agent-arena/contracts";
-import { zh } from "../i18n/zh";
+import { liveArenaZh as zh } from "../i18n/zh";
 import { TypewriterText } from "./typewriter-text";
 
 /**

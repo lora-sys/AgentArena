@@ -1,53 +1,244 @@
 /**
- * 中文文案唯一来源（Issue #27 / 计划 #06 · workstream E · owner P2）
+ * Agent Arena v0.5.2 中文文案唯一权威表。
  *
- * ⚠️ 共触区草案：本文件是 P1 为解锁 #31/#32/#33 而起草的 **初版**，
- * 仅收录 A 线组件当前需要的 key。合并前需 P2 sign-off 并与 D/E 线补全。
- * 权威口径：docs/DEV-STANDARDS.md §4（中文优先）· §7（数值/文案）。
+ * 硬规矩（docs/DEV-STANDARDS.md §5）：
+ *  - 所有用户可见字符串必须从这里取，禁止组件硬编码中文 / 裸英文。
+ *  - 中文为主标题，英文只作副标题（小字、灰色、可省略）。
+ *  - 新增 key 时同步在 docs/DEV-STANDARDS.md 的 i18n 章节登记。
  *
- * 硬规矩：组件内禁止硬编码用户可见字符串，一律从这里取。
- * 中文主标题 + 可选英文副标题（如 "战斗直播 Live Arena"）。
+ * Key 命名：`{页面}.{区域}.{语义}`，全小写，下划线分词。
  */
 
 export const zh = {
-  /** 顶栏 / 通用 */
+  // -------------------------------------------------------------------------
+  // 通用
+  // -------------------------------------------------------------------------
+  "common.app_name": "Agent Arena",
+  "common.app_tagline": "智能体竞技场",
+  "common.loading": "加载中",
+  "common.retry": "重试",
+  "common.close": "关闭",
+  "common.back": "返回",
+  "common.continue": "继续",
+  "common.copy_link": "复制链接",
+  "common.copied": "已复制",
+  "common.nav.arena": "竞技场",
+  "common.nav.battles": "战斗记录",
+  "common.nav.passport": "护照",
+  "common.launch": "进入竞技场",
+
+  // -------------------------------------------------------------------------
+  // Landing 页
+  // -------------------------------------------------------------------------
+  "landing.hero.title": "看三个智能体团队现场造产品",
+  "landing.hero.subtitle": "Watch three agent teams build under fire",
+  "landing.hero.description": "同一份简报，三个团队实时提案、互相攻击、修复、评分。你能看到每一步证据。",
+  "landing.cta.watch_replay": "观看 90 秒已验证演示",
+  "landing.cta.live_battle": "实时开战（Beta）",
+  "landing.fairness.title": "公平协议",
+  "landing.fairness.item1": "三队看到同一份简报",
+  "landing.fairness.item2": "同一模型，同一 token 预算",
+  "landing.fairness.item3": "评分绑定证据事件 ID，可回放",
+  "landing.agents.title": "三支参赛队伍",
+  "landing.agents.safe.name": "稳健构建者",
+  "landing.agents.safe.subtitle": "Safe Builders",
+  "landing.agents.safe.tagline": "正确性优先，每一行代码都可解释。",
+  "landing.agents.viral.name": "传播设计师",
+  "landing.agents.viral.subtitle": "Viral Designers",
+  "landing.agents.viral.tagline": "演示力优先，让产品自带传播势能。",
+  "landing.agents.infra.name": "架构黑客",
+  "landing.agents.infra.subtitle": "Infra Hackers",
+  "landing.agents.infra.tagline": "技术深度优先，正面硬刚难题。",
+  "landing.idea_input.label": "你的创意",
+  "landing.idea_input.placeholder": "例：帮助大学生准备考试的 AI 学习助手",
+  "landing.idea_input.submit": "实时开战",
+  "landing.idea_input.too_long": "创意最长 300 字",
+  "landing.idea_input.empty": "请输入创意",
+
+  // -------------------------------------------------------------------------
+  // Runtime Mode Badge（三态）
+  // -------------------------------------------------------------------------
+  "runtime.badge.verified_replay": "已验证演示 · 固定证据 · 可重复回放",
+  "runtime.badge.live_runtime": "实时 AI 竞技 · 真实智能体正在运行",
+  "runtime.badge.demo_fallback": "演示兜底 · 当前演示不对应刚才输入的创意",
+
+  // -------------------------------------------------------------------------
+  // Round 进度条（七段 · 对应设计稿 02 顶部）
+  // -------------------------------------------------------------------------
+  "round.stage.brief": "简报",
+  "round.stage.proposal": "提案",
+  "round.stage.build": "构建",
+  "round.stage.attack": "攻击",
+  "round.stage.defense": "防守",
+  "round.stage.verify": "验证",
+  "round.stage.judgment": "裁决",
+
+  // -------------------------------------------------------------------------
+  // Live Arena 页
+  // -------------------------------------------------------------------------
+  "arena.header.battle_label": "Battle",
+  "arena.header.live": "LIVE",
+  "arena.header.rules": "规则",
+  "arena.header.share": "分享",
+  "arena.idea_prefix": "创意",
+  "arena.current_attack.title": "当前攻击焦点",
+  "arena.current_attack.attacker": "攻击方",
+  "arena.current_attack.target": "目标",
+  "arena.evidence_chain.title": "证据链",
+  "arena.event_stream.title": "事件流",
+  "arena.host.title": "主持人解说",
+  "arena.host.subtitle": "Arena Host",
+  "arena.agent_card.build": "构建",
+  "arena.agent_card.review": "审查",
+  "arena.agent_card.defend": "防守",
+  "arena.agent_card.proof_label": "证明值",
+  "arena.agent_card.view_artifact": "查看作品",
+  "arena.agent_card.view_evidence": "查看证据",
+  "arena.view.live": "直播",
+  "arena.view.result": "结果",
+  "arena.view.replay": "回放",
+  "arena.loading": "正在连接事件存储",
+  "arena.event.proposal_created": "提案已生成",
+  "arena.event.attack_created": "攻击已生成",
+  "arena.event.defense_created": "防守已提交",
+  "arena.event.artifact_created": "作品已更新",
+  "arena.event.score_created": "评分已记录",
+  "arena.event.champion_selected": "冠军已选出",
+
+  // 致命攻击接管态（设计稿 03）
+  "arena.fatal.banner": "致命攻击 CRITICAL ATTACK DETECTED",
+  "arena.fatal.attacker_side": "攻击方",
+  "arena.fatal.defender_side": "目标方",
+  "arena.fatal.proof_delta_label": "证明值变化",
+
+  // Live AI Degraded 页（设计稿 08）
+  "arena.degraded.banner": "演示兜底 · 当前演示不对应刚才输入的创意",
+  "arena.degraded.countdown_prefix": "秒后自动切回已验证演示",
+  "arena.degraded.pause_hint": "悬停或按键暂停倒计时",
+  "arena.degraded.back_now": "立即切回已验证演示",
+
+  // -------------------------------------------------------------------------
+  // Evidence Lens Modal（设计稿 04）
+  // -------------------------------------------------------------------------
+  "evidence.title": "证据镜",
+  "evidence.subtitle": "Evidence Lens",
+  "evidence.dimension.feasibility": "可行性",
+  "evidence.dimension.originality": "原创性",
+  "evidence.dimension.demo_power": "演示力",
+  "evidence.dimension.technical_depth": "技术深度",
+  "evidence.dimension.clarity": "讲解清晰",
+  "evidence.dimension.risk_control": "风险控制",
+  "evidence.chain_title": "证据链",
+  "evidence.state.full": "完整证据链已就绪",
+  "evidence.state.linked": "仅有关联证据，无完整分解",
+  "evidence.state.insufficient": "当前演示证据不足，无法进入证据镜",
+  "evidence.event_summary": "事件摘要",
+  "evidence.attack_signal": "攻击信号",
+  "evidence.defense_verdict": "防守裁决",
+  "evidence.verified_payload": "已验证载荷",
+  "evidence.recorded": "证据已记录在本场战斗链中。",
+  "evidence.no_payload": "没有附加载荷。",
+
+  // -------------------------------------------------------------------------
+  // Artifact Viewer Modal（设计稿 05）
+  // -------------------------------------------------------------------------
+  "artifact.title": "作品查看",
+  "artifact.subtitle": "Artifact Viewer",
+  "artifact.tab.versions": "版本对比",
+  "artifact.tab.patch": "补丁差异",
+  "artifact.tab.tests": "测试结果",
+  "artifact.tab.evidence": "关联证据",
+  "artifact.version.v1": "v1 · 初版",
+  "artifact.version.v2": "v2 · 修复版",
+  "artifact.test.id": "测试 ID",
+  "artifact.test.name": "用例名",
+  "artifact.test.input": "输入",
+  "artifact.test.expected": "期望",
+  "artifact.test.actual": "实际",
+  "artifact.test.result": "结果",
+  "artifact.test.pass": "通过",
+  "artifact.test.fail": "未通过",
+  "artifact.degraded.title": "实时演示证据不完整",
+  "artifact.degraded.body": "当前实时运行未产出可查看的作品版本对比，请返回观看已验证演示以获得完整证据链。",
+  "artifact.degraded.cta": "返回已验证演示",
+
+  // -------------------------------------------------------------------------
+  // Champion 页（设计稿 06 + 07）
+  // -------------------------------------------------------------------------
+  "champion.reveal.title": "冠军",
+  "champion.reveal.score_suffix": "/100",
+  "champion.reveal.share_evidence": "分享证据链",
+  "champion.reveal.view_replay": "查看战斗回放",
+  "champion.passport.title": "团队护照快照",
+  "champion.passport.subtitle": "Team Passport Snapshot",
+  "champion.passport.strengths": "优势",
+  "champion.passport.weaknesses": "弱点",
+  "champion.passport.improvements": "改进建议",
+  "champion.passport.journey": "战斗旅程",
+  "champion.mini.title": "本场战斗尚未产生完整护照快照",
+  "champion.mini.body": "实时演示未完成到裁决阶段，请继续观看或返回观看已验证演示的完整护照。",
+  "champion.mini.back_to_arena": "返回 Live Arena",
+  "champion.mini.watch_verified": "观看已验证演示",
+
+  // -------------------------------------------------------------------------
+  // 错误 & 边界
+  // -------------------------------------------------------------------------
+  "error.generic": "出了点问题，请稍后重试",
+  "error.rate_limited": "操作过于频繁，请稍后再试",
+  "error.feature_disabled": "实时 AI 竞技当前未开启，请观看已验证演示",
+  "error.battle_not_found": "找不到该战斗",
+} as const;
+
+/**
+ * Live Arena 组件所需的结构化文案。
+ * 新页面优先使用上方扁平 key；该结构仅用于已交付的 A 线组件平滑接入统一文案源。
+ */
+export const liveArenaZh = {
   common: {
-    launch: "进入竞技场",
     replay: "回放",
     result: "结果",
     live: "直播",
     pause: "暂停",
     resume: "继续",
   },
-
-  /** Live Arena 页面 */
   arena: {
-    liveBattle: "战斗直播",
-    liveBattleEn: "Live Arena",
-    arenaName: "智能体竞技场",
-    battleId: "对战编号",
-    liveCommentary: "现场解说",
-    evidenceChain: "证据链",
-    hp: "证明值",
+    hp: zh["arena.agent_card.proof_label"],
+    battle: zh["arena.header.battle_label"],
+    rules: zh["arena.header.rules"],
+    share: zh["arena.header.share"],
+    idea: "创意：帮助大学生准备考试的 AI 学习助手",
+    currentAttack: zh["arena.current_attack.title"],
+    attacker: zh["arena.current_attack.attacker"],
+    target: zh["arena.current_attack.target"],
+    evidenceChain: zh["arena.evidence_chain.title"],
+    eventStream: zh["arena.event_stream.title"],
+    roles: [zh["arena.agent_card.build"], zh["arena.agent_card.review"], zh["arena.agent_card.defend"]] as const,
+    eventType: {
+      proposal_created: zh["arena.event.proposal_created"],
+      attack_created: zh["arena.event.attack_created"],
+      defense_created: zh["arena.event.defense_created"],
+      artifact_created: zh["arena.event.artifact_created"],
+      score_created: zh["arena.event.score_created"],
+      champion_selected: zh["arena.event.champion_selected"],
+    } as Record<string, string>,
     standingBy: "待命中",
     waitingSignal: "等待回合信号…",
-    typing: "生成中",
-    evidenceLocked: "证据待锁定",
+    typing: "生成中…",
+    evidenceLocked: "证据已锁定",
     accepted: "已接受",
     rejected: "已驳回",
-    proposalTag: "方案",
-    /** 回合序号显示：ROUND x / y —— 数字前缀保留英文缩写作副标题 */
     roundOf: (index: number, count: number) => `第 ${index} / ${count} 回合`,
   },
-
-  /**
-   * RoundBanner 七段展示进度条（#31）
-   * 展示层七段；Engine 状态机仅四段（提案/攻击/防守/裁决）。
-   */
   roundBanner: {
-    /** 七段标签（简报/提案/构建/攻击/防守/验证/裁决） */
-    segments: ["简报", "提案", "构建", "攻击", "防守", "验证", "裁决"] as const,
-    /** 大标题：按 Engine 回合 key 映射 */
+    segments: [
+      zh["round.stage.brief"],
+      zh["round.stage.proposal"],
+      zh["round.stage.build"],
+      zh["round.stage.attack"],
+      zh["round.stage.defense"],
+      zh["round.stage.verify"],
+      zh["round.stage.judgment"],
+    ] as const,
     titleByRound: {
       proposal_round: "提案回合",
       cross_attack_round: "交叉攻击回合",
@@ -57,48 +248,37 @@ export const zh = {
     } as Record<string, string>,
     degraded: "证据不足",
   },
-
-  /**
-   * RuntimeModeBadge 三态徽标（#33）
-   * verified_replay（已验证演示）/ live_runtime（实时 AI 竞技）/ demo_fallback（演示兜底）
-   */
   runtimeMode: {
     verified_replay: { label: "已验证演示", sub: "Verified Replay" },
     live_runtime: { label: "实时 AI 竞技", sub: "Live Runtime" },
     demo_fallback: { label: "演示兜底", sub: "Demo Fallback" },
   } as Record<string, { label: string; sub: string }>,
-
-  /** Arena Host 主持人解说（#32） */
   host: {
     name: "解说 AI",
-    nameEn: "Arena Host",
-    label: "现场解说",
+    label: zh["arena.host.title"],
     standby: "竞技场系统待命中。",
     proposal: "三支队伍同时落笔，每一句主张都会成为可回放的证据。",
     scoring: "评委正在把分数绑定到已记录的证据链上。",
     attack: (title: string) => `${title}。目标方现在必须正面回应这条证据。`,
     champion: (title: string) => `${title}。声誉已依据本场证据更新。`,
   },
-
-  /**
-   * 致命攻击全屏接管态（#34 · 设计稿画面 03）
-   * A 线负责视觉：红色警示条 + 攻击方/目标双面板 + 证明值骤降大字过渡。
-   * Evidence Lens 展开内容由 C 线（#39）负责，本处仅提供接管外壳文案。
-   */
   fatal: {
     critical: "致命攻击",
     criticalEn: "Critical Attack Detected",
-    attacker: "攻击方",
-    target: "目标",
+    attacker: zh["arena.fatal.attacker_side"],
+    target: zh["arena.fatal.defender_side"],
     attackEvent: "致命载荷",
-    before: "改前",
-    after: "改后",
-    proofDamage: "证明值掉血",
-    viewEvidence: "查看证据",
-    dismiss: "关闭接管",
-    /** 主持人在致命时刻的解说 */
-    commentary: (target: string) => `${target} 被致命命中，证明值骤降。守得住才是真冠军。`,
+    before: "命中前",
+    after: "命中后",
+    proofDamage: zh["arena.fatal.proof_delta_label"],
+    viewEvidence: zh["arena.agent_card.view_evidence"],
+    dismiss: zh["common.close"],
   },
 } as const;
 
-export type Zh = typeof zh;
+export type ZhKey = keyof typeof zh;
+
+/** Lookup with English fallback to key itself (for missing entries during migration). */
+export function t(key: ZhKey): string {
+  return zh[key] ?? key;
+}

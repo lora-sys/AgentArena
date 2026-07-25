@@ -235,7 +235,7 @@ export function assertAttack(value: unknown): asserts value is Attack {
   addStringIssue(issues, value.claim, "claim");
   addStringIssue(issues, value.evidence, "evidence");
   if (!isOneOf(value.severity, severities)) {
-    issues.push("severity must be low, medium, or high");
+    issues.push("severity must be low, medium, high, or fatal");
   }
   addStringIssue(issues, value.suggestedFix, "suggestedFix");
   assertNoIssues<Attack>("Attack", issues, value);
