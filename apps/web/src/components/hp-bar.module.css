@@ -1,0 +1,129 @@
+.root {
+  position: relative;
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--bg-panel);
+  border: 1px solid var(--bg-hairline);
+  border-radius: var(--radius-md);
+  transition: background var(--dur-hit-flash) ease-out;
+}
+
+.flash {
+  animation: hitFlash var(--dur-hit-flash) ease-out;
+}
+
+.shake {
+  animation: fatalShake var(--dur-fatal-shake) ease-in-out;
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: var(--sp-2);
+}
+
+.teamName {
+  font-family: var(--font-body);
+  font-size: var(--fs-caption);
+  color: var(--ink-3);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.hpText {
+  font-family: var(--font-mono);
+  color: var(--ink-2);
+}
+
+.hpNumber {
+  font-size: var(--fs-title);
+  font-weight: 600;
+  color: var(--ink-1);
+}
+
+.hpMax {
+  font-size: var(--fs-caption);
+  color: var(--ink-3);
+}
+
+.track {
+  position: relative;
+  height: 6px;
+  background: var(--ink-5);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition:
+    width var(--dur-hp-drain) ease-out,
+    background var(--dur-hit-flash) ease-out;
+}
+
+.floating {
+  position: absolute;
+  top: -8px;
+  right: var(--sp-4);
+  font-family: var(--font-mono);
+  font-size: var(--fs-title);
+  font-weight: 700;
+  color: var(--danger);
+  text-shadow: 0 0 12px var(--danger);
+  animation: floatUp var(--dur-floating-damage) ease-out forwards;
+  pointer-events: none;
+}
+
+.floatingFatal {
+  font-size: calc(var(--fs-title) * 1.4);
+  color: #fff;
+  text-shadow: 0 0 20px var(--danger), 0 0 40px var(--danger);
+}
+
+@keyframes hitFlash {
+  0% {
+    background: var(--danger-dim);
+    border-color: var(--danger);
+  }
+  100% {
+    background: var(--bg-panel);
+    border-color: var(--bg-hairline);
+  }
+}
+
+@keyframes fatalShake {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-4px, 2px); }
+  40% { transform: translate(4px, -2px); }
+  60% { transform: translate(-3px, -1px); }
+  80% { transform: translate(3px, 1px); }
+}
+
+@keyframes floatUp {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-32px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flash,
+  .shake,
+  .floating {
+    animation: none;
+  }
+  .floating {
+    opacity: 0;
+  }
+  .fill {
+    transition: none;
+  }
+}

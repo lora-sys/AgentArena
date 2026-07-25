@@ -1,0 +1,52 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: var(--sp-1) var(--sp-3);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  letter-spacing: 0.04em;
+  border-radius: var(--radius-full);
+  border: 1px solid;
+  white-space: nowrap;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: currentColor;
+}
+
+.verified_replay {
+  color: var(--team-safe);
+  border-color: var(--team-safe);
+  background: var(--team-safe-dim);
+}
+
+.live_runtime {
+  color: var(--team-viral);
+  border-color: var(--team-viral);
+  background: var(--team-viral-dim);
+}
+
+.live_runtime .dot {
+  animation: pulseDot 1.4s ease-in-out infinite;
+}
+
+.demo_fallback {
+  color: var(--champion);
+  border-color: var(--champion);
+  background: rgba(233, 196, 104, 0.14);
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live_runtime .dot {
+    animation: none;
+  }
+}

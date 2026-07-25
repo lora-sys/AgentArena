@@ -1,8 +1,14 @@
-import { Link, NavLink, Navigate, Route, Routes, useParams } from "react-router-dom";
+import { Link, NavLink, Navigate, Route, Routes, useParams, useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import type { BattleEvent } from "@agent-arena/contracts";
 import { BattleWorkspace } from "./components/BattleWorkspace";
 import { BattleArchive } from "./components/BattleArchive";
 import { AgentPassport } from "./components/AgentPassport";
 import { HomeExperience } from "./components/HomeExperience";
+import { LiveArenaPage } from "./components/live-arena-page";
+import { loadBattleEvents } from "./data/battle";
+import { t } from "./i18n";
+import type { RuntimeMode } from "./components/runtime-mode-badge";
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
@@ -27,7 +33,42 @@ function HomePage() {
 
 function BattlePage() {
   const { battleId = "demo" } = useParams();
+  const [searchParams] = useSearchParams();
+  const mode = (searchParams.get("mode") ?? "verified_replay") as RuntimeMode;
+
+  // v0.5.2: use the new LiveArenaPage for the golden BA-2026-0024 storyline
+  // and any live_runtime / demo_fallback battles. Legacy battles keep the
+  // old BattleWorkspace for backwards compatibility during the migration.
+  if (battleId === "BA-2026-0024" || mode !== "verified_replay") {
+    return <LiveArenaRoute battleId={battleId} mode={mode} />;
+  }
   return <main className="battle-page"><BattleWorkspace battleId={battleId} /></main>;
+}
+
+function LiveArenaRoute({ battleId, mode }: { battleId: string; mode: RuntimeMode }) {
+  const [events, setEvents] = useState<readonly BattleEvent[] | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    void loadBattleEvents(battleId).then((result) => {
+      if (!cancelled) setEvents(result.events);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [battleId]);
+
+  if (!events) {
+    return <main className="battle-page"><p>{t("common.loading")}…</p></main>;
+  }
+
+  return (
+    <LiveArenaPage
+      battleId={battleId}
+      idea="帮助大学生准备考试的 AI 学习助手"
+      events={events}
+      mode={mode}
+    />
+  );
 }
 
 function BattlesPage() {

@@ -1,0 +1,82 @@
+.root {
+  display: flex;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  background: var(--bg-panel);
+  border: 1px solid var(--bg-hairline);
+  border-radius: var(--radius-md);
+  align-items: flex-start;
+}
+
+.avatar {
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 8px rgba(73, 214, 200, 0.3));
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-1);
+}
+
+.title {
+  font-family: var(--font-heading);
+  font-size: var(--fs-body);
+  color: var(--ink-1);
+}
+
+.subtitle {
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--ink-3);
+  letter-spacing: 0.08em;
+}
+
+.line {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-body);
+  color: var(--ink-2);
+  line-height: 1.5;
+  animation: fadeIn 200ms ease-out;
+}
+
+.waveform {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 18px;
+}
+
+.bar {
+  flex: 1;
+  background: var(--team-safe);
+  opacity: 0.6;
+  animation: wave 1.2s ease-in-out infinite;
+  min-height: 2px;
+}
+
+@keyframes wave {
+  0%, 100% { height: 20%; }
+  50% { height: 100%; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar {
+    animation: none;
+    height: 40%;
+  }
+  .line {
+    animation: none;
+  }
+}

@@ -1,0 +1,106 @@
+/**
+ * v0.5.2 Design Tokens — 唯一权威表
+ *
+ * 对齐设计稿 ui/详细瞬间状态设计稿.png（画面 01–08）
+ * 与 ui/design.png（Landing Hero）。
+ *
+ * 使用规则（docs/DEV-STANDARDS.md §5）：
+ *  - 新组件一律引用 var(--token)，禁止硬编码颜色 / 字号。
+ *  - 数值与设计稿不一致时，以设计稿为准。
+ *  - 所有颜色 OKLCH/HEX 双写，HEX 供旧组件 fallback。
+ */
+
+:root {
+  /* ── 背景阶（深空） ─────────────────────────────────────────────────── */
+  --bg-void: #0a0d14;             /* 设计稿 02 主背景 */
+  --bg-panel: #10151f;            /* 卡片底 */
+  --bg-panel-2: #151b27;          /* 二级卡片 */
+  --bg-hairline: #1f2837;         /* 分隔线 */
+  --bg-glow: rgba(73, 214, 200, 0.08); /* 顶部氛围光 */
+
+  /* ── 三队主色（写死，与设计稿色块一致） ────────────────────────────── */
+  --team-safe: #49d6c8;           /* 稳健构建者 · 蓝绿 */
+  --team-viral: #f5567e;          /* 传播设计师 · 桃红 */
+  --team-infra: #f2b84b;          /* 架构黑客 · 琥珀 */
+  --team-safe-dim: rgba(73, 214, 200, 0.18);
+  --team-viral-dim: rgba(245, 86, 126, 0.18);
+  --team-infra-dim: rgba(242, 184, 75, 0.18);
+
+  /* ── 危险 / 冠军金 / 中性阶 ────────────────────────────────────────── */
+  --danger: #ff4d4d;              /* HP < 35 · 致命攻击红 */
+  --danger-dim: rgba(255, 77, 77, 0.14);
+  --champion: #e9c468;            /* 冠军金 · Reveal 光斑 */
+  --champion-glow: rgba(233, 196, 104, 0.32);
+  --ink-1: #eef4f8;               /* 主文 */
+  --ink-2: #b7c2cf;               /* 次文 */
+  --ink-3: #7c8896;               /* 说明 */
+  --ink-4: #4c5663;               /* 禁用 */
+  --ink-5: #2a313c;               /* 极淡 */
+
+  /* ── 字体族 ────────────────────────────────────────────────────────── */
+  --font-heading: "Archivo Black", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-body: "Inter", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", "SF Mono", Menlo, monospace;
+
+  /* ── 字号阶梯（与设计稿比例一致） ─────────────────────────────────── */
+  --fs-caption: 10px;             /* 标签 / 提示 */
+  --fs-body: 13px;                /* 正文 */
+  --fs-body-lg: 15px;             /* 强调正文 */
+  --fs-title: 22px;               /* 卡片标题 */
+  --fs-hero: 44px;                /* 页面 hero */
+  --fs-mega: 96px;                /* 致命攻击 HP 大字 */
+
+  /* ── 间距阶 ────────────────────────────────────────────────────────── */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-12: 48px;
+  --sp-16: 64px;
+
+  /* ── 圆角 ──────────────────────────────────────────────────────────── */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 999px;
+
+  /* ── 阴影 / 光晕 ───────────────────────────────────────────────────── */
+  --shadow-panel: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --glow-safe: 0 0 24px rgba(73, 214, 200, 0.25);
+  --glow-viral: 0 0 24px rgba(245, 86, 126, 0.25);
+  --glow-infra: 0 0 24px rgba(242, 184, 75, 0.25);
+  --glow-danger: 0 0 32px rgba(255, 77, 77, 0.4);
+  --glow-champion: 0 0 48px rgba(233, 196, 104, 0.4);
+
+  /* ── 动效时长（写死，UI Mapping v0.5.1 §14） ─────────────────────── */
+  --dur-hp-drain: 700ms;
+  --dur-hit-flash: 500ms;
+  --dur-fatal-shake: 450ms;
+  --dur-floating-damage: 1100ms;
+  --dur-round-banner: 350ms;
+  --dur-victory-reveal: 1200ms;
+  --dur-modal-fade: 350ms;
+  --dur-typewriter-min: 14ms;
+  --dur-typewriter-max: 25ms;
+
+  /* ── Z 轴 ──────────────────────────────────────────────────────────── */
+  --z-base: 0;
+  --z-sticky: 10;
+  --z-banner: 100;
+  --z-modal: 1000;
+  --z-fatal-overlay: 2000;
+}
+
+/* ── Reduced Motion 降级（硬规矩） ─────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

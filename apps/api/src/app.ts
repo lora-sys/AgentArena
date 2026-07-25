@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import type { BattleEvent } from "@agent-arena/contracts";
 import fixture from "../../../examples/fixtures/hackathon-001.json";
+import verifiedShowcase from "../../../examples/fixtures/verified-showcase.json";
 import { runLiveBattleFromPayload, LiveBattleIdeaTooLongError } from "@/lib/runtime/runLiveBattleFromPayload";
 import { StepFunNotConfiguredError } from "@/lib/runtime/providers/stepfun";
 import { BattleRateLimiter } from "./middlewares/rate-limit";
@@ -75,8 +76,39 @@ export function normalizeStoredEvent(event: BattleEvent): BattleEvent {
   };
 }
 
+/** Map verified-showcase fixture events to contracts BattleEvent shape. */
+function verifiedShowcaseEvents(): BattleEvent[] {
+  return (verifiedShowcase.events as ReadonlyArray<{
+    id: string;
+    battleId: string;
+    round: string;
+    actorId?: string;
+    targetId?: string;
+    eventType: string;
+    title: string;
+    content: string;
+    rawPayload?: unknown;
+    createdAt: string;
+  }>).map((event, index) => ({
+    id: event.id,
+    battleId: event.battleId,
+    round: event.round,
+    actorId: event.actorId,
+    targetId: event.targetId,
+    eventType: event.eventType as BattleEvent["eventType"],
+    title: event.title,
+    content: event.content,
+    rawPayload: event.rawPayload,
+    sequence: index + 1,
+    createdAt: event.createdAt,
+  }));
+}
+
 app.get("/api/battles/:id/events", async (context) => {
   const battleId = context.req.param("id");
+  if (battleId === "BA-2026-0024") {
+    return context.json({ battleId, source: "fixture", events: verifiedShowcaseEvents() });
+  }
   if (battleId === "demo" || battleId === fixture.battle.id) {
     return context.json({ battleId, source: "fixture", events: demoEvents() });
   }
