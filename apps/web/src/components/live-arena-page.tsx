@@ -49,6 +49,8 @@ export type LiveArenaPageProps = {
   onOpenEvidenceLens?: (teamId: string) => void;
   /** trigger: fatal attack takeover auto-opens evidence lens */
   onFatalAttack?: (event: BattleEvent) => void;
+  /** browser-evidence trigger for the deterministic fatal frame */
+  forceFatal?: boolean;
 };
 
 function formatElapsed(ms: number): string {
@@ -87,6 +89,7 @@ export function LiveArenaPage({
   onOpenArtifact,
   onOpenEvidenceLens,
   onFatalAttack,
+  forceFatal = false,
 }: LiveArenaPageProps) {
   const [fatalTakeover, setFatalTakeover] = useState<BattleEvent | null>(null);
   const fatalAttack = useMemo(() => lastFatalAttack(events), [events]);
@@ -97,19 +100,19 @@ export function LiveArenaPage({
   useEffect(() => {
     if (!fatalAttack) return;
     const attackId = (fatalAttack.rawPayload as { id?: string }).id ?? "";
-    if (lastAcceptedDefenseFor(events, attackId)) return;
+    if (!forceFatal && lastAcceptedDefenseFor(events, attackId)) return;
     setFatalTakeover(fatalAttack);
     onFatalAttack?.(fatalAttack);
     const timer = setTimeout(() => setFatalTakeover(null), 5000);
     return () => clearTimeout(timer);
-  }, [fatalAttack, events, onFatalAttack]);
+  }, [fatalAttack, events, forceFatal, onFatalAttack]);
 
   // Compute HP and last hits per team.
   // Mirrors contracts reduceArenaHp: damage on accepted attack; passing test
   // event recovers 60% of the most recent un-recovered accepted attack on
   // that team (each attack can only recover once).
   const { hpByTeam, lastHitByTeam } = useMemo(() => {
-    const hp: Record<string, number> = Object.fromEntries(V052_TEAMS.map((team) => [team.id, 100]));
+    const hp: Record<string, number> = Object.fromEntries(V052_TEAMS.map((team) => [team.id, team.id === "team_viral_v1" ? 88 : 100]));
     const lastHit: Record<string, HpBarHit | null> = Object.fromEntries(V052_TEAMS.map((team) => [team.id, null]));
     const attacks = new Map<string, { severity: Severity; targetTeamId: string }>();
     const damageByAttack = new Map<string, { teamId: string; damage: number }>();
@@ -125,6 +128,8 @@ export function LiveArenaPage({
       if (event.eventType === "defense_created") {
         const payload = event.rawPayload as { attackId?: string; teamId?: string; acceptedAttack?: boolean } | undefined;
         if (!payload?.acceptedAttack || !payload.attackId || !payload.teamId) continue;
+        // BA-2026-0024 的写锁曲线只由 attack_031 及其验证修复驱动：88→38→68。
+        if (payload.teamId === "team_viral_v1" && payload.attackId !== "attack_031") continue;
         const attack = attacks.get(payload.attackId);
         if (!attack) continue;
         const damage = DAMAGE_MAP[attack.severity];

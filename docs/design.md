@@ -18,6 +18,8 @@ Runtime tokens and responsive rules live in `apps/web/src/styles.css`. Visible s
 
 Do not introduce Storybook or a second UI kit without a concrete reuse need. Prefer existing components and contracts in `apps/web/src/components`.
 
+Live AI Degraded is a page-level takeover rather than a badge-only skin. It removes all fixed battle evidence, preserves an explicit demo-fallback badge, separates verified UI state from missing evidence, and returns to the golden replay after a pausable 10-second countdown.
+
 ## Visual QA
 
 Check 1440×900 and 390×844, compare against the reference, exercise all primary controls, inspect console errors, and run the Example Battle three times before a demo release.

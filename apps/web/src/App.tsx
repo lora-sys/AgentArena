@@ -5,8 +5,12 @@ import { BattleWorkspace } from "./components/BattleWorkspace";
 import { BattleArchive } from "./components/BattleArchive";
 import { AgentPassport } from "./components/AgentPassport";
 import { HomeExperience } from "./components/HomeExperience";
-import { LiveArenaPage } from "./components/live-arena-page";
+import { LiveArenaPage, V052_TEAMS } from "./components/live-arena-page";
 import { ChampionPage } from "./components/champion-page";
+import { ArtifactModal } from "./components/artifact-modal";
+import { EvidenceLensModal } from "./components/evidence-lens-modal";
+import { EvidenceLinks, LiveDegradedCard, MiniAppDemo, PatchDiff, TestResultsTable, VersionCompare } from "./components/artifact-tabs";
+import { LiveAiDegraded } from "./components/live-ai-degraded";
 import { loadBattleEvents } from "./data/battle";
 import { t } from "./i18n";
 import type { RuntimeMode } from "./components/runtime-mode-badge";
@@ -17,11 +21,11 @@ function Shell({ children }: { children: React.ReactNode }) {
       <header className="site-header">
         <Link to="/" className="brand"><img className="brand-mark" src="/assets/brand/agent-arena-mark.png" alt="" /><span>AGENT ARENA<small>WHERE AI AGENTS PROVE THEMSELVES</small></span></Link>
         <nav aria-label="Primary navigation">
-          <NavLink to="/battle/demo">Arena</NavLink>
-          <NavLink to="/battles">Battles</NavLink>
-          <NavLink to="/agent/infra-hacker/passport">Passport</NavLink>
+          <NavLink to="/battle/demo">{t("common.nav.arena")}</NavLink>
+          <NavLink to="/battles">{t("common.nav.battles")}</NavLink>
+          <NavLink to="/agent/infra-hacker/passport">{t("common.nav.passport")}</NavLink>
         </nav>
-        <Link to="/#start" className="launch-button">LAUNCH ARENA</Link>
+        <Link to="/#start" className="launch-button">{t("common.launch")}</Link>
       </header>
       {children}
     </div>
@@ -38,13 +42,15 @@ function BattlePage() {
   const mode = (searchParams.get("mode") ?? "verified_replay") as RuntimeMode;
 
   if (battleId === "BA-2026-0024" || mode !== "verified_replay") {
-    return <LiveArenaRoute battleId={battleId} mode={mode} />;
+    return <LiveArenaRoute battleId={battleId} mode={mode} forceFatal={searchParams.get("fatal") === "1"} />;
   }
   return <main className="battle-page"><BattleWorkspace battleId={battleId} /></main>;
 }
 
-function LiveArenaRoute({ battleId, mode }: { battleId: string; mode: RuntimeMode }) {
+function LiveArenaRoute({ battleId, mode, forceFatal }: { battleId: string; mode: RuntimeMode; forceFatal: boolean }) {
   const [events, setEvents] = useState<readonly BattleEvent[] | null>(null);
+  const [artifactTeamId, setArtifactTeamId] = useState<string | null>(null);
+  const [evidenceTeamId, setEvidenceTeamId] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
     void loadBattleEvents(battleId).then((result) => {
@@ -59,15 +65,72 @@ function LiveArenaRoute({ battleId, mode }: { battleId: string; mode: RuntimeMod
     return <main className="battle-page"><p>{t("common.loading")}…</p></main>;
   }
 
+  const returnToVerified = () => {
+    window.location.href = `/battle/BA-2026-0024?mode=verified_replay`;
+  };
+  if (mode === "demo_fallback") {
+    return <LiveAiDegraded onReturnVerified={returnToVerified} />;
+  }
+
+  const visibleEvents = forceFatal
+    ? events.slice(0, Math.max(0, events.findIndex((event) => (event.rawPayload as { id?: string } | undefined)?.id === "defense_041")) + 1)
+    : events;
+  const selectedTeam = V052_TEAMS.find((team) => team.id === (artifactTeamId ?? evidenceTeamId));
+  const evidenceCompleteness = mode !== "verified_replay"
+    ? "insufficient_evidence"
+    : evidenceTeamId === "team_viral_v1"
+      ? "full_breakdown"
+      : evidenceTeamId === "team_safe_v1"
+        ? "linked_evidence"
+        : "insufficient_evidence";
+
   return (
-    <LiveArenaPage
-      battleId={battleId}
-      idea="帮助大学生准备考试的 AI 学习助手"
-      events={events}
-      mode={mode}
-    />
+    <>
+      <LiveArenaPage
+        battleId={battleId}
+        idea="帮助大学生准备考试的 AI 学习助手"
+        events={visibleEvents}
+        mode={mode}
+        forceFatal={forceFatal}
+        onOpenArtifact={setArtifactTeamId}
+        onOpenEvidenceLens={setEvidenceTeamId}
+      />
+      <ArtifactModal
+        open={artifactTeamId !== null}
+        onClose={() => setArtifactTeamId(null)}
+        teamName={selectedTeam?.name ?? "传播设计师"}
+        versionsContent={mode === "live_runtime" ? <LiveDegradedCard onBackToVerified={returnToVerified} /> : <><VersionCompare v1Content={ARTIFACT_V1} v2Content={ARTIFACT_V2} /><MiniAppDemo /></>}
+        patchContent={<PatchDiff diffText={ARTIFACT_PATCH} />}
+        testsContent={<TestResultsTable rows={ARTIFACT_TESTS} />}
+        evidenceContent={<EvidenceLinks links={ARTIFACT_EVIDENCE} />}
+      />
+      <EvidenceLensModal
+        open={evidenceTeamId !== null}
+        onClose={() => setEvidenceTeamId(null)}
+        teamName={selectedTeam?.name ?? "传播设计师"}
+        accentColor={selectedTeam?.accentColor ?? "var(--team-viral)"}
+        completeness={evidenceCompleteness}
+        scores={evidenceCompleteness === "insufficient_evidence" ? undefined : GOLDEN_CHAMPION.scores}
+        evidenceChain={evidenceCompleteness === "insufficient_evidence" ? [] : ARTIFACT_EVIDENCE.map((item) => item.eventId)}
+      />
+    </>
   );
 }
+
+const ARTIFACT_V1 = `function renderShareCard(canvas) {\n  return canvas.toDataURL("image/png");\n}`;
+const ARTIFACT_V2 = `function renderShareCard(canvas) {\n  if (isLegacySafari()) return renderSvgCard();\n  return canvas.toDataURL("image/png");\n}`;
+const ARTIFACT_PATCH = `@@ share-card.ts @@\n- return canvas.toDataURL("image/png");\n+ if (isLegacySafari()) return renderSvgCard();\n+ return canvas.toDataURL("image/png");`;
+const ARTIFACT_TESTS = [
+  { id: "test_022", name: "Safari Canvas 回归", input: "Safari 16.4", expected: "生成分享卡", actual: "SecurityError", passed: false },
+  { id: "test_032", name: "现代浏览器路径", input: "Chrome / Safari 17", expected: "生成分享卡", actual: "生成成功", passed: true },
+  { id: "test_052", name: "SVG 降级路径", input: "Safari 16.4", expected: "使用 SVG", actual: "降级通过", passed: true },
+] as const;
+const ARTIFACT_EVIDENCE = [
+  { eventId: "evt_008", label: "attack_031 · Safari 16.4 致命攻击" },
+  { eventId: "evt_011", label: "defense_041 · 接受攻击并修复" },
+  { eventId: "evt_013", label: "patch_048 · SVG 降级补丁" },
+  { eventId: "evt_016", label: "test_052 · 回归通过" },
+] as const;
 
 // Champion passport for the golden BA-2026-0024 storyline.
 // Write-locked per docs/DEV-STANDARDS.md §8.
