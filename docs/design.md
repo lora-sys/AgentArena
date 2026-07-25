@@ -14,7 +14,7 @@ The authoritative visual and motion specifications are the engineering brief and
 
 ## Tokens and behavior
 
-Runtime tokens and responsive rules live in `apps/web/src/styles.css`. Visible status must not rely on color alone. Motion respects `prefers-reduced-motion`. Page-level horizontal overflow is forbidden at 390px; intentional fighter/template rails own their own horizontal scrolling.
+Runtime tokens and responsive rules live in `apps/web/src/styles.css` and `apps/web/src/styles/tokens.css`. Visible status must not rely on color alone. Motion respects `prefers-reduced-motion`. Modal surfaces use the shared 60% black overlay and 350ms fade-and-scale token. Page-level horizontal overflow is forbidden at 390px; intentional fighter/template rails own their own horizontal scrolling.
 
 Do not introduce Storybook or a second UI kit without a concrete reuse need. Prefer existing components and contracts in `apps/web/src/components`.
 

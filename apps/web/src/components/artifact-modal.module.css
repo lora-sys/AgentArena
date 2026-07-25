@@ -1,0 +1,20 @@
+.backdrop { position: fixed; inset: 0; z-index: 70; display: grid; padding: 24px; place-items: center; background: var(--overlay-modal); animation: backdrop-in var(--motion-modal) var(--ease-out) both; }
+.modal { width: min(1080px, 100%); min-height: 620px; overflow: hidden; border: 1px solid var(--ink-5); border-radius: var(--radius-lg); background: var(--surface-1); box-shadow: var(--shadow-panel); animation: modal-in var(--motion-modal) var(--ease-out) both; }
+.header { display: flex; justify-content: space-between; align-items: center; padding: 18px 22px; border-bottom: 1px solid var(--ink-5); background: linear-gradient(90deg, rgba(var(--vd-rgb),.08), transparent); }
+.header span { color: var(--vd); font: 600 var(--fs-caption)/1 var(--font-mono); }
+.header h2 { margin: 8px 0 0; color: var(--ink-1); font: 400 var(--fs-title)/1 var(--font-heading); }
+.close { width: 34px; height: 34px; border: 1px solid var(--ink-5); border-radius: var(--radius-sm); background: var(--surface-2); color: var(--ink-2); cursor: pointer; font-size: 20px; }
+.tabs { display: grid; grid-template-columns: repeat(4, 1fr); padding: 0 18px; border-bottom: 1px solid var(--ink-5); }
+.tabs button { position: relative; border: 0; padding: 15px 8px; background: transparent; color: var(--ink-3); cursor: pointer; font: 600 var(--fs-caption)/1 var(--font-mono); }
+.tabs button[aria-selected="true"] { color: var(--vd); }
+.tabs button[aria-selected="true"]::after { position: absolute; right: 8px; bottom: -1px; left: 8px; height: 2px; background: var(--vd); box-shadow: 0 0 10px rgba(var(--vd-rgb),.65); content: ""; }
+.panel { display: grid; min-height: 470px; align-content: center; justify-items: center; padding: 40px; text-align: center; }
+.emptyIcon { display: grid; width: 64px; height: 64px; place-items: center; border: 1px solid rgba(var(--vd-rgb),.45); border-radius: 50%; color: var(--vd); font-size: 28px; box-shadow: 0 0 28px rgba(var(--vd-rgb),.12); }
+.panel strong { margin-top: 20px; color: var(--ink-1); font: 400 20px/1 var(--font-heading); }
+.panel p { color: var(--ink-3); font-size: var(--fs-body); }
+.trigger { margin-top: 10px; border: 1px solid rgba(var(--team-rgb),.45); border-radius: var(--radius-sm); padding: 6px 11px; background: rgba(var(--team-rgb),.08); color: var(--team); cursor: pointer; font: 600 8px/1 var(--font-mono); }
+.close:focus-visible, .tabs button:focus-visible, .trigger:focus-visible { outline: 2px solid var(--ink-1); outline-offset: 3px; }
+@keyframes backdrop-in { from { opacity: 0; } }
+@keyframes modal-in { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: scale(1); } }
+@media (max-width: 600px) { .backdrop { align-items: end; padding: 0; } .modal { min-height: 82vh; border-radius: var(--radius-lg) var(--radius-lg) 0 0; } .header { padding: 15px 16px; } .tabs { grid-template-columns: repeat(2, 1fr); padding: 0 10px; } .panel { min-height: 52vh; padding: 28px 18px; } }
+@media (prefers-reduced-motion: reduce) { .backdrop, .modal { animation: none; } }

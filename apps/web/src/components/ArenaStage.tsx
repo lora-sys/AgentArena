@@ -6,9 +6,11 @@ import { RoundBanner } from "./round-banner";
 import { ArenaHost } from "./arena-host";
 import { HpBar } from "./hp-bar";
 import { FatalTakeover, type FatalTakeoverProps } from "./fatal-takeover";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { liveArenaZh as zh } from "../i18n/zh";
+import { ArtifactModal } from "./artifact-modal";
+import { AgentCardArtifactTrigger } from "./agent-card-artifact-trigger";
 
 type FatalState = Omit<FatalTakeoverProps, "open" | "onDismiss">;
 
@@ -20,6 +22,8 @@ export function ArenaStage({ compact = false, battleId = "demo", events = demoEv
   // 致命攻击接管态（#34）：null=未接管
   const [fatal, setFatal] = useState<FatalState | null>(null);
   const [fatalEvent, setFatalEvent] = useState<BattleEvent | null>(null);
+  const [artifactTeamId, setArtifactTeamId] = useState<string | null>(null);
+  const closeArtifact = useCallback(() => setArtifactTeamId(null), []);
   const shownFatalRef = useRef<string | null>(null);
   const [searchParams] = useSearchParams();
   // 演示触发器：?fatal=1 合成金色剧情致命时刻（pitch 手动唤起 + 取证用）；真实 fixture 落地后由 onFatal 路径驱动
@@ -103,6 +107,7 @@ export function ArenaStage({ compact = false, battleId = "demo", events = demoEv
             <HpBar teamId={team.id} hp={proofHp[team.id]} prevHp={prevProof[team.id]} severity={hit ? severity : undefined} onFatal={() => setFatal({ attacker: teamName(linkedAttack?.actorId), attackerPortrait: teams.find((item) => item.id === linkedAttack?.actorId)?.portrait, target: team.name, targetPortrait: team.portrait, attackTitle: linkedAttack?.title ?? currentAttackId ?? "attack", attackSummary: linkedAttack?.content, hpBefore: prevProof[team.id] ?? 100, damage: Math.max(0, (prevProof[team.id] ?? 100) - (proofHp[team.id] ?? 0)), hpAfter: proofHp[team.id] ?? 0 })} />
             <svg className="proof-sparkline" viewBox="0 0 180 28" role="img" aria-label={`${team.name} ${zh.arena.hp}趋势`}><polyline points={sparkline} /></svg>
             <div className="fighter-roles">{zh.arena.roles.map((role) => <span key={role}>{role}</span>)}</div>
+            {!compact && <AgentCardArtifactTrigger onOpen={() => setArtifactTeamId(team.id)} />}
             <div className="event-copy"><span>{event ? zh.arena.eventType[event.eventType] ?? event.eventType : zh.arena.standingBy}</span>{defensePayload && <b className={`verdict ${hit ? "accepted" : "rejected"}`}>{hit ? zh.arena.accepted : zh.arena.rejected}</b>}<TypewriterText as="p" key={event?.id} text={event?.content ?? zh.arena.waitingSignal} active={active} keepCursor={active} /><small>{active ? zh.arena.typing : zh.arena.evidenceLocked}</small></div>
           </article>;
         })}
@@ -116,6 +121,7 @@ export function ArenaStage({ compact = false, battleId = "demo", events = demoEv
       <div className="replay-controls"><button type="button" onClick={replay.toggle}>{replay.playing ? zh.common.pause : zh.common.resume}</button><div><i style={{ width: `${((replay.batchIndex + 1) / replay.batchCount) * 100}%` }} /></div><button type="button" onClick={replay.cycleSpeed}>{replay.speed}×</button><button type="button" onClick={replay.replay}>{zh.common.replay}</button></div>
       {!compact && <div className="round-jump" aria-label="跳转到回合">{Array.from({length: replay.batchCount},(_,index) => <button className={index === replay.batchIndex ? "active" : ""} key={index} onClick={() => replay.seek(index)}>{index + 1}</button>)}</div>}
       <FatalTakeover open={fatal !== null} {...(fatal ?? { attacker: "", target: "", attackTitle: "", hpBefore: 0, damage: 0, hpAfter: 0 })} onViewEvidence={onFatalEvidence && fatalEvent ? () => onFatalEvidence(fatalEvent) : undefined} onDismiss={() => setFatal(null)} />
+      <ArtifactModal open={artifactTeamId !== null} teamName={teamName(artifactTeamId ?? undefined)} onClose={closeArtifact} />
     </section>
   );
 }

@@ -76,6 +76,7 @@
   --motion-fatal-shake: 450ms;       /* 致命命中震动 */
   --motion-damage-float: 1100ms;     /* 浮动伤害数字 */
   --motion-round-banner: 350ms;      /* Round Banner 转场 */
+  --motion-modal: 350ms;             /* Modal fade + scale */
   --motion-victory-reveal: 1200ms;   /* 冠军揭晓 */
   --motion-kill-cam: 1500ms;         /* Kill Cam（P3） */
 
@@ -89,6 +90,7 @@
   --radius-md: 8px;
   --radius-lg: 13px;
   --shadow-panel: 0 30px 100px rgba(0, 0, 0, .45), inset 0 1px rgba(255, 255, 255, .025);
+  --overlay-modal: rgba(0, 0, 0, .6);
 
   /* 危险血量阈值（HP < 35 变红）· 供 JS/CSS 引用 */
   --hp-danger-threshold: 35;
@@ -101,6 +103,7 @@
     --motion-fatal-shake: 1ms;
     --motion-damage-float: 1ms;
     --motion-round-banner: 1ms;
+    --motion-modal: 1ms;
     --motion-victory-reveal: 1ms;
     --motion-kill-cam: 1ms;
   }

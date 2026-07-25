@@ -23,3 +23,29 @@ None.
 - Critical: 0
 - High: 2, both fixed
 - Medium: 3, tracked integration/evidence dependencies
+
+---
+
+# Adversarial Review — #35 Artifact Modal Shell
+
+Date: 2026-07-25
+Reviewer: Codex
+
+## CRITICAL
+
+None.
+
+## HIGH
+
+1. `apps/web/src/components/ArenaStage.tsx` — the inline `onClose` function changed on every replay render, forcing the modal effect to clean up and reinstall while open; cleanup could restore focus outside the dialog during playback. Fixed with a stable `useCallback`, with a parent-rerender focus regression test.
+
+## MEDIUM
+
+1. `apps/web/src/components/artifact-modal.tsx` — the shell intentionally renders empty panels even when an `ArtifactBundle` is present. This matches #35 scope, but #36–#38 must replace each placeholder without weakening the dialog and focus behavior.
+2. Animation video capture remains unavailable because the execution policy rejects `agent-browser record`; desktop and 375px screenshots plus semantic browser snapshots are present.
+
+## Summary
+
+- Critical: 0
+- High: 1, fixed
+- Medium: 2, tracked follow-up/evidence dependencies
