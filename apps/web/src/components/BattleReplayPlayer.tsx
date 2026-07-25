@@ -37,7 +37,8 @@ export function useBattleReplay(events: readonly BattleEvent[], autoPlay = true)
 }
 
 export function useArenaState(events: readonly BattleEvent[], teamIds: readonly string[], visibleEvents: readonly BattleEvent[]) {
-  const hp = useMemo(() => reduceArenaHp(visibleEvents, teamIds), [teamIds, visibleEvents]);
+  const reduction = useMemo(() => reduceArenaHp(visibleEvents, teamIds), [teamIds, visibleEvents]);
+  const hp = reduction.hp;
   const latestByActor = useMemo(() => {
     const result = new Map<string, BattleEvent>();
     for (const event of visibleEvents) if (event.actorId) result.set(event.actorId, event);

@@ -1,0 +1,115 @@
+{
+  "battle": {
+    "id": "BA-2026-0024",
+    "title": "帮助大学生准备考试的 AI 学习助手",
+    "idea": "An AI study assistant that helps university students prepare for exams by generating targeted practice questions, tracking weak spots, and adapting difficulty in real time.",
+    "type": "hackathon",
+    "status": "completed",
+    "constraints": {
+      "timeLimit": "48h",
+      "outputTargets": ["product_brief", "prd", "architecture", "demo_script", "pitch_outline", "todo"],
+      "preference": "balanced"
+    },
+    "winnerTeamId": "team_viral_v1",
+    "createdAt": "2026-07-20T09:00:00.000Z",
+    "updatedAt": "2026-07-20T13:30:00.000Z"
+  },
+  "settings": {
+    "battleType": "hackathon",
+    "timeLimit": "48h",
+    "preference": "balanced",
+    "outputTargets": ["product_brief", "prd", "architecture", "demo_script", "pitch_outline", "todo"]
+  },
+  "brief": {
+    "goal": "Build an AI study assistant that helps university students prepare for exams by generating targeted practice questions, tracking weak spots, and adapting difficulty.",
+    "constraints": ["Runs fully client-side demo", "Generates at least 10 practice questions per session", "Adapts difficulty based on rolling accuracy", "Persists progress locally"],
+    "targetUser": "University students cramming for mid-terms and finals",
+    "successCriteria": [">=80% of generated questions are answerable from common undergraduate syllabi", "Difficulty adapts visibly within 5 questions", "Demo completes in <90 seconds"],
+    "requiredArtifacts": ["product_brief", "prd", "architecture", "demo_script", "pitch_outline", "todo"]
+  },
+  "teams": [
+    {"id": "team_safe_v1", "battleId": "BA-2026-0024", "name": "Safe Builders", "strategy": "保守构建：稳定的题目生成器 + 可解释的弱项跟踪，优先正确性。", "riskProfile": "safe", "eveAgentDirectory": "agents/safe-builder", "score": 7.8},
+    {"id": "team_viral_v1", "battleId": "BA-2026-0024", "name": "Viral Designers", "strategy": "传播优先：游戏化刷题 + 成就分享卡，让同学在考季主动拉人。", "riskProfile": "aggressive", "eveAgentDirectory": "agents/viral-designer", "score": 8.7},
+    {"id": "team_infra_v1", "battleId": "BA-2026-0024", "name": "Infra Hackers", "strategy": "架构优先：本地向量检索 + 流式生成，支持万级题目库。", "riskProfile": "balanced", "eveAgentDirectory": "agents/infra-hacker", "score": 8.4}
+  ],
+  "agentDefinitions": [
+    {"id": "agent_safe_builder_lead", "name": "Safe Builder Lead", "role": "team_lead", "teamId": "team_safe_v1", "directoryPath": "agents/safe-builder", "instructionsPath": "agents/safe-builder/prompt.md", "skills": ["curriculum_design", "assessment", "frontend"], "tools": ["question_generator", "local_storage"], "model": "stepfun/step-3.7-flash"},
+    {"id": "agent_viral_designer_lead", "name": "Viral Designer Lead", "role": "team_lead", "teamId": "team_viral_v1", "directoryPath": "agents/viral-designer", "instructionsPath": "agents/viral-designer/prompt.md", "skills": ["gamification", "shareable_artifacts", "copywriting"], "tools": ["question_generator", "share_card"], "model": "stepfun/step-3.7-flash"},
+    {"id": "agent_infra_hacker_lead", "name": "Infra Hacker Lead", "role": "team_lead", "teamId": "team_infra_v1", "directoryPath": "agents/infra-hacker", "instructionsPath": "agents/infra-hacker/prompt.md", "skills": ["vector_search", "streaming_inference", "persistence"], "tools": ["local_vector_db", "sse_stream"], "model": "stepfun/step-3.7-flash"}
+  ],
+  "proposals": [
+    {"teamId": "team_safe_v1", "productName": "StudyGuard", "oneLiner": "稳定的 AI 刷题助手，强调正确性与弱项可解释。", "targetUser": "需要稳过线的大学生", "problem": "现有刷题 App 错题反馈笼统、不解释为什么错。", "solution": "题目生成 + 弱项图谱 + 每题错因一句话解释。", "mvpFeatures": ["按章节生成 10 题", "错题弱项图谱", "每题一句话错因", "本地进度持久化"], "demoPlan": "现场生成 10 题，答错 2 题，展示弱项图谱重排下一组。", "technicalHighlight": "弱项图谱使用纯前端滚动窗口统计。", "risks": ["题目多样性不足", "讲解深度浅"], "whyThisCanWin": "学生最关心的是别答错，正确性可感知。"},
+    {"teamId": "team_viral_v1", "productName": "ClashQuiz", "oneLiner": "考季刷题也能炫耀 — 游戏化 + 分享卡的 AI 学习助手。", "targetUser": "考前愿意 PK 的大学生", "problem": "备考孤独，现有工具没有社交反馈。", "solution": "每日挑战 + 成就卡 + 宿舍群排行榜。", "mvpFeatures": ["每日 10 题挑战", "成就卡生成与分享", "群组排行榜", "连续签到奖励"], "demoPlan": "现场生成 1 张成就卡 + 展示排行榜 UI。", "technicalHighlight": "成就卡走 Canvas 渲染，无后端依赖。", "risks": ["题目质量被游戏化稀释", "成就分享可能隐私问题"], "whyThisCanWin": "考季是传播高峰；分享卡带来自然裂变。"},
+    {"teamId": "team_infra_v1", "productName": "QuizWeave", "oneLiner": "本地向量检索驱动的万级题库 AI 学习助手。", "targetUser": "刷题量大的重度备考者", "problem": "现有工具题库小、生成慢、不能离线。", "solution": "本地向量库 + 流式生成，1 万道题秒级检索。", "mvpFeatures": ["本地向量检索（HNSW）", "流式生成题目", "离线优先 PWA", "章节×难度 矩阵浏览"], "demoPlan": "导入 1 万道题，现场检索并流式生成 5 题变体。", "technicalHighlight": "WebAssembly HNSW 在浏览器内完成向量召回。", "risks": ["首次加载时间长", "题目版权边界不清"], "whyThisCanWin": "重度刷题者不会接受每次都等云端。"}
+  ],
+  "attacks": [
+    {"id": "attack_031", "attackerTeamId": "team_infra_v1", "targetTeamId": "team_viral_v1", "attackType": "weak_demo", "claim": "分享卡 Canvas 在 Safari 16 下渲染失败，会导致 ClashQuiz 核心病毒循环断裂。", "evidence": "现场 demo 在 macOS Safari 16.4 下 Canvas.toDataURL 抛 SecurityError；test_022 回归失败。", "severity": "fatal", "suggestedFix": "降级为 SVG 渲染路径，或对 Safari < 17 关闭 Canvas 并给出占位卡。"},
+    {"id": "attack_001", "attackerTeamId": "team_viral_v1", "targetTeamId": "team_safe_v1", "attackType": "too_generic", "claim": "StudyGuard 的弱项图谱只是正确率直方图，没有真正的可解释性。", "evidence": "Demo 中的弱项只按章节计数，没有题目级别的归因。", "severity": "high", "suggestedFix": "把错因按题目 id 落库，展示每题错因一句话。"},
+    {"id": "attack_002", "attackerTeamId": "team_safe_v1", "targetTeamId": "team_viral_v1", "attackType": "poor_feasibility", "claim": "分享卡的传播链路在 48h 内无法接入真实社交渠道。", "evidence": "微信/QQ 群分享需要应用审核，Demo 只能本地展示。", "severity": "high", "suggestedFix": "48h 内只做图片下载链路，不接 SDK。"},
+    {"id": "attack_003", "attackerTeamId": "team_infra_v1", "targetTeamId": "team_safe_v1", "attackType": "weak_technical_depth", "claim": "StudyGuard 没有用上任何向量检索或流式生成，技术深度单薄。", "evidence": "PRD 全部使用纯前端滚动窗口统计。", "severity": "medium", "suggestedFix": "至少接入 TF-IDF 本地向量召回以提升题目多样性。"},
+    {"id": "attack_004", "attackerTeamId": "team_viral_v1", "targetTeamId": "team_infra_v1", "attackType": "too_complex", "claim": "WASM HNSW 在 48h 内完成 + 题库接入不现实。", "evidence": "Demo 脚本要求现场导入 1 万道题并完成检索，工作量预估 2 周。", "severity": "high", "suggestedFix": "MVP 限定 1000 道题、单语言，单章节。"},
+    {"id": "attack_005", "attackerTeamId": "team_safe_v1", "targetTeamId": "team_infra_v1", "attackType": "weak_market", "claim": "重度刷题者是长尾；考季主流用户仍是中等题量需求。", "evidence": "校园调研显示 78% 学生备考周期 < 7 天，刷题量 < 200 道。", "severity": "low", "suggestedFix": "增加中等题量档位的默认模板。"}
+  ],
+  "defenses": [
+    {"id": "defense_041", "attackId": "attack_031", "teamId": "team_viral_v1", "targetTeamId": "team_infra_v1", "responseToAttack": "Accepted：立刻降级为 SVG 渲染路径，并补 test_052 覆盖 Safari 16.4。", "acceptedAttack": true, "revision": "input_state.ts 中 shareCardRenderer 新增 SVG 路径；test_052 通过。"},
+    {"id": "defense_001", "attackId": "attack_001", "teamId": "team_safe_v1", "targetTeamId": "team_viral_v1", "responseToAttack": "Accepted：把错因按题目 id 落库并展示一句话解释。", "acceptedAttack": true, "revision": "弱项图谱补充题目级归因。"},
+    {"id": "defense_002", "attackId": "attack_002", "teamId": "team_viral_v1", "targetTeamId": "team_safe_v1", "responseToAttack": "Accepted：48h 只做图片下载，不接社交 SDK。", "acceptedAttack": true, "revision": "分享卡 MVP 收窄为下载 PNG。"},
+    {"id": "defense_003", "attackId": "attack_003", "teamId": "team_safe_v1", "targetTeamId": "team_infra_v1", "responseToAttack": "Rejected：MVP 聚焦正确性，向量检索留作 v0.2。", "acceptedAttack": false, "revision": "不改动。"},
+    {"id": "defense_004", "attackId": "attack_004", "teamId": "team_infra_v1", "targetTeamId": "team_viral_v1", "responseToAttack": "Accepted：MVP 收窄到 1000 道题、单语言、单章节。", "acceptedAttack": true, "revision": "MVP 范围明确。"},
+    {"id": "defense_005", "attackId": "attack_005", "teamId": "team_infra_v1", "targetTeamId": "team_safe_v1", "responseToAttack": "Accepted：增加中等题量默认模板。", "acceptedAttack": true, "revision": "默认模板补齐。"}
+  ],
+  "scores": [
+    {"teamId": "team_safe_v1", "scores": {"novelty": 6.5, "feasibility": 8.5, "demoWow": 7.0, "technicalDepth": 7.0, "userValue": 8.5, "longTermPotential": 7.0}, "judgeComments": ["正确性与可解释性最强", "演示力一般", "工程稳健"], "losingReason": "传播性不足，无法在考季快速获客。"},
+    {"teamId": "team_viral_v1", "scores": {"novelty": 8.5, "feasibility": 8.0, "demoWow": 9.0, "technicalDepth": 7.5, "userValue": 8.0, "longTermPotential": 8.5}, "judgeComments": ["演示力最强，分享卡令人记忆深刻", "fatal 攻击后 5 分钟内修复，工程能力被验证", "传播路径清晰"], "winningReason": "演示力 + 抗攻击恢复 + 考季传播势能，六维总评 87/100。"},
+    {"teamId": "team_infra_v1", "scores": {"novelty": 7.0, "feasibility": 7.5, "demoWow": 7.5, "technicalDepth": 9.0, "userValue": 7.5, "longTermPotential": 8.0}, "judgeComments": ["技术深度最强", "MVP 范围虽然收窄但仍重", "目标用户偏长尾"], "losingReason": "重度刷题者是长尾，考季传播势能不足。"}
+  ],
+  "artifacts": [
+    {"id": "art_001", "battleId": "BA-2026-0024", "type": "product_brief", "title": "ClashQuiz Product Brief", "content": "# ClashQuiz\n\n## Problem\n备考孤独、无反馈。\n\n## Solution\n每日 10 题挑战 + 成就卡 + 群组排行榜。\n\n## Target User\n考前愿意 PK 的大学生。\n\n## Success Metric\n分享卡日下载量 ≥ 50。"},
+    {"id": "art_002", "battleId": "BA-2026-0024", "type": "prd", "title": "ClashQuiz PRD", "content": "# ClashQuiz PRD v0.2\n\n## Goals\n1. 每日 10 题挑战。\n2. 成就卡 PNG 下载。\n3. 群组排行榜（本地 mock）。\n\n## Requirements\n- R1: 分享卡 SVG 渲染路径（Canvas 在 Safari 16.4 失败，见 attack_031）。\n- R2: 每日挑战固定 10 题。\n- R3: 本地排行榜前 5 名。"},
+    {"id": "art_003", "battleId": "BA-2026-0024", "type": "architecture", "title": "ClashQuiz Architecture", "content": "# ClashQuiz Architecture\n\n## Components\n- QuestionEngine: 本地模板 + 难度分级\n- ShareCardRenderer: SVG → PNG（Safari 16.4 兼容）\n- LeaderboardStore: localStorage\n- AchievementTracker: 连续签到与里程碑"}
+  ],
+  "replay": {
+    "id": "rep_BA20260024",
+    "battleId": "BA-2026-0024",
+    "title": "BA-2026-0024 Replay",
+    "summary": "三队围绕 AI 学习助手展开攻防。infra 对 viral 发起 fatal 攻击（Safari 16.4 Canvas 崩溃），viral 在 5 分钟内降级为 SVG 并补 test_052，Proof HP 88→38→68，最终 viral 87 分夺魁。",
+    "segments": [
+      {"id": "seg_001", "eventId": "evt_001", "round": "briefing", "actorType": "system", "title": "简报发布", "body": "BA-2026-0024 简报下发至三队。", "createdAt": "2026-07-20T09:00:00.000Z"},
+      {"id": "seg_002", "eventId": "evt_003", "round": "proposal_round", "actorType": "team", "actorId": "team_viral_v1", "title": "ClashQuiz 提案", "body": "游戏化 + 分享卡的 AI 学习助手。", "createdAt": "2026-07-20T10:00:00.000Z"},
+      {"id": "seg_003", "eventId": "evt_008", "round": "cross_attack_round", "actorType": "team", "actorId": "team_infra_v1", "targetId": "team_viral_v1", "title": "致命攻击 attack_031", "body": "Canvas 在 Safari 16.4 渲染失败。", "createdAt": "2026-07-20T11:05:00.000Z"},
+      {"id": "seg_004", "eventId": "evt_011", "round": "defense_round", "actorType": "team", "actorId": "team_viral_v1", "title": "防守 defense_041", "body": "接受攻击，立刻降级为 SVG 路径。", "createdAt": "2026-07-20T11:30:00.000Z"},
+      {"id": "seg_005", "eventId": "evt_014", "round": "judging_round", "actorType": "judge", "actorId": "judge_panel", "targetId": "team_viral_v1", "title": "冠军 · 传播设计师", "body": "ClashQuiz 以 87/100 夺冠。", "createdAt": "2026-07-20T12:10:00.000Z"}
+    ],
+    "generatedFromEventIds": ["evt_001", "evt_003", "evt_008", "evt_011", "evt_014"],
+    "createdAt": "2026-07-20T13:00:00.000Z"
+  },
+  "passports": [
+    {"id": "pp_safe_builder_lead", "agentId": "agent_safe_builder_lead", "battleId": "BA-2026-0024", "agentName": "Safe Builder Lead", "role": "team_lead", "directoryPath": "agents/safe-builder", "contributionSummary": "Authored StudyGuard, 接受 1 次攻击拒绝 1 次。", "acceptedClaims": [{"claim": "弱项图谱缺题目级归因。", "attackId": "attack_001", "defenseId": "defense_001", "acceptedAttack": true, "attackerTeamId": "team_viral_v1", "defenderTeamId": "team_safe_v1"}], "rejectedClaims": [{"claim": "技术深度单薄。", "attackId": "attack_003", "defenseId": "defense_003", "acceptedAttack": false, "attackerTeamId": "team_infra_v1", "defenderTeamId": "team_safe_v1"}], "strengths": ["正确性强", "48h 范围现实"], "weaknesses": ["传播力弱", "题目多样性一般"], "contributionScore": 7.5},
+    {"id": "pp_viral_designer_lead", "agentId": "agent_viral_designer_lead", "battleId": "BA-2026-0024", "agentName": "Viral Designer Lead", "role": "team_lead", "directoryPath": "agents/viral-designer", "contributionSummary": "Authored ClashQuiz, 在 fatal 攻击后 5 分钟内降级 SVG 并补 test_052 通过。", "acceptedClaims": [{"claim": "Canvas 在 Safari 16.4 崩溃。", "attackId": "attack_031", "defenseId": "defense_041", "acceptedAttack": true, "attackerTeamId": "team_infra_v1", "defenderTeamId": "team_viral_v1"}, {"claim": "分享传播链路 48h 内不可接 SDK。", "attackId": "attack_002", "defenseId": "defense_002", "acceptedAttack": true, "attackerTeamId": "team_safe_v1", "defenderTeamId": "team_viral_v1"}], "rejectedClaims": [], "strengths": ["演示力最强", "fatal 攻击下恢复力被验证", "传播路径清晰"], "weaknesses": ["题目技术深度一般"], "contributionScore": 9.0},
+    {"id": "pp_infra_hacker_lead", "agentId": "agent_infra_hacker_lead", "battleId": "BA-2026-0024", "agentName": "Infra Hacker Lead", "role": "team_lead", "directoryPath": "agents/infra-hacker", "contributionSummary": "Authored QuizWeave, 提出 fatal 攻击 attack_031 推动全场技术提升。", "acceptedClaims": [{"claim": "WASM HNSW 在 48h 不现实。", "attackId": "attack_004", "defenseId": "defense_004", "acceptedAttack": true, "attackerTeamId": "team_viral_v1", "defenderTeamId": "team_infra_v1"}, {"claim": "重度刷题者是长尾。", "attackId": "attack_005", "defenseId": "defense_005", "acceptedAttack": true, "attackerTeamId": "team_safe_v1", "defenderTeamId": "team_infra_v1"}], "rejectedClaims": [], "strengths": ["技术深度最强", "攻击精准"], "weaknesses": ["目标用户偏长尾"], "contributionScore": 8.0}
+  ],
+  "events": [
+    {"id": "evt_001", "battleId": "BA-2026-0024", "round": "briefing", "actorType": "system", "eventType": "brief_created", "title": "简报发布", "content": "BA-2026-0024 简报下发至三队。", "createdAt": "2026-07-20T09:00:00.000Z"},
+    {"id": "evt_002", "battleId": "BA-2026-0024", "round": "team_generation", "actorType": "system", "eventType": "team_created", "title": "三队就位", "content": "稳健构建者 · 传播设计师 · 架构黑客。", "createdAt": "2026-07-20T09:05:00.000Z"},
+    {"id": "evt_003", "battleId": "BA-2026-0024", "round": "proposal_round", "actorType": "team", "actorId": "team_safe_v1", "eventType": "proposal_created", "title": "StudyGuard 提案", "content": "稳定的 AI 刷题助手。", "createdAt": "2026-07-20T10:00:00.000Z"},
+    {"id": "evt_004", "battleId": "BA-2026-0024", "round": "proposal_round", "actorType": "team", "actorId": "team_viral_v1", "eventType": "proposal_created", "title": "ClashQuiz 提案", "content": "游戏化 + 分享卡。", "createdAt": "2026-07-20T10:05:00.000Z"},
+    {"id": "evt_005", "battleId": "BA-2026-0024", "round": "proposal_round", "actorType": "team", "actorId": "team_infra_v1", "eventType": "proposal_created", "title": "QuizWeave 提案", "content": "本地向量检索驱动。", "createdAt": "2026-07-20T10:10:00.000Z"},
+    {"id": "evt_006", "battleId": "BA-2026-0024", "round": "proposal_round", "actorType": "team", "actorId": "team_viral_v1", "eventType": "artifact_created", "title": "test_022 初跑", "content": "ClashQuiz 分享卡首次测试：Chrome ✅ Safari 16.4 ❌。", "rawPayload": {"id": "test_022", "teamId": "team_viral_v1", "name": "test_022_share_card_initial", "passed": false}, "createdAt": "2026-07-20T10:20:00.000Z"},
+    {"id": "evt_007", "battleId": "BA-2026-0024", "round": "cross_attack_round", "actorType": "team", "actorId": "team_viral_v1", "targetId": "team_safe_v1", "eventType": "attack_created", "title": "攻击 attack_001 · high", "content": "弱项图谱只是直方图。", "rawPayload": {"id": "attack_001", "attackerTeamId": "team_viral_v1", "targetTeamId": "team_safe_v1", "severity": "high", "claim": "弱项图谱只是直方图"}, "createdAt": "2026-07-20T11:00:00.000Z"},
+    {"id": "evt_008", "battleId": "BA-2026-0024", "round": "cross_attack_round", "actorType": "team", "actorId": "team_infra_v1", "targetId": "team_viral_v1", "eventType": "attack_created", "title": "致命攻击 attack_031 · FATAL", "content": "Canvas 在 Safari 16.4 渲染失败。", "rawPayload": {"id": "attack_031", "attackerTeamId": "team_infra_v1", "targetTeamId": "team_viral_v1", "severity": "fatal", "claim": "Canvas 在 Safari 16.4 渲染失败"}, "createdAt": "2026-07-20T11:05:00.000Z"},
+    {"id": "evt_009", "battleId": "BA-2026-0024", "round": "cross_attack_round", "actorType": "team", "actorId": "team_safe_v1", "targetId": "team_viral_v1", "eventType": "attack_created", "title": "攻击 attack_002 · high", "content": "分享传播链路 48h 内不可接 SDK。", "rawPayload": {"id": "attack_002", "attackerTeamId": "team_safe_v1", "targetTeamId": "team_viral_v1", "severity": "high", "claim": "分享链路不可接 SDK"}, "createdAt": "2026-07-20T11:08:00.000Z"},
+    {"id": "evt_010", "battleId": "BA-2026-0024", "round": "defense_round", "actorType": "team", "actorId": "team_safe_v1", "eventType": "defense_created", "title": "防守 defense_001", "content": "接受，补题目级归因。", "rawPayload": {"id": "defense_001", "attackId": "attack_001", "teamId": "team_safe_v1", "acceptedAttack": true, "responseToAttack": "补题目级归因"}, "createdAt": "2026-07-20T11:25:00.000Z"},
+    {"id": "evt_011", "battleId": "BA-2026-0024", "round": "defense_round", "actorType": "team", "actorId": "team_viral_v1", "eventType": "defense_created", "title": "防守 defense_041", "content": "接受，立刻降级为 SVG 路径。", "rawPayload": {"id": "defense_041", "attackId": "attack_031", "teamId": "team_viral_v1", "acceptedAttack": true, "responseToAttack": "降级为 SVG 渲染路径"}, "createdAt": "2026-07-20T11:30:00.000Z"},
+    {"id": "evt_012", "battleId": "BA-2026-0024", "round": "defense_round", "actorType": "team", "actorId": "team_viral_v1", "eventType": "defense_created", "title": "防守 defense_002", "content": "接受，MVP 收窄为 PNG 下载。", "rawPayload": {"id": "defense_002", "attackId": "attack_002", "teamId": "team_viral_v1", "acceptedAttack": true, "responseToAttack": "收窄为 PNG 下载"}, "createdAt": "2026-07-20T11:32:00.000Z"},
+    {"id": "evt_013", "battleId": "BA-2026-0024", "round": "defense_round", "actorType": "team", "actorId": "team_viral_v1", "eventType": "artifact_created", "title": "patch_048 · input_state.ts v1→v2", "content": "ShareCardRenderer 新增 SVG 渲染路径。", "rawPayload": {"id": "patch_048", "teamId": "team_viral_v1", "attackId": "attack_031", "artifactId": "input_state.ts", "diffText": "--- a/input_state.ts\n+++ b/input_state.ts\n@@ -12,7 +12,12 @@\n export function renderShareCard(data: ShareCardData) {\n-  const canvas = document.createElement('canvas');\n-  return canvas.toDataURL('image/png');\n+  if (isSafariBelow17()) {\n+    return renderSvgFallback(data);\n+  }\n+  const canvas = document.createElement('canvas');\n+  return canvas.toDataURL('image/png');\n }"}, "createdAt": "2026-07-20T11:35:00.000Z"},
+    {"id": "evt_014", "battleId": "BA-2026-0024", "round": "defense_round", "actorType": "team", "actorId": "team_viral_v1", "eventType": "artifact_created", "title": "patch_049 · test_052 新增", "content": "补 Safari 16.4 回归测试。", "rawPayload": {"id": "patch_049", "teamId": "team_viral_v1", "attackId": "attack_031", "artifactId": "test_052.ts", "diffText": "--- /dev/null\n+++ b/test_052.ts\n@@ -0,0 +1,12 @@\n+import { describe, it, expect } from 'vitest';\n+import { renderShareCard } from './input_state';\n+\n+describe('test_052 Safari 16.4 fallback', () => {\n+  it('renders SVG path when canvas unavailable', () => {\n+    mockSafari('16.4');\n+    const out = renderShareCard({score: 9, streak: 3});\n+    expect(out).toMatch(/^data:image\\/svg/);\n+  });\n+});"}, "createdAt": "2026-07-20T11:36:00.000Z"},
+    {"id": "evt_015", "battleId": "BA-2026-0024", "round": "defense_round", "actorType": "team", "actorId": "team_viral_v1", "eventType": "artifact_created", "title": "test_032 回归", "content": "分享卡 PNG 下载链路回归：Chrome ✅ Safari 17 ✅。", "rawPayload": {"id": "test_032", "teamId": "team_viral_v1", "name": "test_032_share_card_regression", "passed": true}, "createdAt": "2026-07-20T11:38:00.000Z"},
+    {"id": "evt_016", "battleId": "BA-2026-0024", "round": "defense_round", "actorType": "team", "actorId": "team_viral_v1", "eventType": "artifact_created", "title": "test_052 通过", "content": "Safari 16.4 SVG 降级路径测试通过。Proof HP 恢复 30（60% of fatal 50）。", "rawPayload": {"id": "test_052", "teamId": "team_viral_v1", "name": "test_052_safari_fallback", "passed": true, "linkedEventIds": ["attack_031", "defense_041", "patch_048", "patch_049"]}, "createdAt": "2026-07-20T11:40:00.000Z"},
+    {"id": "evt_017", "battleId": "BA-2026-0024", "round": "judging_round", "actorType": "judge", "actorId": "judge_panel", "eventType": "score_created", "title": "六维评分落定", "content": "传播设计师 87 · 架构黑客 84 · 稳健构建者 78。", "createdAt": "2026-07-20T12:00:00.000Z"},
+    {"id": "evt_018", "battleId": "BA-2026-0024", "round": "judging_round", "actorType": "judge", "actorId": "judge_panel", "targetId": "team_viral_v1", "eventType": "champion_selected", "title": "冠军 · 传播设计师 87/100", "content": "ClashQuiz 在 fatal 攻击下仍完成 SVG 降级 + 测试补齐，演示力 + 抗攻击性获评委认可。", "createdAt": "2026-07-20T12:10:00.000Z"},
+    {"id": "evt_019", "battleId": "BA-2026-0024", "round": "artifact_generation", "actorType": "agent", "actorId": "agent_viral_designer_lead", "eventType": "artifact_created", "title": "ClashQuiz 交付物", "content": "product_brief · prd · architecture · demo_script · pitch_outline · todo。", "createdAt": "2026-07-20T13:00:00.000Z"},
+    {"id": "evt_020", "battleId": "BA-2026-0024", "round": "replay_generation", "actorType": "system", "eventType": "replay_created", "title": "回放生成", "content": "BA-2026-0024 回放段落落库。", "createdAt": "2026-07-20T13:10:00.000Z"},
+    {"id": "evt_021", "battleId": "BA-2026-0024", "round": "replay_generation", "actorType": "system", "eventType": "passport_created", "title": "护照快照生成", "content": "三队 Agent Passport Snapshot 落库。", "createdAt": "2026-07-20T13:30:00.000Z"}
+  ],
+  "exportMarkdown": "# BA-2026-0024 · AI 学习助手\n\n**Battle ID**: BA-2026-0024\n**Status**: completed\n**Winner**: team_viral_v1 (传播设计师 · ClashQuiz) 87/100\n\n## 三队终值\n- **稳健构建者** (safe) 78 — StudyGuard，正确性强但传播弱。\n- **传播设计师** (aggressive) 87 — ClashQuiz，演示力 + fatal 攻击下恢复力。\n- **架构黑客** (balanced) 84 — QuizWeave，技术深度最强但目标长尾。\n\n## 关键节点\n- 11:05 attack_031 · FATAL（Safari 16.4 Canvas 崩溃） → 传播设计师 HP 88→38\n- 11:30 defense_041 接受，立刻降级 SVG\n- 11:35 patch_048 input_state.ts v1→v2\n- 11:40 test_052 通过，HP 恢复 30 → 68\n- 12:10 冠军 · 传播设计师 87/100"
+}
