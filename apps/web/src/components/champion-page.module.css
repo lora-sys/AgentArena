@@ -1,0 +1,344 @@
+.root {
+  min-height: 100vh;
+  background:
+    radial-gradient(1200px 600px at 50% 20%, var(--champion-glow), transparent 60%),
+    var(--bg-void);
+  color: var(--ink-1);
+}
+
+/* ── Champion Reveal（1200ms Victory Reveal） ───────────────────────────── */
+.reveal {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--sp-12) var(--sp-6);
+  opacity: 0;
+  transform: scale(0.92);
+  transition: opacity var(--dur-victory-reveal) ease-out, transform var(--dur-victory-reveal) ease-out;
+}
+
+.revealIn {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.trophy {
+  font-size: 96px;
+  margin-bottom: var(--sp-6);
+  filter: drop-shadow(0 0 32px var(--champion-glow));
+  animation: trophyDrop var(--dur-victory-reveal) ease-out;
+}
+
+@keyframes trophyDrop {
+  from {
+    transform: translateY(-120px) scale(0.6);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.revealTitle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin: 0 0 var(--sp-4);
+  align-items: center;
+}
+
+.revealLabel {
+  font-family: var(--font-mono);
+  font-size: var(--fs-body);
+  color: var(--champion);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+.championName {
+  font-family: var(--font-heading);
+  font-size: clamp(48px, 8vw, 96px);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-shadow: 0 0 32px currentColor;
+}
+
+.championScore {
+  font-family: var(--font-mono);
+  font-size: clamp(36px, 5vw, 64px);
+  color: var(--ink-1);
+}
+
+.championScore small {
+  font-size: 0.5em;
+  color: var(--ink-3);
+}
+
+.battleMeta {
+  font-family: var(--font-mono);
+  color: var(--ink-3);
+  margin-bottom: var(--sp-8);
+}
+
+.revealActions {
+  display: flex;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-12);
+}
+
+.revealActions button,
+.miniActions button {
+  padding: var(--sp-3) var(--sp-6);
+  background: transparent;
+  border: 1px solid var(--bg-hairline);
+  color: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: var(--fs-body);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.revealActions .primary,
+.miniActions .primary {
+  background: var(--champion);
+  color: #031214;
+  border-color: var(--champion);
+  font-weight: 600;
+}
+
+.otherTeams {
+  display: flex;
+  gap: var(--sp-4);
+}
+
+.otherTeam {
+  padding: var(--sp-3) var(--sp-6);
+  border: 1px solid;
+  border-radius: var(--radius-md);
+  display: flex;
+  gap: var(--sp-3);
+  align-items: baseline;
+}
+
+.otherTeamName {
+  font-size: var(--fs-body);
+}
+
+.otherTeamScore {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: var(--fs-title);
+  color: var(--ink-1);
+}
+
+/* ── Team Passport ─────────────────────────────────────────────────────── */
+.passport {
+  padding: var(--sp-12) var(--sp-6);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.passportHeader {
+  text-align: center;
+  margin-bottom: var(--sp-8);
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--ink-3);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.passportHeader h2 {
+  margin: var(--sp-2) 0 0;
+  font-family: var(--font-heading);
+  font-size: var(--fs-hero);
+}
+
+.passportGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-8);
+}
+
+.scoresSection {
+  background: var(--bg-panel);
+  border: 1px solid var(--bg-hairline);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.scoreRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-bottom: var(--sp-3);
+  border-bottom: 1px solid var(--bg-hairline);
+}
+
+.scoreRow:last-child {
+  border-bottom: none;
+}
+
+.scoreLabel {
+  color: var(--ink-2);
+}
+
+.scoreValue {
+  font-family: var(--font-mono);
+}
+
+.scoreValue strong {
+  font-size: var(--fs-title);
+  color: var(--champion);
+  margin-right: 2px;
+}
+
+.scoreMax {
+  color: var(--ink-3);
+  font-size: var(--fs-caption);
+}
+
+.textSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.textBlock {
+  background: var(--bg-panel);
+  border: 1px solid var(--bg-hairline);
+  border-left: 4px solid var(--team-safe);
+  border-radius: var(--radius-md);
+  padding: var(--sp-4);
+}
+
+.textBlock[data-tone="weak"] {
+  border-left-color: var(--danger);
+}
+
+.textBlock[data-tone="improve"] {
+  border-left-color: var(--champion);
+}
+
+.textBlock h3 {
+  margin: 0 0 var(--sp-3);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--ink-3);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.textBlock ul {
+  margin: 0;
+  padding-left: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  color: var(--ink-2);
+}
+
+.journeySection {
+  grid-column: 1 / -1;
+  background: var(--bg-panel);
+  border: 1px solid var(--bg-hairline);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-6);
+}
+
+.journeySection h3 {
+  margin: 0 0 var(--sp-4);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--ink-3);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.journeyList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--sp-3);
+}
+
+.journeyList li {
+  padding: var(--sp-3);
+  background: var(--bg-panel-2);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.journeyRound {
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--ink-3);
+}
+
+.journeyTitle {
+  color: var(--ink-1);
+  font-size: var(--fs-body);
+}
+
+/* ── Mini Passport 未完成态 ────────────────────────────────────────────── */
+.miniPassport {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--sp-12) var(--sp-6);
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.miniPassport h2 {
+  font-family: var(--font-heading);
+  font-size: var(--fs-hero);
+  color: var(--ink-1);
+  margin: 0 0 var(--sp-4);
+}
+
+.miniPassport p {
+  color: var(--ink-2);
+  font-size: var(--fs-body-lg);
+  line-height: 1.6;
+  margin-bottom: var(--sp-8);
+}
+
+.miniActions {
+  display: flex;
+  gap: var(--sp-3);
+}
+
+@media (max-width: 900px) {
+  .passportGrid {
+    grid-template-columns: 1fr;
+  }
+  .otherTeams {
+    flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .trophy {
+    transition: none;
+    animation: none;
+  }
+}
