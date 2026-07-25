@@ -116,6 +116,21 @@ export const zh = {
   "arena.degraded.countdown_prefix": "秒后自动切回已验证演示",
   "arena.degraded.pause_hint": "悬停或按键暂停倒计时",
   "arena.degraded.back_now": "立即切回已验证演示",
+  "arena.degraded.status": "LIVE AI · EVIDENCE INSUFFICIENT",
+  "arena.degraded.title": "实时 AI 证据不足",
+  "arena.degraded.body": "本次实时战斗未能产生完整、可验证的裁决与证据链。当前内容不会被包装成已验证结果，也不会套用刚才输入的创意。",
+  "arena.degraded.available": "本次已完成",
+  "arena.degraded.events": "界面已安全降级",
+  "arena.degraded.attacks": "运行模式已明确标识",
+  "arena.degraded.defenses": "已验证演示可随时返回",
+  "arena.degraded.missing": "缺失证据",
+  "arena.degraded.score": "无可验证裁决",
+  "arena.degraded.tests": "测试结果不完整",
+  "arena.degraded.chain": "完整证据链缺失",
+  "arena.degraded.recommendation": "推荐操作",
+  "arena.degraded.retry": "也可返回首页重新发起实时战斗",
+  "arena.degraded.pause": "暂停倒计时",
+  "arena.degraded.resume": "继续倒计时",
 
   // -------------------------------------------------------------------------
   // Evidence Lens Modal（设计稿 04）

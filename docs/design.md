@@ -30,6 +30,8 @@ Champion is one continuous page: a viewport-height 1200ms broadcast reveal leads
 
 Mini Passport is the honest live-partial counterpart to Champion: a centered cyan status card replaces both victory reveal and verified score content. It renders immediately while the event store is checked, distinguishes “waiting for events” from “events recorded,” and offers explicit routes back to the live battle or across to the verified showcase.
 
+Live AI Degraded is a page-level takeover, not a badge-only variation. It keeps the runtime badge visible, removes all unverified battle output, separates safe UI state from missing evidence, and provides a 10-second recoverable return to the verified showcase. Hover, keyboard focus, or the explicit countdown control pauses recovery so accessibility never competes with demo pacing.
+
 ## Visual QA
 
 Check 1440×900 and 390×844, compare against the reference, exercise all primary controls, inspect console errors, and run the Example Battle three times before a demo release.

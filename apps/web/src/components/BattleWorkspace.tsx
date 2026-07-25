@@ -6,6 +6,7 @@ import { RuntimeModeBadge, modeFromSource, normalizeMode, type RuntimeMode } fro
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { t } from "../i18n/zh";
 import { VERIFIED_SHOWCASE_ID } from "../data/verified-showcase";
+import { LiveAiDegraded } from "./live-ai-degraded";
 
 type BattleView = "live" | "result" | "replay";
 
@@ -63,7 +64,7 @@ export function BattleWorkspace({ battleId }: { battleId: string }) {
       </nav>
     </header>
 
-    {view === "result" ? <ResultPanel champion={champion} events={events} /> : view === "replay" ? <ReplayWorkspace events={replayEvents} allEvents={events} battleId={battleId} runtimeMode={runtimeMode} onReturnVerified={returnToVerified} onProgress={handleProgress} onSelect={setSelected} /> : <div className="battle-grid">
+    {runtimeMode === "demo_fallback" ? <LiveAiDegraded onReturnVerified={returnToVerified} /> : view === "result" ? <ResultPanel champion={champion} events={events} /> : view === "replay" ? <ReplayWorkspace events={replayEvents} allEvents={events} battleId={battleId} runtimeMode={runtimeMode} onReturnVerified={returnToVerified} onProgress={handleProgress} onSelect={setSelected} /> : <div className="battle-grid">
       <ArenaStage battleId={battleId} events={replayEvents} runtimeMode={runtimeMode} onReturnVerified={returnToVerified} onProgress={handleProgress} onFatalEvidence={setSelected} />
       <EvidenceLog events={visibleEvents} onSelect={setSelected} />
     </div>}
