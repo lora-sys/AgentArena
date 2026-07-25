@@ -103,3 +103,30 @@ None.
 - Critical: 0
 - High: 1, fixed
 - Medium: 3, bounded by fixture/contract scope
+
+---
+
+# Adversarial Review — #38 Artifact Live Degraded
+
+Date: 2026-07-25
+Reviewer: Codex
+
+## CRITICAL
+
+None.
+
+## HIGH
+
+1. `apps/web/src/components/BattleWorkspace.tsx:20` — returning from a non-golden live battle navigates to BA-2026-0024, but the loader retained the old battle object and had no stale-promise guard. A slow old request could overwrite the new verified route or flash mismatched evidence under the verified badge. Fixed by clearing route-bound state immediately and ignoring responses after effect cleanup.
+
+## MEDIUM
+
+1. `apps/web/src/components/artifact-live-degraded-card.tsx:15` — the reusable card accepts an optional return callback, so an isolated caller could render a no-op CTA. The production Modal path supplies it from `BattleWorkspace`; future isolated reuse should make the callback mandatory or provide navigation context.
+2. `apps/web/src/components/artifact-modal.tsx:79` — degraded detection relies on `artifact` being absent. This is correct only because `ArenaStage` explicitly refuses to inject the golden fixture outside `verified_replay`; bypassing that boundary would leak fixture content into live mode.
+3. Issue #38 has no video requirement; desktop, 390px, semantic state-switch evidence and design-tone comparison are present.
+
+## Summary
+
+- Critical: 0
+- High: 1, fixed
+- Medium: 3, integration constraints documented

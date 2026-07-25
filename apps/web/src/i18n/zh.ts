@@ -202,6 +202,11 @@ export const zh = {
   "artifact.degraded.title": "实时演示证据不完整",
   "artifact.degraded.body": "当前实时运行未产出可查看的作品版本对比，请返回观看已验证演示以获得完整证据链。",
   "artifact.degraded.cta": "返回已验证演示",
+  "artifact.degraded.eyebrow": "LIVE AI · EVIDENCE INCOMPLETE",
+  "artifact.degraded.live_status": "实时智能体运行中",
+  "artifact.degraded.missing_status": "作品载荷缺失",
+  "artifact.degraded.verified_status": "已验证演示可用",
+  "artifact.degraded.note": "不会把固定 fixture 冒充为本次实时运行的证据",
 
   // -------------------------------------------------------------------------
   // Champion 页（设计稿 06 + 07）

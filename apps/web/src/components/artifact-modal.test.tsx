@@ -66,4 +66,11 @@ describe("ArtifactModal", () => {
 
     expect(screen.getByRole("tab", { name: "版本对比" }).getAttribute("aria-selected")).toBe("true");
   });
+
+  it("takes over empty live runtime artifacts with the degraded card", () => {
+    render(<ArtifactModal open mode="live_runtime" teamName="传播设计师" onReturnVerified={() => undefined} onClose={() => undefined} />);
+
+    expect(screen.getByRole("heading", { name: "实时演示证据不完整" })).toBeTruthy();
+    expect(screen.queryByText("版本对比内容将在下一阶段接入")).toBeNull();
+  });
 });

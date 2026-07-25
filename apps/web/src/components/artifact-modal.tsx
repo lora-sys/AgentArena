@@ -6,6 +6,8 @@ import { ArtifactTabVersions } from "./artifact-tab-versions";
 import { ArtifactTabPatch } from "./artifact-tab-patch";
 import { ArtifactTabTests } from "./artifact-tab-tests";
 import { ArtifactTabEvidence } from "./artifact-tab-evidence";
+import { ArtifactLiveDegradedCard } from "./artifact-live-degraded-card";
+import type { RuntimeMode } from "./runtime-mode-badge";
 
 const tabs = [
   { id: "versions", label: t("artifact.tab.versions"), empty: t("artifact.empty.versions") },
@@ -20,11 +22,13 @@ export interface ArtifactModalProps {
   open: boolean;
   teamName: string;
   artifact?: ArtifactBundle;
+  mode?: RuntimeMode;
   onEvidenceSelect?: (eventId: string) => void;
+  onReturnVerified?: () => void;
   onClose: () => void;
 }
 
-export function ArtifactModal({ open, teamName, artifact, onEvidenceSelect, onClose }: ArtifactModalProps) {
+export function ArtifactModal({ open, teamName, artifact, mode = "verified_replay", onEvidenceSelect, onReturnVerified, onClose }: ArtifactModalProps) {
   const [activeTab, setActiveTab] = useState<ArtifactTab>("versions");
   const panelRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -72,6 +76,7 @@ export function ArtifactModal({ open, teamName, artifact, onEvidenceSelect, onCl
 
   if (!open) return null;
   const active = tabs.find((tab) => tab.id === activeTab) ?? tabs[0];
+  const liveDegraded = mode === "live_runtime" && !artifact;
 
   return <div className={styles.backdrop} onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
     <div ref={panelRef} className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="artifact-modal-title">
@@ -79,11 +84,12 @@ export function ArtifactModal({ open, teamName, artifact, onEvidenceSelect, onCl
         <div><span>{t("artifact.team_prefix")} · {teamName}</span><h2 id="artifact-modal-title">{artifact?.title ?? t("artifact.title")}</h2></div>
         <button ref={closeRef} type="button" className={styles.close} onClick={onClose} aria-label={t("artifact.close")}>×</button>
       </header>
-      <div className={styles.tabs} role="tablist" aria-label={t("artifact.title")}>
+      {!liveDegraded && <div className={styles.tabs} role="tablist" aria-label={t("artifact.title")}>
         {tabs.map((tab) => <button key={tab.id} id={`artifact-tab-${tab.id}`} type="button" role="tab" aria-selected={activeTab === tab.id} aria-controls="artifact-tabpanel" tabIndex={activeTab === tab.id ? 0 : -1} onClick={() => setActiveTab(tab.id)}>{tab.label}</button>)}
-      </div>
-      <section id="artifact-tabpanel" role="tabpanel" aria-labelledby={`artifact-tab-${active.id}`} className={`${styles.panel} ${artifact ? styles.panelPopulated : ""}`}>
-        {artifact && active.id === "versions" ? <ArtifactTabVersions artifact={artifact} />
+      </div>}
+      <section id="artifact-tabpanel" role="tabpanel" aria-labelledby={liveDegraded ? undefined : `artifact-tab-${active.id}`} aria-label={liveDegraded ? t("artifact.degraded.title") : undefined} className={`${styles.panel} ${artifact || liveDegraded ? styles.panelPopulated : ""}`}>
+        {liveDegraded ? <ArtifactLiveDegradedCard onReturnVerified={onReturnVerified} />
+          : artifact && active.id === "versions" ? <ArtifactTabVersions artifact={artifact} />
           : artifact && active.id === "patch" && artifact.patchDiffText ? <ArtifactTabPatch diffText={artifact.patchDiffText} />
           : artifact && active.id === "tests" ? <ArtifactTabTests results={artifact.testResults} />
           : artifact && active.id === "evidence" ? <ArtifactTabEvidence eventIds={artifact.linkedEvidenceEventIds} onSelect={onEvidenceSelect} /> : <>

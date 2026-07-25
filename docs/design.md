@@ -22,6 +22,8 @@ Artifact version presentation uses a two-column verified-code comparison beside 
 
 Artifact detail tabs preserve evidence semantics: patch rows align deleted and added lines in two columns, test results keep the six-column contract in a locally scrollable table, and evidence links close the modal before briefly pinning and focusing the selected Event Stream record.
 
+Live-runtime Artifact degradation borrows the centered warning hierarchy and restrained cyan recovery CTA from the Live AI Degraded frame. It removes unavailable tabs, explicitly labels the missing payload, and never presents verified fixture content until mode has changed back to `verified_replay`.
+
 ## Visual QA
 
 Check 1440×900 and 390×844, compare against the reference, exercise all primary controls, inspect console errors, and run the Example Battle three times before a demo release.

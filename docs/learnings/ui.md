@@ -1,5 +1,10 @@
 # UI Learnings
 
+- 2026-07-25 · #38 · runtime mode 必须下传到内容边界，不能只改变顶部 Badge，否则黄金 fixture 会被误认成实时证据 · 适用于双运行时 UI · 参见 `ArenaStage.tsx`
+- 2026-07-25 · #38 · 缺失作品载荷时应整页接管 Modal 内容并隐藏无效标签，而不是让四个 tab 各自显示空态 · 适用于证据降级 · 参见 `artifact-modal.tsx`
+- 2026-07-25 · #38 · “返回已验证演示”在同一黄金路由可原位切 mode，跨 Battle 则应导航到 BA-2026-0024 · 适用于止损 CTA · 参见 `BattleWorkspace.tsx`
+- 2026-07-25 · #38 · 路由驱动的数据加载必须清空旧状态并取消过期 Promise，否则新 Badge 可能短暂配上旧证据 · 适用于异步页面切换 · 参见 `findings.md`
+
 - 2026-07-25 · #37 · unified diff 双栏必须为删除/新增补空行，才能让同一变更块保持视觉行对齐 · 适用于补丁查看 · 参见 `artifact-tab-patch.tsx`
 - 2026-07-25 · #37 · 窄屏六列表格应在组件内部横向滚动，不能把溢出传给页面或 Modal · 适用于密集证据表 · 参见 `artifact-detail-tabs.module.css`
 - 2026-07-25 · #37 · 证据跳转需要先关闭 Modal，再把历史事件临时置顶、滚动并聚焦，才能让用户看见定位结果 · 适用于跨浮层锚点 · 参见 `ArenaStage.tsx`

@@ -2,9 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { BattleEvent } from "@agent-arena/contracts";
 import { loadBattleEvents, type BattleEventsResult } from "../data/battle";
 import { ArenaStage } from "./ArenaStage";
-import { RuntimeModeBadge, modeFromSource, normalizeMode } from "./runtime-mode-badge";
-import { useSearchParams } from "react-router-dom";
+import { RuntimeModeBadge, modeFromSource, normalizeMode, type RuntimeMode } from "./runtime-mode-badge";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { t } from "../i18n/zh";
+import { VERIFIED_SHOWCASE_ID } from "../data/verified-showcase";
 
 type BattleView = "live" | "result" | "replay";
 
@@ -13,9 +14,17 @@ export function BattleWorkspace({ battleId }: { battleId: string }) {
   const [visibleEvents, setVisibleEvents] = useState<readonly BattleEvent[]>([]);
   const [view, setView] = useState<BattleView>("live");
   const [selected, setSelected] = useState<BattleEvent | null>(null);
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
 
-  useEffect(() => { void loadBattleEvents(battleId).then(setBattle); }, [battleId]);
+  useEffect(() => {
+    let current = true;
+    setBattle(null);
+    setVisibleEvents([]);
+    setSelected(null);
+    void loadBattleEvents(battleId).then((result) => { if (current) setBattle(result); });
+    return () => { current = false; };
+  }, [battleId]);
   const handleProgress = useCallback((events: readonly BattleEvent[]) => setVisibleEvents(events), []);
   const events = battle?.events ?? [];
   const replayEvents = useMemo(() => events.filter((event) => ["proposal_created", "attack_created", "defense_created", "artifact_created", "score_created", "champion_selected"].includes(event.eventType)), [events]);
@@ -24,6 +33,18 @@ export function BattleWorkspace({ battleId }: { battleId: string }) {
     const eventId = searchParams.get("event");
     if (eventId && events.length) setSelected(events.find((event) => event.id === eventId) ?? null);
   }, [events, searchParams]);
+
+  const returnToVerified = useCallback(() => {
+    if (battleId !== VERIFIED_SHOWCASE_ID) {
+      navigate(`/battle/${VERIFIED_SHOWCASE_ID}?mode=verified_replay`);
+      return;
+    }
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      next.set("mode", "verified_replay");
+      return next;
+    }, { replace: true });
+  }, [battleId, navigate, setSearchParams]);
 
   if (!battle) return <section className="battle-loading"><span>{t("arena.loading")}</span><i /></section>;
 
@@ -38,22 +59,22 @@ export function BattleWorkspace({ battleId }: { battleId: string }) {
       </nav>
     </header>
 
-    {view === "result" ? <ResultPanel champion={champion} events={events} /> : view === "replay" ? <ReplayWorkspace events={replayEvents} allEvents={events} battleId={battleId} onProgress={handleProgress} onSelect={setSelected} /> : <div className="battle-grid">
-      <ArenaStage battleId={battleId} events={replayEvents} onProgress={handleProgress} onFatalEvidence={setSelected} />
+    {view === "result" ? <ResultPanel champion={champion} events={events} /> : view === "replay" ? <ReplayWorkspace events={replayEvents} allEvents={events} battleId={battleId} runtimeMode={runtimeMode} onReturnVerified={returnToVerified} onProgress={handleProgress} onSelect={setSelected} /> : <div className="battle-grid">
+      <ArenaStage battleId={battleId} events={replayEvents} runtimeMode={runtimeMode} onReturnVerified={returnToVerified} onProgress={handleProgress} onFatalEvidence={setSelected} />
       <EvidenceLog events={visibleEvents} onSelect={setSelected} />
     </div>}
     <EvidenceDrawer event={selected} onClose={() => setSelected(null)} />
   </section>;
 }
 
-function ReplayWorkspace({ events, allEvents, battleId, onProgress, onSelect }: { events: readonly BattleEvent[]; allEvents: readonly BattleEvent[]; battleId: string; onProgress: (events: readonly BattleEvent[]) => void; onSelect: (event: BattleEvent) => void }) {
+function ReplayWorkspace({ events, allEvents, battleId, runtimeMode, onReturnVerified, onProgress, onSelect }: { events: readonly BattleEvent[]; allEvents: readonly BattleEvent[]; battleId: string; runtimeMode: RuntimeMode; onReturnVerified: () => void; onProgress: (events: readonly BattleEvent[]) => void; onSelect: (event: BattleEvent) => void }) {
   const [inspection, setInspection] = useState<"timeline"|"graph"|"log">("timeline");
   const attacks = allEvents.filter((event) => event.eventType === "attack_created");
   const defenses = allEvents.filter((event) => event.eventType === "defense_created");
   const accepted = defenses.filter((event) => (event.rawPayload as { acceptedAttack?: boolean } | undefined)?.acceptedAttack);
   const critical = attacks.filter((event) => (event.rawPayload as { severity?: string } | undefined)?.severity === "high");
   const damage = accepted.reduce((total, defense) => { const attackId = (defense.rawPayload as { attackId?: string }).attackId; const attack = attacks.find((item) => (item.rawPayload as { id?: string } | undefined)?.id === attackId); const severity = (attack?.rawPayload as { severity?: string } | undefined)?.severity; return total + (severity === "high" ? 30 : severity === "medium" ? 15 : 5); },0);
-  return <section className="replay-workspace"><aside className="replay-rounds"><header>REPLAY</header>{["PROPOSAL","ATTACK","DEFENSE","SCORING","CHAMPION"].map((round,index) => <button key={round}><b>0{index+1}</b><span>{round}</span></button>)}</aside><div className="replay-center"><ArenaStage battleId={battleId} events={events} onProgress={onProgress} /><div className="replay-stats">{[["ATTACKS",attacks.length],["ACCEPTED",accepted.length],["REJECTED",defenses.length-accepted.length],["CRITICAL",critical.length],["DAMAGE",damage],["AVG SEVERITY",critical.length ? "HIGH" : "MED"]].map(([label,value]) => <div key={label}><strong>{value}</strong><span>{label}</span></div>)}</div></div><aside className="replay-inspector"><nav>{(["timeline","graph","log"] as const).map((tab) => <button className={inspection===tab?"active":""} onClick={() => setInspection(tab)} key={tab}>{tab.toUpperCase()}</button>)}</nav>{inspection === "timeline" && <EvidenceLog events={allEvents} onSelect={onSelect} />}{inspection === "graph" && <div className="damage-graph">{attacks.map((event,index) => <div key={event.id}><span>{index+1}</span><i style={{height:`${((event.rawPayload as {severity?:string})?.severity === "high" ? 100 : (event.rawPayload as {severity?:string})?.severity === "medium" ? 55 : 24)}%`}} /><b>{(event.rawPayload as {severity?:string})?.severity ?? "low"}</b></div>)}</div>}{inspection === "log" && <div className="raw-log">{allEvents.map((event) => <button key={event.id} onClick={() => onSelect(event)}><span>{event.sequence?.toString().padStart(2,"0")}</span>{event.eventType}</button>)}</div>}</aside></section>;
+  return <section className="replay-workspace"><aside className="replay-rounds"><header>REPLAY</header>{["PROPOSAL","ATTACK","DEFENSE","SCORING","CHAMPION"].map((round,index) => <button key={round}><b>0{index+1}</b><span>{round}</span></button>)}</aside><div className="replay-center"><ArenaStage battleId={battleId} events={events} runtimeMode={runtimeMode} onReturnVerified={onReturnVerified} onProgress={onProgress} /><div className="replay-stats">{[["ATTACKS",attacks.length],["ACCEPTED",accepted.length],["REJECTED",defenses.length-accepted.length],["CRITICAL",critical.length],["DAMAGE",damage],["AVG SEVERITY",critical.length ? "HIGH" : "MED"]].map(([label,value]) => <div key={label}><strong>{value}</strong><span>{label}</span></div>)}</div></div><aside className="replay-inspector"><nav>{(["timeline","graph","log"] as const).map((tab) => <button className={inspection===tab?"active":""} onClick={() => setInspection(tab)} key={tab}>{tab.toUpperCase()}</button>)}</nav>{inspection === "timeline" && <EvidenceLog events={allEvents} onSelect={onSelect} />}{inspection === "graph" && <div className="damage-graph">{attacks.map((event,index) => <div key={event.id}><span>{index+1}</span><i style={{height:`${((event.rawPayload as {severity?:string})?.severity === "high" ? 100 : (event.rawPayload as {severity?:string})?.severity === "medium" ? 55 : 24)}%`}} /><b>{(event.rawPayload as {severity?:string})?.severity ?? "low"}</b></div>)}</div>}{inspection === "log" && <div className="raw-log">{allEvents.map((event) => <button key={event.id} onClick={() => onSelect(event)}><span>{event.sequence?.toString().padStart(2,"0")}</span>{event.eventType}</button>)}</div>}</aside></section>;
 }
 
 function EvidenceLog({ events, onSelect }: { events: readonly BattleEvent[]; onSelect: (event: BattleEvent) => void }) {
