@@ -1,9 +1,6 @@
 import { Link, NavLink, Navigate, Route, Routes, useParams, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import type { BattleEvent, TeamPassport } from "@agent-arena/contracts";
-import { BattleWorkspace } from "./components/BattleWorkspace";
-import { BattleArchive } from "./components/BattleArchive";
-import { AgentPassport } from "./components/AgentPassport";
 import { HomeExperience } from "./components/HomeExperience";
 import { LiveArenaPage, V052_TEAMS } from "./components/live-arena-page";
 import { ChampionPage } from "./components/champion-page";
@@ -21,9 +18,9 @@ function Shell({ children }: { children: React.ReactNode }) {
       <header className="site-header">
         <Link to="/" className="brand"><img className="brand-mark" src="/assets/brand/agent-arena-mark.png" alt="" /><span>AGENT ARENA<small>{t("common.brand_tagline")}</small></span></Link>
         <nav aria-label={t("common.app_tagline")}>
-          <NavLink to="/battle/demo">{t("common.nav.arena")}</NavLink>
-          <NavLink to="/battles">{t("common.nav.battles")}</NavLink>
-          <NavLink to="/agent/infra-hacker/passport">{t("common.nav.passport")}</NavLink>
+          <NavLink to="/">{t("common.nav.home")}</NavLink>
+          <NavLink to="/battle/BA-2026-0024?mode=verified_replay">{t("common.nav.arena")}</NavLink>
+          <NavLink to="/battle/BA-2026-0024/champion">{t("common.nav.passport")}</NavLink>
         </nav>
         <Link to="/#live-battle" className="launch-button">{t("common.launch")}</Link>
       </header>
@@ -41,10 +38,7 @@ function BattlePage() {
   const [searchParams] = useSearchParams();
   const mode = (searchParams.get("mode") ?? "verified_replay") as RuntimeMode;
 
-  if (battleId === "BA-2026-0024" || mode !== "verified_replay") {
-    return <LiveArenaRoute battleId={battleId} mode={mode} forceFatal={searchParams.get("fatal") === "1"} />;
-  }
-  return <main className="battle-page"><BattleWorkspace battleId={battleId} /></main>;
+  return <LiveArenaRoute battleId={battleId} mode={mode} forceFatal={searchParams.get("fatal") === "1"} />;
 }
 
 function LiveArenaRoute({ battleId, mode, forceFatal }: { battleId: string; mode: RuntimeMode; forceFatal: boolean }) {
@@ -266,15 +260,6 @@ function ChampionRoute() {
   );
 }
 
-function BattlesPage() {
-  return <BattleArchive />;
-}
-
-function PassportPage() {
-  const { agentId } = useParams();
-  return <AgentPassport agentId={agentId ?? "infra-hacker"} />;
-}
-
 export function App() {
   return (
     <Shell>
@@ -282,8 +267,6 @@ export function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/battle/:battleId" element={<BattlePage />} />
         <Route path="/battle/:battleId/champion" element={<ChampionRoute />} />
-        <Route path="/battles" element={<BattlesPage />} />
-        <Route path="/agent/:agentId/passport" element={<PassportPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Shell>

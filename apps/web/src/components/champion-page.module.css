@@ -1,5 +1,5 @@
 .root {
-  min-height: 100vh;
+  min-height: min(720px, calc(100vh - 72px));
   background:
     radial-gradient(1200px 600px at 50% 20%, var(--champion-glow), transparent 60%),
     var(--bg-void);
@@ -25,12 +25,19 @@
   transform: scale(1);
 }
 
-.trophy {
-  font-size: 96px;
-  margin-bottom: var(--sp-6);
-  filter: drop-shadow(0 0 32px var(--champion-glow));
+.championPortrait {
+  width: 150px;
+  height: 150px;
+  margin-bottom: var(--sp-5);
+  position: relative;
+  border: 1px solid var(--team-viral);
+  border-radius: 50%;
+  box-shadow: 0 0 48px var(--champion-glow), 0 0 32px color-mix(in srgb, var(--team-viral) 38%, transparent);
   animation: trophyDrop var(--dur-victory-reveal) ease-out;
 }
+
+.championPortrait img { width: 100%; height: 100%; object-fit: cover; object-position: center 18%; border-radius: 50%; }
+.championPortrait span { position: absolute; right: -8px; bottom: 8px; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: var(--champion); color: var(--bg-void); border: 3px solid var(--bg-void); }
 
 @keyframes trophyDrop {
   from {
@@ -337,7 +344,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .reveal,
-  .trophy {
+  .championPortrait {
     transition: none;
     animation: none;
   }

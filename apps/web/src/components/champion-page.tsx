@@ -23,6 +23,12 @@ const JOURNEY_LABELS: Record<string, Parameters<typeof t>[0]> = {
   judging: "champion.journey.judging",
 };
 
+const TEAM_PORTRAITS: Record<string, string> = {
+  team_safe_v1: "/assets/agents/safe-builder.png",
+  team_viral_v1: "/assets/agents/viral-designer.png",
+  team_infra_v1: "/assets/agents/infra-hacker.png",
+};
+
 export function ChampionPage({
   battleId,
   champion,
@@ -61,8 +67,9 @@ export function ChampionPage({
     <div className={styles.root} data-testid="champion-page" data-state="revealed">
       {/* 上半屏：Champion Reveal（1200ms Victory Reveal） */}
       <section className={`${styles.reveal} ${revealed ? styles.revealIn : ""}`}>
-        <div className={styles.trophy} aria-hidden="true">
-          🏆
+        <div className={styles.championPortrait}>
+          <img src={TEAM_PORTRAITS[champion.teamId] ?? "/assets/agents/viral-designer.png"} alt="" />
+          <span aria-hidden="true">★</span>
         </div>
         <h1 className={styles.revealTitle}>
           <span className={styles.revealLabel}>{t("champion.reveal.title")}</span>

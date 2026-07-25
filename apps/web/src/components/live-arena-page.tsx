@@ -15,12 +15,13 @@ export type LiveArenaTeam = {
   subtitle: string;
   accentColor: string;
   role: string;
+  portrait: string;
 };
 
 export const V052_TEAMS: readonly LiveArenaTeam[] = [
-  { id: "team_safe_v1", name: "稳健构建者", subtitle: "Safe Builders", accentColor: "var(--team-safe)", role: "可行性" },
-  { id: "team_viral_v1", name: "传播设计师", subtitle: "Viral Designers", accentColor: "var(--team-viral)", role: "演示力" },
-  { id: "team_infra_v1", name: "架构黑客", subtitle: "Infra Hackers", accentColor: "var(--team-infra)", role: "技术深度" },
+  { id: "team_safe_v1", name: "稳健构建者", subtitle: "Safe Builders", accentColor: "var(--team-safe)", role: "可行性", portrait: "/assets/agents/safe-builder.png" },
+  { id: "team_viral_v1", name: "传播设计师", subtitle: "Viral Designers", accentColor: "var(--team-viral)", role: "演示力", portrait: "/assets/agents/viral-designer.png" },
+  { id: "team_infra_v1", name: "架构黑客", subtitle: "Infra Hackers", accentColor: "var(--team-infra)", role: "技术深度", portrait: "/assets/agents/infra-hacker.png" },
 ];
 
 const ACTOR_TO_TEAM: Record<string, string> = {
@@ -220,9 +221,11 @@ export function LiveArenaPage({
         {V052_TEAMS.map((team) => (
           <article key={team.id} className={styles.teamCard} style={{ borderColor: team.accentColor }}>
             <header className={styles.teamHeader}>
-              <div>
+              <img className={styles.teamPortrait} src={team.portrait} alt="" />
+              <div className={styles.teamIdentity}>
                 <h3 className={styles.teamName} style={{ color: team.accentColor }}>{team.name}</h3>
                 <span className={styles.teamSubtitle}>{team.subtitle}</span>
+                <span className={styles.teamRole}>{team.role}</span>
               </div>
               <button
                 type="button"

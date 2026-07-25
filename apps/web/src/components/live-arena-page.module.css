@@ -114,9 +114,22 @@
 
 .teamHeader {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
+  gap: var(--sp-3);
 }
+
+.teamPortrait {
+  width: 68px;
+  height: 68px;
+  flex: 0 0 68px;
+  object-fit: cover;
+  object-position: center 22%;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--bg-hairline);
+  background: var(--bg-void);
+}
+
+.teamIdentity { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; }
 
 .teamName {
   margin: 0;
@@ -129,6 +142,8 @@
   font-size: var(--fs-caption);
   color: var(--ink-3);
 }
+
+.teamRole { color: var(--ink-2); font-size: var(--fs-caption); }
 
 .evidenceButton {
   background: transparent;

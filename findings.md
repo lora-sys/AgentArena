@@ -22,6 +22,8 @@ No unresolved low findings.
 - Removed raw idea text from secondary model fields so untrusted input only reaches prompts inside the guarded `<user_idea>` wrapper.
 - Removed a global `max_tokens` override that could truncate valid structured outputs for every runtime/provider.
 - Pointed both live-battle CTAs at the actual live idea input instead of the verified-replay brief.
+- Removed the legacy archive/passport routes and the old workspace fallback so the product exposes only the three v0.5.2 pages.
+- Derived the Champion portrait from `teamId` instead of hard-coding the golden winner, preventing a wrong portrait for non-golden results.
 
 ## Summary
 

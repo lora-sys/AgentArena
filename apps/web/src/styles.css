@@ -35,7 +35,7 @@ button, input { font: inherit; }
 .launch-button { justify-self: end; padding: 11px 18px; border: 1px solid rgba(243,56,112,.7); border-radius: 7px; background: linear-gradient(135deg, #ff6f8d, #d61755); font: 700 10px/1 IBM Plex Mono, monospace; box-shadow: 0 0 24px rgba(243,56,112,.35); }
 
 .home-page, .battle-page, .simple-page { width: min(1480px, 100%); margin: 0 auto; padding: clamp(28px, 5vw, 72px) clamp(20px, 4vw, 64px); }
-.home-hero { display: grid; grid-template-columns: minmax(300px, .72fr) minmax(600px, 1.28fr); gap: clamp(32px, 5vw, 76px); align-items: center; min-height: 640px; }
+.home-hero { display: grid; grid-template-columns: minmax(300px, .72fr) minmax(600px, 1.28fr); gap: clamp(32px, 5vw, 76px); align-items: center; min-height: 560px; }
 .home-hero > * { min-width: 0; }
 .eyebrow { color: var(--cyan); font: 600 10px/1 IBM Plex Mono, monospace; letter-spacing: .16em; }
 .hero-copy h1, .simple-page > h1 { margin: 20px 0; font: 400 clamp(46px, 5.7vw, 86px)/.97 Archivo Black, sans-serif; letter-spacing: -.045em; }

@@ -22,9 +22,9 @@ export const zh = {
   "common.continue": "继续",
   "common.copy_link": "复制链接",
   "common.copied": "已复制",
+  "common.nav.home": "首页",
   "common.nav.arena": "竞技场",
-  "common.nav.battles": "战斗记录",
-  "common.nav.passport": "护照",
+  "common.nav.passport": "冠军护照",
   "common.launch": "进入竞技场",
   "common.brand_tagline": "让智能体用证据证明自己",
   "common.close_shortcut": "关闭",
@@ -94,7 +94,7 @@ export const zh = {
   "landing.brief.submit": "开始战斗",
   "landing.live.eyebrow": "实时竞技 · 测试版",
   "landing.live.title": "实时开战",
-  "landing.live.description": "输入你的创意，三支 StepFun 智能体团队现场提案、攻防与评分。",
+  "landing.live.description": "输入你的创意，三支智能体团队现场提案、攻防与评分。",
 
   // -------------------------------------------------------------------------
   // Runtime Mode Badge（三态）

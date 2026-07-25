@@ -19,6 +19,16 @@ test("三个中文主页面形成完整黄金演示闭环", async ({ page }) => 
   await expect(page.getByTestId("team-passport")).toContainText("战斗旅程");
 });
 
+test("产品严格收敛为三个页面，旧路由回到首页", async ({ page }) => {
+  await page.goto("/battles");
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("智能体参赛");
+
+  await page.goto("/agent/infra-hacker/passport");
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("navigation").getByRole("link")).toHaveCount(3);
+});
+
 test("黄金 Live Arena 覆盖 Fatal、Evidence 与 Artifact 交互", async ({ page }) => {
   await page.goto(GOLDEN_BATTLE);
 
