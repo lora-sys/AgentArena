@@ -55,6 +55,11 @@ export function IdeaInputCard({ onBattleCreated, navigateTo = defaultNavigate }:
         setError(t("error.generic"));
         return;
       }
+      try {
+        window.sessionStorage.setItem(`agent-arena:idea:${body.battleId}`, trimmed);
+      } catch {
+        // Session storage is an optional presentation aid; SSE remains authoritative.
+      }
       onBattleCreated?.(body.battleId);
       navigateTo(`/battle/${body.battleId}?mode=live_runtime`);
     } catch {

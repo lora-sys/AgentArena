@@ -85,12 +85,14 @@ function isAbortError(err: unknown): boolean {
 
 function isInfrastructureError(err: unknown): boolean {
   if (!err || typeof err !== "object") return false;
-  const e = err as { status?: unknown; error?: { code?: unknown }; code?: unknown };
+  const e = err as { name?: unknown; message?: unknown; status?: unknown; error?: { code?: unknown }; code?: unknown };
   if (typeof e.status === "number" && e.status >= 400 && e.status < 600) {
     return true;
   }
   const errCode = e.error?.code ?? e.code;
-  return errCode === "ECONNREFUSED" || errCode === "ENOTFOUND" || errCode === "ETIMEDOUT";
+  return e.name === "APIConnectionTimeoutError" ||
+    (typeof e.message === "string" && /request timed out/i.test(e.message)) ||
+    errCode === "ECONNREFUSED" || errCode === "ENOTFOUND" || errCode === "ETIMEDOUT";
 }
 
 function isModelOutputError(err: unknown): boolean {

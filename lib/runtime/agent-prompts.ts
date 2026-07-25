@@ -56,10 +56,13 @@ Do not invent features not supported by the champion proposal. Use judge comment
 function teamInstructionsFor(spec: AgentSpec): string {
   switch (spec.teamId) {
     case "team_safe_builder":
+    case "team_safe_v1":
       return safeBuilderInstructions;
     case "team_viral_designer":
+    case "team_viral_v1":
       return viralDesignerInstructions;
     case "team_infra_hacker":
+    case "team_infra_v1":
       return infraHackerInstructions;
     default:
       return safeBuilderInstructions;

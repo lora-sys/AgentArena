@@ -412,6 +412,15 @@ describe("MastraRuntime", () => {
     await expect(runtime.runProposal(sampleSpec, validProposal)).rejects.toThrow("aborted");
   });
 
+  it("re-throws provider timeout without fabricating mock output", async () => {
+    const timeoutErr = new Error("Request timed out.");
+    timeoutErr.name = "APIConnectionTimeoutError";
+    const fakeClient = makeFakeClient([timeoutErr]);
+    const runtime = makeRuntime(fakeClient);
+
+    await expect(runtime.runProposal(sampleSpec, validProposal)).rejects.toThrow("timed out");
+  });
+
   it("re-throws empty-content error without falling back to mock (R23)", async () => {
     // R23 fix: "OpenAI returned empty content" is a model-output error.
     // It must throw so callers see the real failure, not silently

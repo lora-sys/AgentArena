@@ -23,6 +23,18 @@ export const V052_TEAMS: readonly LiveArenaTeam[] = [
   { id: "team_infra_v1", name: "架构黑客", subtitle: "Infra Hackers", accentColor: "var(--team-infra)", role: "技术深度" },
 ];
 
+const ACTOR_TO_TEAM: Record<string, string> = {
+  agent_safe_builder_lead: "team_safe_v1",
+  agent_viral_designer_lead: "team_viral_v1",
+  agent_infra_hacker_lead: "team_infra_v1",
+};
+
+function participantName(id: string | undefined): string {
+  if (!id) return "—";
+  const teamId = ACTOR_TO_TEAM[id] ?? id;
+  return V052_TEAMS.find((team) => team.id === teamId)?.name ?? id;
+}
+
 const ROUND_TO_STAGE: Record<string, RoundStage> = {
   briefing: "brief",
   team_generation: "brief",
@@ -112,7 +124,7 @@ export function LiveArenaPage({
   // event recovers 60% of the most recent un-recovered accepted attack on
   // that team (each attack can only recover once).
   const { hpByTeam, lastHitByTeam } = useMemo(() => {
-    const hp: Record<string, number> = Object.fromEntries(V052_TEAMS.map((team) => [team.id, team.id === "team_viral_v1" ? 88 : 100]));
+    const hp: Record<string, number> = Object.fromEntries(V052_TEAMS.map((team) => [team.id, mode === "verified_replay" && team.id === "team_viral_v1" ? 88 : 100]));
     const lastHit: Record<string, HpBarHit | null> = Object.fromEntries(V052_TEAMS.map((team) => [team.id, null]));
     const attacks = new Map<string, { severity: Severity; targetTeamId: string }>();
     const damageByAttack = new Map<string, { teamId: string; damage: number }>();
@@ -129,7 +141,7 @@ export function LiveArenaPage({
         const payload = event.rawPayload as { attackId?: string; teamId?: string; acceptedAttack?: boolean } | undefined;
         if (!payload?.acceptedAttack || !payload.attackId || !payload.teamId) continue;
         // BA-2026-0024 的写锁曲线只由 attack_031 及其验证修复驱动：88→38→68。
-        if (payload.teamId === "team_viral_v1" && payload.attackId !== "attack_031") continue;
+        if (mode === "verified_replay" && payload.teamId === "team_viral_v1" && payload.attackId !== "attack_031") continue;
         const attack = attacks.get(payload.attackId);
         if (!attack) continue;
         const damage = DAMAGE_MAP[attack.severity];
@@ -155,7 +167,7 @@ export function LiveArenaPage({
       }
     }
     return { hpByTeam: hp, lastHitByTeam: lastHit };
-  }, [events]);
+  }, [events, mode]);
 
   // Current attack focus card: latest attack event
   const currentAttack = useMemo(() => {
@@ -249,10 +261,10 @@ export function LiveArenaPage({
           <div className={styles.attackCard}>
             <div className={styles.attackMeta}>
               <span className={styles.attackLabel}>{t("arena.current_attack.attacker")}</span>
-              <strong>{V052_TEAMS.find((team) => team.id === currentAttack.actorId)?.name ?? currentAttack.actorId}</strong>
+              <strong>{participantName(currentAttack.actorId)}</strong>
               <span className={styles.attackLabel}>→</span>
               <span className={styles.attackLabel}>{t("arena.current_attack.target")}</span>
-              <strong>{V052_TEAMS.find((team) => team.id === currentAttack.targetId)?.name ?? currentAttack.targetId}</strong>
+              <strong>{participantName(currentAttack.targetId)}</strong>
             </div>
             <h4 className={styles.attackTitle}>{currentAttack.title}</h4>
             <TypewriterText text={currentAttack.content} speedMs={18} className={styles.attackContent} />
@@ -300,7 +312,7 @@ export function LiveArenaPage({
           <div className={styles.fatalBody}>
             <div className={styles.fatalSide}>
               <span className={styles.fatalLabel}>{t("arena.fatal.attacker_side")}</span>
-              <strong>{V052_TEAMS.find((team) => team.id === fatalTakeover.actorId)?.name ?? fatalTakeover.actorId}</strong>
+              <strong>{participantName(fatalTakeover.actorId)}</strong>
             </div>
             <div className={styles.fatalCenter}>
               <div className={styles.fatalHp}>
@@ -318,7 +330,7 @@ export function LiveArenaPage({
             </div>
             <div className={styles.fatalSide}>
               <span className={styles.fatalLabel}>{t("arena.fatal.defender_side")}</span>
-              <strong>{V052_TEAMS.find((team) => team.id === fatalTakeover.targetId)?.name ?? fatalTakeover.targetId}</strong>
+              <strong>{participantName(fatalTakeover.targetId)}</strong>
             </div>
           </div>
         </div>

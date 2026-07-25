@@ -67,7 +67,7 @@ export function EvidenceLensModal({
         >
           <header className={styles.header}>
             <h2>{t("evidence.title")} · {teamName}</h2>
-            <button ref={closeButtonRef} type="button" onClick={onClose} aria-label={t("common.close")}>ESC</button>
+            <button ref={closeButtonRef} type="button" onClick={onClose} aria-label={t("common.close")}>{t("common.close_shortcut")}</button>
           </header>
           <div className={styles.insufficientBody}>
             <p>{t("evidence.state.insufficient")}</p>
@@ -93,7 +93,7 @@ export function EvidenceLensModal({
             <span className={styles.eyebrow}>{t("evidence.subtitle")}</span>
             <h2>{t("evidence.title")} · {teamName}</h2>
           </div>
-          <button ref={closeButtonRef} type="button" onClick={onClose} aria-label={t("common.close")}>ESC</button>
+          <button ref={closeButtonRef} type="button" onClick={onClose} aria-label={t("common.close")}>{t("common.close_shortcut")}</button>
         </header>
 
         {completeness === "linked_evidence" && (

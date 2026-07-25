@@ -14,6 +14,15 @@ export type ChampionPageProps = {
   onShare?: () => void;
 };
 
+const JOURNEY_LABELS: Record<string, Parameters<typeof t>[0]> = {
+  proposal: "champion.journey.proposal",
+  attack: "champion.journey.attack",
+  defense: "champion.journey.defense",
+  patch: "champion.journey.patch",
+  verify: "champion.journey.verify",
+  judging: "champion.journey.judging",
+};
+
 export function ChampionPage({
   battleId,
   champion,
@@ -153,7 +162,7 @@ export function ChampionPage({
             <ol className={styles.journeyList}>
               {champion.journey.map((step) => (
                 <li key={step.eventId}>
-                  <span className={styles.journeyRound}>{step.round}</span>
+                  <span className={styles.journeyRound}>{t(JOURNEY_LABELS[step.round] ?? "champion.journey.proposal")}</span>
                   <span className={styles.journeyTitle}>{step.title}</span>
                 </li>
               ))}

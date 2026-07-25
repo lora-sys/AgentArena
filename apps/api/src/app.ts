@@ -113,6 +113,13 @@ app.get("/api/battles/:id/events", async (context) => {
     return context.json({ battleId, source: "fixture", events: demoEvents() });
   }
 
+  // Avoid loading the full Postgres adapter when persistence is not configured.
+  // The documented fallback is immediate and must not spend the request budget
+  // compiling database drivers only to discover DATABASE_URL is absent.
+  if (!process.env.DATABASE_URL) {
+    return context.json({ battleId, source: "fallback", events: [] });
+  }
+
   // Postgres/event-store integration is deliberately soft-failing: the replay
   // remains usable and never blocks the battle experience when storage is absent.
   try {

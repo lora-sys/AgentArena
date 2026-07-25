@@ -168,24 +168,28 @@ export async function* runLiveBattleFromPayload(
   checkDeadline();
 
   // ── 3. proposal_round ──────────────────────────────────────────────────────
-  const proposals: Record<string, { productName: string; oneLiner: string }> = {};
-  for (const team of DEFAULT_TEAMS) {
+  const proposalResults = await Promise.all(DEFAULT_TEAMS.map(async (team) => {
     const proposal = await runtime.runProposal(
       { agentId: team.actorId, role: "contestant", teamId: team.id },
       {
         teamId: team.id,
-        productName: "",
-        oneLiner: "",
-        targetUser: "",
-        problem: "",
-        solution: "",
-        mvpFeatures: [],
-        demoPlan: "",
-        technicalHighlight: "",
-        risks: [],
-        whyThisCanWin: "",
+        productName: "待生成产品",
+        oneLiner: "请根据 problem 字段中 <user_idea> 标签内的内容生成一句话提案",
+        targetUser: "由用户创意确定",
+        problem: wrappedIdea,
+        solution: "请基于用户创意生成方案",
+        mvpFeatures: ["由模型生成"],
+        demoPlan: "请给出可在 90 秒内展示的方案",
+        technicalHighlight: "请给出可验证的技术亮点",
+        risks: ["由模型识别"],
+        whyThisCanWin: "请说明取胜理由",
       },
     );
+    return { team, proposal };
+  }));
+  checkDeadline();
+  const proposals: Record<string, { productName: string; oneLiner: string }> = {};
+  for (const { team, proposal } of proposalResults) {
     proposals[team.id] = { productName: proposal.productName, oneLiner: proposal.oneLiner };
     yield makeEvent(battleId, nextId, now, {
       round: "proposal_round",
@@ -195,21 +199,13 @@ export async function* runLiveBattleFromPayload(
       content: proposal.oneLiner,
       rawPayload: proposal,
     });
-    checkDeadline();
   }
 
   // ── 4. cross_attack_round ──────────────────────────────────────────────────
-  const attacks: Array<{
-    id: string;
-    attackerTeamId: string;
-    targetTeamId: string;
-    claim: string;
-    severity: string;
-  }> = [];
-  for (const [attacker, target] of ATTACK_PAIRS) {
+  const attackResults = await Promise.all(ATTACK_PAIRS.map(async ([attacker, target]) => {
     const attackerTeam = DEFAULT_TEAMS.find((team) => team.id === attacker);
     const targetProposal = proposals[target];
-    if (!attackerTeam || !targetProposal) continue;
+    if (!attackerTeam || !targetProposal) return null;
     const attack = await runtime.runAttack(
       { agentId: attackerTeam.actorId, role: "contestant", teamId: attacker },
       {
@@ -217,12 +213,25 @@ export async function* runLiveBattleFromPayload(
         attackerTeamId: attacker,
         targetTeamId: target,
         attackType: "weak_demo",
-        claim: "",
-        evidence: "",
+        claim: `${targetProposal.productName}：${targetProposal.oneLiner}`,
+        evidence: `目标提案：${targetProposal.oneLiner}`,
         severity: "medium",
-        suggestedFix: "",
+        suggestedFix: "请提出可验证的修复建议",
       },
     );
+    return { attacker, attackerTeam, target, attack };
+  }));
+  checkDeadline();
+  const attacks: Array<{
+    id: string;
+    attackerTeamId: string;
+    targetTeamId: string;
+    claim: string;
+    severity: string;
+  }> = [];
+  for (const result of attackResults) {
+    if (!result) continue;
+    const { attacker, attackerTeam, target, attack } = result;
     attacks.push({
       id: attack.id,
       attackerTeamId: attacker,
@@ -239,13 +248,12 @@ export async function* runLiveBattleFromPayload(
       content: attack.claim,
       rawPayload: attack,
     });
-    checkDeadline();
   }
 
   // ── 5. defense_round ───────────────────────────────────────────────────────
-  for (const attack of attacks) {
+  const defenseResults = await Promise.all(attacks.map(async (attack) => {
     const defenderTeam = DEFAULT_TEAMS.find((team) => team.id === attack.targetTeamId);
-    if (!defenderTeam) continue;
+    if (!defenderTeam) return null;
     const defense = await runtime.runDefense(
       { agentId: defenderTeam.actorId, role: "contestant", teamId: defenderTeam.id },
       {
@@ -253,11 +261,17 @@ export async function* runLiveBattleFromPayload(
         attackId: attack.id,
         teamId: defenderTeam.id,
         targetTeamId: attack.attackerTeamId,
-        responseToAttack: "",
+        responseToAttack: `收到攻击：${attack.claim}`,
         acceptedAttack: false,
-        revision: "",
+        revision: "请判断是否接受并给出修订",
       },
     );
+    return { attack, defenderTeam, defense };
+  }));
+  checkDeadline();
+  for (const result of defenseResults) {
+    if (!result) continue;
+    const { attack, defenderTeam, defense } = result;
     yield makeEvent(battleId, nextId, now, {
       round: "defense_round",
       actorId: defenderTeam.actorId,
@@ -267,12 +281,11 @@ export async function* runLiveBattleFromPayload(
       content: defense.responseToAttack,
       rawPayload: defense,
     });
-    checkDeadline();
   }
 
   // ── 6. judging_round ───────────────────────────────────────────────────────
-  const scores: Array<{ teamId: string; totalScore: number }> = [];
-  for (const team of DEFAULT_TEAMS) {
+  const scoreResults = await Promise.all(DEFAULT_TEAMS.map(async (team) => {
+    const proposal = proposals[team.id];
     const score = await runtime.runJudge(
       { agentId: "judge_panel", role: "judge", teamId: team.id },
       {
@@ -285,10 +298,15 @@ export async function* runLiveBattleFromPayload(
           userValue: 0,
           longTermPotential: 0,
         },
-        judgeComments: [],
+        judgeComments: [`待评提案：${proposal?.productName ?? team.name} · ${proposal?.oneLiner ?? "未生成提案摘要"}`],
       },
     );
     const totalScore = Object.values(score.scores).reduce<number>((sum, value) => sum + (typeof value === "number" ? value : 0), 0);
+    return { team, score, totalScore };
+  }));
+  checkDeadline();
+  const scores: Array<{ teamId: string; totalScore: number }> = [];
+  for (const { team, score, totalScore } of scoreResults) {
     scores.push({ teamId: team.id, totalScore });
     yield makeEvent(battleId, nextId, now, {
       round: "judging_round",
@@ -299,7 +317,6 @@ export async function* runLiveBattleFromPayload(
       content: score.judgeComments.join(" "),
       rawPayload: score,
     });
-    checkDeadline();
   }
 
   // ── 7. champion_selected ───────────────────────────────────────────────────
