@@ -60,6 +60,17 @@ export function verifiedShowcaseArtifactBundle(teamId?: string): ArtifactBundle 
   const payload = patchEvent?.rawPayload as { artifactId?: string; diffText?: string } | undefined;
   if (!initialEvent || !patchEvent || !payload?.artifactId || !payload.diffText) return undefined;
   const restored = restoreVersionsFromUnifiedDiff(payload.diffText);
+  const verifiedTestIds = new Set(["test_022", "test_032", "test_052"]);
+  const testEvents = fixture.events.filter((event) => {
+    const eventPayload = event.rawPayload as { id?: string; name?: string; passed?: boolean } | undefined;
+    return eventPayload?.id && verifiedTestIds.has(eventPayload.id) && typeof eventPayload.name === "string" && typeof eventPayload.passed === "boolean";
+  });
+  const testResults = testEvents.map((event) => {
+    const eventPayload = event.rawPayload as { id: string; teamId: string; name: string; passed: boolean; linkedEventIds?: string[] };
+    return { ...eventPayload, teamId: teamIds[eventPayload.teamId] ?? eventPayload.teamId };
+  });
+  const linkedPayloadIds = new Set(["attack_031", "defense_041", "patch_048", "patch_049", "test_022", "test_032", "test_052"]);
+  const linkedEvidenceEventIds = fixture.events.filter((event) => linkedPayloadIds.has((event.rawPayload as { id?: string } | undefined)?.id ?? "")).map((event) => event.id);
   return {
     artifactId: payload.artifactId,
     teamId,
@@ -70,7 +81,7 @@ export function verifiedShowcaseArtifactBundle(teamId?: string): ArtifactBundle 
       { version: 2, label: t("artifact.version.v2"), contentText: restored.after, createdAt: patchEvent.createdAt, linkedEventId: patchEvent.id },
     ],
     patchDiffText: payload.diffText,
-    testResults: [],
-    linkedEvidenceEventIds: [initialEvent.id, patchEvent.id],
+    testResults,
+    linkedEvidenceEventIds,
   };
 }

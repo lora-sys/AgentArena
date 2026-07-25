@@ -3,6 +3,9 @@ import type { ArtifactBundle } from "@agent-arena/contracts";
 import { t } from "../i18n/zh";
 import styles from "./artifact-modal.module.css";
 import { ArtifactTabVersions } from "./artifact-tab-versions";
+import { ArtifactTabPatch } from "./artifact-tab-patch";
+import { ArtifactTabTests } from "./artifact-tab-tests";
+import { ArtifactTabEvidence } from "./artifact-tab-evidence";
 
 const tabs = [
   { id: "versions", label: t("artifact.tab.versions"), empty: t("artifact.empty.versions") },
@@ -17,10 +20,11 @@ export interface ArtifactModalProps {
   open: boolean;
   teamName: string;
   artifact?: ArtifactBundle;
+  onEvidenceSelect?: (eventId: string) => void;
   onClose: () => void;
 }
 
-export function ArtifactModal({ open, teamName, artifact, onClose }: ArtifactModalProps) {
+export function ArtifactModal({ open, teamName, artifact, onEvidenceSelect, onClose }: ArtifactModalProps) {
   const [activeTab, setActiveTab] = useState<ArtifactTab>("versions");
   const panelRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -78,8 +82,11 @@ export function ArtifactModal({ open, teamName, artifact, onClose }: ArtifactMod
       <div className={styles.tabs} role="tablist" aria-label={t("artifact.title")}>
         {tabs.map((tab) => <button key={tab.id} id={`artifact-tab-${tab.id}`} type="button" role="tab" aria-selected={activeTab === tab.id} aria-controls="artifact-tabpanel" tabIndex={activeTab === tab.id ? 0 : -1} onClick={() => setActiveTab(tab.id)}>{tab.label}</button>)}
       </div>
-      <section id="artifact-tabpanel" role="tabpanel" aria-labelledby={`artifact-tab-${active.id}`} className={`${styles.panel} ${artifact && active.id === "versions" ? styles.panelPopulated : ""}`}>
-        {artifact && active.id === "versions" ? <ArtifactTabVersions artifact={artifact} /> : <>
+      <section id="artifact-tabpanel" role="tabpanel" aria-labelledby={`artifact-tab-${active.id}`} className={`${styles.panel} ${artifact ? styles.panelPopulated : ""}`}>
+        {artifact && active.id === "versions" ? <ArtifactTabVersions artifact={artifact} />
+          : artifact && active.id === "patch" && artifact.patchDiffText ? <ArtifactTabPatch diffText={artifact.patchDiffText} />
+          : artifact && active.id === "tests" ? <ArtifactTabTests results={artifact.testResults} />
+          : artifact && active.id === "evidence" ? <ArtifactTabEvidence eventIds={artifact.linkedEvidenceEventIds} onSelect={onEvidenceSelect} /> : <>
           <div className={styles.emptyIcon} aria-hidden="true">◇</div>
           <strong>{active.label}</strong>
           <p>{active.empty}</p>

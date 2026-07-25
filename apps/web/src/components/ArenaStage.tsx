@@ -24,7 +24,12 @@ export function ArenaStage({ compact = false, battleId = "demo", events = demoEv
   const [fatal, setFatal] = useState<FatalState | null>(null);
   const [fatalEvent, setFatalEvent] = useState<BattleEvent | null>(null);
   const [artifactTeamId, setArtifactTeamId] = useState<string | null>(null);
+  const [focusedEvidenceId, setFocusedEvidenceId] = useState<string | null>(null);
   const closeArtifact = useCallback(() => setArtifactTeamId(null), []);
+  const selectArtifactEvidence = useCallback((eventId: string) => {
+    setArtifactTeamId(null);
+    setFocusedEvidenceId(eventId);
+  }, []);
   const shownFatalRef = useRef<string | null>(null);
   const [searchParams] = useSearchParams();
   // 演示触发器：?fatal=1 合成金色剧情致命时刻（pitch 手动唤起 + 取证用）；真实 fixture 落地后由 onFatal 路径驱动
@@ -82,12 +87,28 @@ export function ArenaStage({ compact = false, battleId = "demo", events = demoEv
   const prevProofRef = useRef<Record<string, number>>({});
   const prevProof = prevProofRef.current;
   useEffect(() => { prevProofRef.current = proofHp; }, [proofHp]);
+  useEffect(() => {
+    if (!focusedEvidenceId) return;
+    const selectedId = focusedEvidenceId;
+    const frame = window.requestAnimationFrame(() => {
+      const target = document.getElementById(`event-${selectedId}`);
+      target?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+      target?.focus({ preventScroll: true });
+    });
+    const timer = window.setTimeout(() => setFocusedEvidenceId((current) => current === selectedId ? null : current), 2400);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
+  }, [focusedEvidenceId]);
   // 展示层回合 key：优先识别冠军 / 评分事件，否则用 batch 的 Engine 回合
   const effectiveRound = replay.batch?.events.some((event) => event.eventType === "champion_selected")
     ? "champion_round"
     : replay.batch?.events.some((event) => event.eventType === "score_created")
       ? "scoring_round"
       : replay.batch?.round ?? "proposal_round";
+  const focusedEvidence = events.find((event) => event.id === focusedEvidenceId);
+  const eventStreamItems = [...(focusedEvidence ? [focusedEvidence] : []), ...[...replay.visibleEvents].reverse().filter((event) => event.id !== focusedEvidenceId)].slice(0, 5);
   return (
     <section className={`arena-stage ${compact ? "compact" : ""}`} aria-label="Live agent battle" data-battle-id={battleId}>
       <header className="arena-header"><div><span className="live-label">LIVE</span><strong>{zh.arena.battle} {battleId.toUpperCase()}</strong><small>{zh.arena.idea}</small></div><div className="round-meta"><span>{zh.arena.rules}</span><span>{zh.arena.share}</span><b>02:14</b></div></header>
@@ -118,11 +139,11 @@ export function ArenaStage({ compact = false, battleId = "demo", events = demoEv
         <div className="attack-focus-main"><div><small>{zh.arena.attacker}</small><strong>{teamName(currentAttack.actorId)}</strong></div><div className="attack-focus-event"><small>{currentAttackId}</small><strong>{currentAttack.title}</strong><p>{currentAttack.content}</p></div><div><small>{zh.arena.target}</small><strong>{teamName(currentAttack.targetId ?? currentAttackPayload?.targetTeamId)}</strong></div></div>
         <div className="evidence-chain"><b>{zh.arena.evidenceChain}</b><ol>{(evidenceChain.length ? evidenceChain : [currentAttack]).map((item) => <li key={item.id}><span>{(item.rawPayload as { id?: string } | undefined)?.id ?? item.id}</span><small>{item.title}</small></li>)}</ol></div>
       </section>}
-      <div className="arena-lower"><section className="event-stream"><header>{zh.arena.eventStream}</header>{replay.visibleEvents.slice(-5).reverse().map((item) => <div key={item.id}><time>{new Date(item.createdAt).toLocaleTimeString("zh-CN", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" })}</time><span>{item.title}</span></div>)}</section><div className="arena-host-slot"><ArenaHost events={replay.batch?.events ?? []} active={replay.playing} /></div></div>
+      <div className="arena-lower"><section className="event-stream"><header>{zh.arena.eventStream}</header>{eventStreamItems.map((item) => <div id={`event-${item.id}`} tabIndex={-1} className={item.id === focusedEvidenceId ? "focused" : ""} key={item.id}><time>{new Date(item.createdAt).toLocaleTimeString("zh-CN", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" })}</time><span>{item.title}</span></div>)}</section><div className="arena-host-slot"><ArenaHost events={replay.batch?.events ?? []} active={replay.playing} /></div></div>
       <div className="replay-controls"><button type="button" onClick={replay.toggle}>{replay.playing ? zh.common.pause : zh.common.resume}</button><div><i style={{ width: `${((replay.batchIndex + 1) / replay.batchCount) * 100}%` }} /></div><button type="button" onClick={replay.cycleSpeed}>{replay.speed}×</button><button type="button" onClick={replay.replay}>{zh.common.replay}</button></div>
       {!compact && <div className="round-jump" aria-label="跳转到回合">{Array.from({length: replay.batchCount},(_,index) => <button className={index === replay.batchIndex ? "active" : ""} key={index} onClick={() => replay.seek(index)}>{index + 1}</button>)}</div>}
       <FatalTakeover open={fatal !== null} {...(fatal ?? { attacker: "", target: "", attackTitle: "", hpBefore: 0, damage: 0, hpAfter: 0 })} onViewEvidence={onFatalEvidence && fatalEvent ? () => onFatalEvidence(fatalEvent) : undefined} onDismiss={() => setFatal(null)} />
-      <ArtifactModal open={artifactTeamId !== null} teamName={teamName(artifactTeamId ?? undefined)} artifact={verifiedShowcaseArtifactBundle(artifactTeamId ?? undefined)} onClose={closeArtifact} />
+      <ArtifactModal open={artifactTeamId !== null} teamName={teamName(artifactTeamId ?? undefined)} artifact={verifiedShowcaseArtifactBundle(artifactTeamId ?? undefined)} onEvidenceSelect={selectArtifactEvidence} onClose={closeArtifact} />
     </section>
   );
 }

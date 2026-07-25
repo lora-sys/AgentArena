@@ -118,6 +118,7 @@ button, input { font: inherit; }
 .event-stream { min-height: 92px; padding: 11px 13px; border: 1px solid var(--ink-5); border-radius: var(--radius-md); background: var(--surface-1); }
 .event-stream header { margin-bottom: 7px; color: var(--ink-2); font: 700 8px/1 var(--font-mono); }
 .event-stream div { display: grid; grid-template-columns: 58px 1fr; gap: 8px; padding: 4px 0; color: var(--ink-3); font: 500 7px/1.2 var(--font-mono); }
+.event-stream div.focused { margin: 0 -7px; border-radius: var(--radius-sm); padding: 6px 7px; background: rgba(var(--success-rgb), .1); color: var(--ink-1); outline: 1px solid rgba(var(--success-rgb), .42); }
 .event-stream time { color: var(--vd); }
 .arena-lower .arena-host { height: 100%; margin-top: 0; }
 @media (max-width: 600px) {

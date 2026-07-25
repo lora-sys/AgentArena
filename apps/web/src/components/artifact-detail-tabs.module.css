@@ -1,0 +1,32 @@
+.patch, .tableWrap, .evidence { width: 100%; text-align: left; }
+.diffMeta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; color: var(--ink-3); font: 500 10px/1.4 var(--font-mono); }
+.diffMeta span { border: 1px solid var(--ink-5); border-radius: var(--radius-sm); padding: 5px 8px; background: var(--surface-2); }
+.diffGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.diffColumn { overflow: hidden; border: 1px solid var(--ink-5); border-radius: var(--radius-md); background: var(--surface-2); }
+.diffColumn header { padding: 12px 14px; border-bottom: 1px solid var(--ink-5); color: var(--ink-1); font: 600 var(--fs-caption)/1 var(--font-mono); }
+.diffColumn pre { min-height: 370px; margin: 0; overflow: auto; padding: 10px 0; font: 500 11px/1.7 var(--font-mono); }
+.diffColumn code { display: block; min-height: 19px; padding: 0 14px; color: var(--ink-2); white-space: pre-wrap; }
+.diffColumn code[data-diff-kind="removed"] { background: rgba(var(--danger-rgb), .14); color: var(--danger); }
+.diffColumn code[data-diff-kind="added"] { background: rgba(var(--success-rgb), .13); color: var(--success); }
+.diffColumn code[data-diff-kind="blank"] { color: transparent; }
+.tableWrap { overflow-x: auto; border: 1px solid var(--ink-5); border-radius: var(--radius-md); }
+.tests { width: 100%; min-width: 900px; border-collapse: collapse; background: var(--surface-2); }
+.tests th { padding: 13px 12px; border-bottom: 1px solid var(--ink-5); color: var(--ink-3); text-align: left; font: 600 10px/1 var(--font-mono); }
+.tests td { padding: 16px 12px; border-bottom: 1px solid var(--ink-5); color: var(--ink-2); font-size: 11px; line-height: 1.45; }
+.tests tbody tr:last-child td { border-bottom: 0; }
+.tests code { color: var(--ink-1); font-family: var(--font-mono); }
+.pass, .fail { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 50%; font-weight: 800; }
+.pass { background: rgba(var(--success-rgb), .12); color: var(--success); }
+.fail { background: rgba(var(--danger-rgb), .12); color: var(--danger); }
+.evidence > header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 12px 14px; border: 1px solid rgba(var(--success-rgb), .28); border-radius: var(--radius-md); background: rgba(var(--success-rgb), .06); color: var(--success); font: 600 var(--fs-caption)/1 var(--font-mono); }
+.evidence > header strong { font: 400 var(--fs-title)/1 var(--font-heading); }
+.evidence ol { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.evidence li { display: grid; grid-template-columns: 34px 1fr auto; gap: 12px; align-items: center; padding: 12px 14px; border: 1px solid var(--ink-5); border-radius: var(--radius-md); background: var(--surface-2); }
+.evidence li > i { color: var(--ink-4); font: 600 10px/1 var(--font-mono); }
+.evidence li div { display: grid; gap: 6px; }
+.evidence li strong { margin: 0; color: var(--ink-1); font: 600 12px/1 var(--font-mono); }
+.evidence li small { color: var(--ink-3); font-size: 10px; }
+.evidence button { border: 1px solid var(--ink-5); border-radius: var(--radius-sm); padding: 8px 10px; background: var(--surface-3); color: var(--ink-2); cursor: pointer; font: 600 10px/1 var(--font-mono); }
+.evidence button:disabled { opacity: .45; cursor: not-allowed; }
+.evidence button:focus-visible { outline: 2px solid var(--ink-1); outline-offset: 3px; }
+@media (max-width: 600px) { .diffGrid { grid-template-columns: 1fr; } .diffColumn pre { min-height: 210px; } .evidence li { grid-template-columns: 28px 1fr; } .evidence button { grid-column: 2; justify-self: start; } }

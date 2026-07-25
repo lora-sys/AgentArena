@@ -76,3 +76,30 @@ None.
 - Critical: 0
 - High: 1, fixed
 - Medium: 3, tracked scope/evidence constraints
+
+---
+
+# Adversarial Review — #37 Artifact Patch / Tests / Evidence
+
+Date: 2026-07-25
+Reviewer: Codex
+
+## CRITICAL
+
+None.
+
+## HIGH
+
+1. `apps/web/src/components/ArenaStage.tsx:90` — selecting linked evidence permanently pinned that historical event into the five-row live Event Stream because `focusedEvidenceId` was never cleared. After one evidence jump, the stream silently stopped being a true “latest five” view. Fixed by expiring the focused/pinned state after a short verified highlight window.
+
+## MEDIUM
+
+1. `apps/web/src/components/artifact-tab-tests.tsx:5` — the six-column explanatory copy is intentionally keyed to the three golden fixture test IDs because the public `TestResultPayload` carries only id/name/passed. A future fixture ID requires new localized detail copy or will correctly show “fixture 未记录”.
+2. `apps/web/src/components/artifact-tab-patch.tsx:11` — lines beginning with unified-diff control prefixes are treated as metadata. This is correct for the verified patch but is not a general-purpose multi-file diff parser.
+3. Agent-browser semantic and screenshot evidence is complete; issue #37 does not require video, so no recording gap applies here.
+
+## Summary
+
+- Critical: 0
+- High: 1, fixed
+- Medium: 3, bounded by fixture/contract scope

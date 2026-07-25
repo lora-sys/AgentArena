@@ -20,6 +20,8 @@ Do not introduce Storybook or a second UI kit without a concrete reuse need. Pre
 
 Artifact version presentation uses a two-column verified-code comparison beside a self-contained Mini App preview. Below 900px the preview stacks after the comparison; below 600px the two versions also stack, while the modal itself owns vertical scrolling.
 
+Artifact detail tabs preserve evidence semantics: patch rows align deleted and added lines in two columns, test results keep the six-column contract in a locally scrollable table, and evidence links close the modal before briefly pinning and focusing the selected Event Stream record.
+
 ## Visual QA
 
 Check 1440×900 and 390×844, compare against the reference, exercise all primary controls, inspect console errors, and run the Example Battle three times before a demo release.

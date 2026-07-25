@@ -1,5 +1,10 @@
 # UI Learnings
 
+- 2026-07-25 · #37 · unified diff 双栏必须为删除/新增补空行，才能让同一变更块保持视觉行对齐 · 适用于补丁查看 · 参见 `artifact-tab-patch.tsx`
+- 2026-07-25 · #37 · 窄屏六列表格应在组件内部横向滚动，不能把溢出传给页面或 Modal · 适用于密集证据表 · 参见 `artifact-detail-tabs.module.css`
+- 2026-07-25 · #37 · 证据跳转需要先关闭 Modal，再把历史事件临时置顶、滚动并聚焦，才能让用户看见定位结果 · 适用于跨浮层锚点 · 参见 `ArenaStage.tsx`
+- 2026-07-25 · #37 · 历史事件定位必须自动过期，否则会永久占用“最近 5 条”实时流槽位 · 适用于 Live Arena Event Stream · 参见 `findings.md`
+
 - 2026-07-25 · #36 · 黄金 fixture 只提供 unified diff 时，可机械拆分上下文/删除/新增行还原两个已验证片段，不能补写未记录源码 · 适用于版本对比 · 参见 `verified-showcase.ts`
 - 2026-07-25 · #36 · Modal 标签状态必须在关闭时重置，否则跨 Agent 重开会隐藏默认版本页 · 适用于所有复用弹窗 · 参见 `artifact-modal.test.tsx`
 - 2026-07-25 · #36 · 版本双栏 + Mini App 在 900px 先拆主列、600px 再拆版本列，可保持桌面展示密度并避免移动端横向溢出 · 适用于 Artifact Viewer · 参见 `artifact-tab-versions.module.css`
