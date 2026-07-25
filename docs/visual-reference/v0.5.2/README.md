@@ -54,3 +54,7 @@ agent-browser --session baseline-45 screenshot "docs/visual-reference/v0.5.2/02-
 ```
 
 移动端基线将视口切换为 `390 844`；Modal 基线在对应队伍卡片打开“证据”或“作品”后拍摄。Fatal 使用 `fatal=1` 的取证触发器；合并前仍由真实 fixture 的 `fatal` severity 契约覆盖。
+
+## 逐 Issue PR 证据
+
+`pr-evidence/` 保存 #34–#40 的 Issue 级左右对照图，以及 #41 无独立设计帧时的桌面／移动实现截图。#26–#33 复用上方 01–03、09 基线与对应差异说明，避免复制同一设计裁剪。
