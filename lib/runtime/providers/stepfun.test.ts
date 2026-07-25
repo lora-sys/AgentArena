@@ -1,4 +1,19 @@
 import { describe, expect, it, vi } from "vitest";
+
+const openAIMock = vi.hoisted(() => ({
+  create: vi.fn(),
+  constructorOptions: [] as Array<Record<string, unknown>>,
+}));
+
+vi.mock("openai", () => ({
+  default: class MockOpenAI {
+    chat = { completions: { create: openAIMock.create } };
+
+    constructor(options: Record<string, unknown>) {
+      openAIMock.constructorOptions.push(options);
+    }
+  },
+}));
 import {
   createStepFunRuntime,
   isStepFunConfigured,
@@ -82,6 +97,29 @@ describe("createStepFunRuntime", () => {
     expect(out.teamId).toBe("team_viral_v1");
     expect(out.productName).toBe("ClashQuiz");
     expect(client.chat.completions.create).toHaveBeenCalledTimes(1);
+  });
+
+  it("creates the provider client, normalizes legacy base URL, and admits a streamed request", async () => {
+    openAIMock.create.mockImplementationOnce(async () => (async function* () {
+      yield { choices: [{ delta: { content: JSON.stringify(sampleProposal) }, finish_reason: null }] };
+      yield { choices: [{ delta: {}, finish_reason: "stop" }] };
+    })());
+
+    const runtime = createStepFunRuntime({
+      apiKey: "sk_test_dummy",
+      baseURL: "https://api.stepfun.com/step_plan/v1/",
+      model: "step-test",
+    });
+    const out = await runtime.runProposal(spec, sampleProposal);
+
+    expect(out.productName).toBe("ClashQuiz");
+    expect(openAIMock.create).toHaveBeenCalledTimes(1);
+    expect(openAIMock.constructorOptions.at(-1)).toMatchObject({
+      apiKey: "sk_test_dummy",
+      baseURL: "https://api.stepfun.com/v1",
+      timeout: 75_000,
+      maxRetries: 0,
+    });
   });
 });
 
