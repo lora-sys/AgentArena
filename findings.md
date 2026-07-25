@@ -154,3 +154,25 @@ None.
 - Critical: 0
 - High: 6 (fixed)
 - Medium: 2
+# Adversarial Review — #40 Champion Reveal + Team Passport
+
+Date: 2026-07-25
+Reviewer: Codex
+
+## CRITICAL
+None.
+
+## HIGH
+1. `apps/web/src/components/champion-page.tsx` — 任意 battle id 曾可落入固定冠军数据，构成 verified fixture 泄漏；非黄金 battle 现在直接返回本场 Arena，不渲染固定护照，已修复。
+2. `apps/web/src/components/champion-page.tsx` — champion event 缺失时曾用硬编码时间戳继续渲染，掩盖损坏 fixture；现在缺少裁决事件即回到 verified Arena，已修复。
+3. `apps/web/src/components/champion-reveal.tsx` — 亚军分数曾在视图中硬编码，可能与 fixture 漂移；现在从 `verifiedShowcaseStandings` 派生，已修复。
+
+## MEDIUM
+1. `apps/web/src/components/champion-reveal.tsx` — 复制成功提示 timeout 在卸载后可能写状态；已加入 ref 清理。
+2. `apps/web/src/components/champion-page.test.tsx` — 单测覆盖冠军、弱点、deep link 和跨组件分数一致性，但剪贴板失败态主要由 agent-browser 成功路径验证。
+3. `apps/web/src/components/champion-page.module.css` — Reveal 与参考稿的主体层级有明显实现差异：本实现按验收强化冠军 avatar，参考稿更强调大型奖杯；需在 PR 视觉说明中明确。
+
+## Summary
+- Critical: 0
+- High: 3 (fixed)
+- Medium: 3 (1 fixed, 2 documented)

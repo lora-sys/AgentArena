@@ -26,6 +26,8 @@ Live-runtime Artifact degradation borrows the centered warning hierarchy and res
 
 Evidence Lens uses a two-column audit surface: six dimension cards on the left and a numbered event chain on the right. `linked_evidence` exposes only the first attributable line per dimension; `insufficient_evidence` removes all score detail and desaturates the surface so fixed replay evidence cannot masquerade as live evidence.
 
+Champion is one continuous page: a viewport-height 1200ms broadcast reveal leads into a dense Team Passport audit surface. Champion gold is concentrated in the verified winner, seal, score accents, and journey spine; strengths, weaknesses, and improvements remain separately legible through success, danger, and champion semantics. Mobile removes runner-up portraits and stacks the six scores, trait cards, and journey without page-level horizontal scrolling.
+
 ## Visual QA
 
 Check 1440×900 and 390×844, compare against the reference, exercise all primary controls, inspect console errors, and run the Example Battle three times before a demo release.

@@ -308,6 +308,8 @@ button, input { font: inherit; }
 .result-stats strong { color: var(--gold); font: 400 30px/1 Archivo Black,sans-serif; }
 .result-stats span { color: var(--arena-faint); font: 7px/1 IBM Plex Mono,monospace; }
 .result-panel button { border: 1px solid var(--cyan); border-radius: 5px; padding: 12px 20px; color: var(--cyan); background: transparent; font: 600 9px/1 IBM Plex Mono,monospace; cursor: pointer; }
+.result-champion-link { border: 1px solid rgba(var(--champion-rgb),.45); border-radius: var(--radius-sm); padding: 12px 20px; background: rgba(var(--champion-rgb),.08); color: var(--champion); font: 700 9px/1 var(--font-mono); text-decoration:none; }
+.result-champion-link:focus-visible { outline: 2px solid var(--ink-1); outline-offset: 3px; }
 .battle-loading { display: grid; min-height: 500px; place-items: center; align-content: center; gap: 18px; color: var(--cyan); font: 600 9px/1 IBM Plex Mono,monospace; }
 .battle-loading i { width: 160px; height: 2px; background: linear-gradient(90deg,transparent,var(--cyan),transparent); animation: loading-pulse 1s ease-in-out infinite; }
 .evidence-backdrop { position: fixed; z-index: 30; inset: 0; display: grid; justify-items: end; background: rgba(2,5,9,.72); backdrop-filter: blur(6px); }

@@ -1,4 +1,4 @@
-import { type BattleEvent, type Severity, type SixDimensionScore } from "@agent-arena/contracts";
+import { type BattleEvent, type Severity } from "@agent-arena/contracts";
 import { demoEvents, teams, goldenFatalDemo } from "../data/demo";
 import { useArenaState, useBattleReplay } from "./BattleReplayPlayer";
 import { TypewriterText } from "./typewriter-text";
@@ -11,20 +11,12 @@ import { useSearchParams } from "react-router-dom";
 import { liveArenaZh as zh } from "../i18n/zh";
 import { ArtifactModal } from "./artifact-modal";
 import { AgentCardArtifactTrigger } from "./agent-card-artifact-trigger";
-import { VERIFIED_SHOWCASE_ID, verifiedShowcaseArtifactBundle } from "../data/verified-showcase";
+import { VERIFIED_SHOWCASE_ID, verifiedShowcaseArtifactBundle, verifiedShowcasePassport } from "../data/verified-showcase";
 import type { RuntimeMode } from "./runtime-mode-badge";
 import { EvidenceLensModal } from "./evidence-lens-modal";
 
 type FatalState = Omit<FatalTakeoverProps, "open" | "onDismiss">;
 
-const verifiedScores: SixDimensionScore = {
-  feasibility_zh: { score: 21, max: 25, completeness: "full_breakdown", breakdown: [{ label: "48 小时范围可落地", delta: 23 }, { label: "社交渠道收窄", delta: -2 }] },
-  originality: { score: 20, max: 25, completeness: "full_breakdown", breakdown: [{ label: "游戏化传播路径", delta: 22 }, { label: "玩法参考较多", delta: -2 }] },
-  demoPower: { score: 22, max: 25, completeness: "full_breakdown", breakdown: [{ label: "演示流畅性", delta: 24 }, { label: "覆盖偏窄", delta: -2 }] },
-  technicalDepth: { score: 12, max: 15, completeness: "linked_evidence", breakdown: [{ label: "SVG 降级修复", delta: 13 }, { label: "架构深度有限", delta: -1 }] },
-  clarity: { score: 8, max: 10, completeness: "linked_evidence", breakdown: [{ label: "叙事清晰", delta: 9 }, { label: "边界说明不足", delta: -1 }] },
-  riskControl: { score: 4, max: 5, completeness: "linked_evidence", breakdown: [{ label: "致命攻击后恢复", delta: 5 }, { label: "初始兼容风险", delta: -1 }] },
-};
 const verifiedEvidenceChain = ["test_022", "attack_031", "defense_041", "patch_048", "test_052"];
 
 export function ArenaStage({ compact = false, battleId = "demo", events = demoEvents, runtimeMode = "verified_replay", onProgress, onFatalEvidence, onReturnVerified }: { compact?: boolean; battleId?: string; events?: readonly BattleEvent[]; runtimeMode?: RuntimeMode; onProgress?: (events: readonly BattleEvent[]) => void; onFatalEvidence?: (event: BattleEvent) => void; onReturnVerified?: () => void }) {
@@ -175,7 +167,7 @@ export function ArenaStage({ compact = false, battleId = "demo", events = demoEv
       <div className="replay-controls"><button type="button" onClick={replay.toggle}>{replay.playing ? zh.common.pause : zh.common.resume}</button><div><i style={{ width: `${((replay.batchIndex + 1) / replay.batchCount) * 100}%` }} /></div><button type="button" onClick={replay.cycleSpeed}>{replay.speed}×</button><button type="button" onClick={replay.replay}>{zh.common.replay}</button></div>
       {!compact && <div className="round-jump" aria-label="跳转到回合">{Array.from({length: replay.batchCount},(_,index) => <button className={index === replay.batchIndex ? "active" : ""} key={index} onClick={() => replay.seek(index)}>{index + 1}</button>)}</div>}
       <FatalTakeover open={fatal !== null} {...(fatal ?? { attacker: "", target: "", attackTitle: "", hpBefore: 0, damage: 0, hpAfter: 0 })} onViewEvidence={() => { if (evidenceTimerRef.current !== null) window.clearTimeout(evidenceTimerRef.current); evidenceTimerRef.current = null; setFatal(null); setEvidenceTeamId(fatalEvent?.targetId ?? "viral_designer"); }} onDismiss={() => { if (evidenceTimerRef.current !== null) window.clearTimeout(evidenceTimerRef.current); evidenceTimerRef.current = null; setFatal(null); }} />
-      <EvidenceLensModal open={evidenceTeamId !== null} teamName={teamName(evidenceTeamId ?? undefined)} totalScore={runtimeMode === "verified_replay" && battleId === VERIFIED_SHOWCASE_ID ? 87 : proofHp[evidenceTeamId ?? ""] ?? 0} completeness={runtimeMode === "verified_replay" && battleId === VERIFIED_SHOWCASE_ID ? "full_breakdown" : "insufficient_evidence"} scores={runtimeMode === "verified_replay" && battleId === VERIFIED_SHOWCASE_ID ? verifiedScores : undefined} evidenceChain={verifiedEvidenceChain} onClose={closeEvidence} />
+      <EvidenceLensModal open={evidenceTeamId !== null} teamName={teamName(evidenceTeamId ?? undefined)} totalScore={runtimeMode === "verified_replay" && battleId === VERIFIED_SHOWCASE_ID ? verifiedShowcasePassport.totalScore : proofHp[evidenceTeamId ?? ""] ?? 0} completeness={runtimeMode === "verified_replay" && battleId === VERIFIED_SHOWCASE_ID ? verifiedShowcasePassport.evidenceCompleteness : "insufficient_evidence"} scores={runtimeMode === "verified_replay" && battleId === VERIFIED_SHOWCASE_ID ? verifiedShowcasePassport.scores : undefined} evidenceChain={verifiedEvidenceChain} onClose={closeEvidence} />
       <ArtifactModal open={artifactTeamId !== null} teamName={teamName(artifactTeamId ?? undefined)} artifact={runtimeMode === "verified_replay" && battleId === VERIFIED_SHOWCASE_ID ? verifiedShowcaseArtifactBundle(artifactTeamId ?? undefined) : undefined} mode={runtimeMode} onEvidenceSelect={selectArtifactEvidence} onReturnVerified={onReturnVerified} onClose={closeArtifact} />
     </section>
   );

@@ -3,7 +3,7 @@ import type { BattleEvent } from "@agent-arena/contracts";
 import { loadBattleEvents, type BattleEventsResult } from "../data/battle";
 import { ArenaStage } from "./ArenaStage";
 import { RuntimeModeBadge, modeFromSource, normalizeMode, type RuntimeMode } from "./runtime-mode-badge";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { t } from "../i18n/zh";
 import { VERIFIED_SHOWCASE_ID } from "../data/verified-showcase";
 
@@ -33,6 +33,10 @@ export function BattleWorkspace({ battleId }: { battleId: string }) {
     const eventId = searchParams.get("event");
     if (eventId && events.length) setSelected(events.find((event) => event.id === eventId) ?? null);
   }, [events, searchParams]);
+  useEffect(() => {
+    const requestedView = searchParams.get("view");
+    if (requestedView === "live" || requestedView === "result" || requestedView === "replay") setView(requestedView);
+  }, [searchParams]);
 
   const returnToVerified = useCallback(() => {
     if (battleId !== VERIFIED_SHOWCASE_ID) {
@@ -96,5 +100,5 @@ function EvidenceDrawer({ event, onClose }: { event: BattleEvent | null; onClose
 
 function ResultPanel({ champion, events }: { champion?: BattleEvent; events: readonly BattleEvent[] }) {
   const accepted = events.filter((event) => event.eventType === "defense_created" && (event.rawPayload as { acceptedAttack?: boolean } | undefined)?.acceptedAttack);
-  return <section className="result-panel"><p className="eyebrow">BATTLE COMPLETE</p><h1>{champion?.title ?? "RESULT SEALED"}</h1><p>{champion?.content ?? "The champion is derived from the recorded score evidence."}</p><div className="result-stats"><div><strong>{events.length}</strong><span>EVIDENCE EVENTS</span></div><div><strong>{accepted.length}</strong><span>ACCEPTED ATTACKS</span></div><div><strong>5</strong><span>ROUNDS REPLAYABLE</span></div></div><button type="button" onClick={() => window.location.reload()}>REPLAY FROM START</button></section>;
+  return <section className="result-panel"><p className="eyebrow">BATTLE COMPLETE</p><h1>{champion?.title ?? "RESULT SEALED"}</h1><p>{champion?.content ?? "The champion is derived from the recorded score evidence."}</p><div className="result-stats"><div><strong>{events.length}</strong><span>EVIDENCE EVENTS</span></div><div><strong>{accepted.length}</strong><span>ACCEPTED ATTACKS</span></div><div><strong>5</strong><span>ROUNDS REPLAYABLE</span></div></div>{champion && <Link className="result-champion-link" to={`/battle/${champion.battleId}/champion`}>{t("champion.reveal.open")}</Link>}<button type="button" onClick={() => window.location.reload()}>REPLAY FROM START</button></section>;
 }

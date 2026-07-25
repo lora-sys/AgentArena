@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { verifiedShowcaseArtifactBundle } from "./verified-showcase";
+import { verifiedShowcaseArtifactBundle, verifiedShowcasePassport } from "./verified-showcase";
 
 describe("verifiedShowcaseArtifactBundle", () => {
+  it("keeps the six dimension passport total and demo score write-locked", () => {
+    const scoreTotal = Object.values(verifiedShowcasePassport.scores).reduce((sum, dimension) => sum + dimension.score, 0);
+    expect(scoreTotal).toBe(87);
+    expect(verifiedShowcasePassport.scores.demoPower.score).toBe(19);
+    expect(verifiedShowcasePassport.weaknesses.length).toBeGreaterThan(0);
+  });
   it("restores input_state.ts v1 and v2 from fixture patch_048", () => {
     const bundle = verifiedShowcaseArtifactBundle("viral_designer");
 
