@@ -19,7 +19,7 @@ import { createStepFunRuntime, StepFunNotConfiguredError } from "./providers/ste
  *     → champion_selected
  *
  * Budgets (write-locked, docs/DEV-STANDARDS.md §8):
- *   - Total ≤ 90s  (throws LiveBattleTimeoutError past this)
+ *   - Total ≤ 150s for the RPM-limited real provider (verified replay stays 90s)
  *   - First event ≤ 10s (callers can time the first `yield`)
  *
  * Prompt-injection defence (write-locked, DEV-STANDARDS.md §6):
@@ -29,7 +29,10 @@ import { createStepFunRuntime, StepFunNotConfiguredError } from "./providers/ste
  *   - Idea length is capped at 300 chars upstream (POST /api/battles).
  */
 
-export const LIVE_BATTLE_TOTAL_BUDGET_MS = 90_000;
+// The verified replay is the fixed 90-second pitch path. Real StepFun runs
+// have a separate 150-second ceiling so an RPM-10 account can complete all
+// evidence-bound stages without fabricating fallback results.
+export const LIVE_BATTLE_TOTAL_BUDGET_MS = 150_000;
 export const LIVE_BATTLE_FIRST_EVENT_BUDGET_MS = 10_000;
 export const LIVE_BATTLE_MAX_IDEA_LENGTH = 300;
 
@@ -56,6 +59,10 @@ export type LiveBattleOptions = {
   runtime?: ArenaAgentRuntime;
   now?: () => number;
   idGenerator?: () => string;
+  /** Test seam; production always uses LIVE_BATTLE_TOTAL_BUDGET_MS. */
+  totalBudgetMs?: number;
+  /** Test seam for proving that fast provider progress survives in completion events. */
+  initialStreamChars?: Readonly<Record<string, number>>;
 };
 
 const DEFAULT_TEAMS = [
@@ -99,6 +106,17 @@ function sanitizeIdea(idea: string): string {
   return trimmed.replace(/<\/?user_idea>/gi, "");
 }
 
+async function retryTransient<T>(operation: () => Promise<T>): Promise<T> {
+  try {
+    return await operation();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!/timed out|timeout|ECONNRESET|connection reset/i.test(message)) throw error;
+    await new Promise((resolve) => setTimeout(resolve, 750));
+    return operation();
+  }
+}
+
 function makeEvent(
   battleId: string,
   id: () => string,
@@ -113,6 +131,75 @@ function makeEvent(
   };
 }
 
+type AgentActivityPhase = "proposal" | "attack" | "defense" | "judge" | "artifact";
+
+function makeActivityEvent(
+  battleId: string,
+  id: () => string,
+  now: () => number,
+  input: {
+    teamId: string;
+    actorId: string;
+    round: string;
+    phase: AgentActivityPhase;
+    status: "working" | "complete";
+    summary: string;
+    progress: number;
+    startedAt: number;
+    targetId?: string;
+    streamChars?: number;
+  },
+): BattleEvent {
+  return makeEvent(battleId, id, now, {
+    round: input.round,
+    actorId: input.actorId,
+    targetId: input.targetId,
+    eventType: "commentary_created",
+    title: input.summary,
+    content: input.summary,
+    rawPayload: {
+      kind: "agent_activity",
+      teamId: input.teamId,
+      phase: input.phase,
+      status: input.status,
+      summary: input.summary,
+      progress: input.progress,
+      elapsedMs: Math.max(0, now() - input.startedAt),
+      streamChars: input.streamChars,
+    },
+  });
+}
+
+type SettlementUpdate<T> =
+  | { kind: "complete"; index: number; value: T }
+  | { kind: "pulse"; pendingIndexes: number[]; pulse: number };
+
+async function* settleInCompletionOrder<T>(promises: readonly Promise<T>[]): AsyncGenerator<SettlementUpdate<T>> {
+  const pending = new Map<number, Promise<{ kind: "complete"; index: number; value: T; error?: unknown }>>();
+  promises.forEach((promise, index) => {
+    pending.set(index, promise.then(
+      (value) => ({ kind: "complete" as const, index, value }),
+      (error) => ({ kind: "complete" as const, index, value: undefined as T, error }),
+    ));
+  });
+  let pulse = 0;
+  while (pending.size > 0) {
+    let pulseTimer: ReturnType<typeof setTimeout> | undefined;
+    const pulsePromise = new Promise<{ kind: "pulse"; pendingIndexes: number[]; pulse: number }>((resolve) => {
+      pulseTimer = setTimeout(() => resolve({ kind: "pulse", pendingIndexes: [...pending.keys()], pulse: ++pulse }), 2500);
+    });
+    const result = await Promise.race([...pending.values(), pulsePromise]);
+    if (pulseTimer) clearTimeout(pulseTimer);
+    if (result.kind === "pulse") {
+      yield result;
+      continue;
+    }
+    pending.delete(result.index);
+    if (result.error !== undefined) throw result.error;
+    yield { kind: "complete", index: result.index, value: result.value };
+  }
+}
+
 export async function* runLiveBattleFromPayload(
   input: LiveBattleInput,
   options: LiveBattleOptions = {},
@@ -124,25 +211,80 @@ export async function* runLiveBattleFromPayload(
   const now = options.now ?? defaultNow;
   const nextId = options.idGenerator ?? defaultId;
   const startedAt = now();
-  const deadline = startedAt + LIVE_BATTLE_TOTAL_BUDGET_MS;
+  const totalBudgetMs = options.totalBudgetMs ?? LIVE_BATTLE_TOTAL_BUDGET_MS;
+  const deadline = startedAt + totalBudgetMs;
+  const abortController = new AbortController();
   const checkDeadline = (): void => {
     const elapsed = now() - startedAt;
-    if (now() > deadline) throw new LiveBattleTimeoutError(elapsed);
+    if (now() > deadline) {
+      abortController.abort();
+      throw new LiveBattleTimeoutError(elapsed);
+    }
   };
 
-  const runtime =
+  const withinDeadline = async <T>(operation: () => Promise<T>): Promise<T> => {
+    const remaining = Math.max(0, deadline - now());
+    if (remaining === 0) {
+      abortController.abort();
+      throw new LiveBattleTimeoutError(now() - startedAt);
+    }
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      return await Promise.race([
+        operation(),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => {
+            abortController.abort();
+            reject(new LiveBattleTimeoutError(now() - startedAt));
+          }, remaining);
+        }),
+      ]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  };
+
+  const streamCharsByTeamMethod = new Map<string, number>();
+  const streamKey = (teamId: string, method: string): string => `${teamId}:${method}`;
+  for (const [key, value] of Object.entries(options.initialStreamChars ?? {})) {
+    streamCharsByTeamMethod.set(key, value);
+  }
+  const streamChars = (teamId: string, method: string): number => streamCharsByTeamMethod.get(streamKey(teamId, method)) ?? 0;
+  const streamSummary = (teamId: string, method: string, fallback: string): string => {
+    const received = streamChars(teamId, method);
+    return received > 0 ? `${fallback} · 已接收 ${received} 字符` : `${fallback} · 等待模型首个片段`;
+  };
+
+  const baseRuntime =
     options.runtime ??
     (() => {
       try {
-        return createStepFunRuntime();
+        return createStepFunRuntime({
+          signal: abortController.signal,
+          onStreamProgress: ({ spec, method, receivedChars }) => {
+            if (spec.teamId) streamCharsByTeamMethod.set(streamKey(spec.teamId, method), receivedChars);
+          },
+        });
       } catch (err) {
         if (err instanceof StepFunNotConfiguredError) throw err;
         throw err;
       }
     })();
+  const runtime: ArenaAgentRuntime = {
+    runProposal: (spec, stageInput) => withinDeadline(() => retryTransient(() => baseRuntime.runProposal(spec, stageInput))),
+    runAttack: (spec, stageInput) => withinDeadline(() => retryTransient(() => baseRuntime.runAttack(spec, stageInput))),
+    runDefense: (spec, stageInput) => withinDeadline(() => retryTransient(() => baseRuntime.runDefense(spec, stageInput))),
+    runJudge: (spec, stageInput) => withinDeadline(() => retryTransient(() => baseRuntime.runJudge(spec, stageInput))),
+    runArtifact: (spec, stageInput) => withinDeadline(() => retryTransient(() => baseRuntime.runArtifact(spec, stageInput))),
+  };
 
   const wrappedIdea = wrapUserIdea(idea);
   const battleId = input.battleId;
+  const evidenceEventIdsByTeam = new Map<string, string[]>(DEFAULT_TEAMS.map((team) => [team.id, []]));
+  const bindEvidence = (teamId: string, eventId: string): void => {
+    const ids = evidenceEventIdsByTeam.get(teamId);
+    if (ids && !ids.includes(eventId)) ids.push(eventId);
+  };
 
   // ── 1. briefing ────────────────────────────────────────────────────────────
   yield makeEvent(battleId, nextId, now, {
@@ -168,7 +310,17 @@ export async function* runLiveBattleFromPayload(
   checkDeadline();
 
   // ── 3. proposal_round ──────────────────────────────────────────────────────
-  const proposalResults = await Promise.all(DEFAULT_TEAMS.map(async (team) => {
+  yield makeEvent(battleId, nextId, now, {
+    round: "proposal_round", eventType: "commentary_created", title: "三队并行生成提案", content: "模型已接收简报，正在生成结构化提案并校验证据字段。",
+  });
+  const proposalStartedAt = now();
+  for (const team of DEFAULT_TEAMS) {
+    yield makeActivityEvent(battleId, nextId, now, {
+      teamId: team.id, actorId: team.actorId, round: "proposal_round", phase: "proposal",
+      status: "working", summary: "正在读取简报并生成提案骨架", progress: 18, startedAt: proposalStartedAt,
+    });
+  }
+  const proposalTasks = DEFAULT_TEAMS.map(async (team) => {
     const proposal = await runtime.runProposal(
       { agentId: team.actorId, role: "contestant", teamId: team.id },
       {
@@ -186,12 +338,33 @@ export async function* runLiveBattleFromPayload(
       },
     );
     return { team, proposal };
-  }));
+  });
+  const proposalResults: Awaited<(typeof proposalTasks)[number]>[] = [];
+  for await (const update of settleInCompletionOrder(proposalTasks)) {
+    if (update.kind === "pulse") {
+      for (const index of update.pendingIndexes) {
+        const team = DEFAULT_TEAMS[index];
+        yield makeActivityEvent(battleId, nextId, now, {
+          teamId: team.id, actorId: team.actorId, round: "proposal_round", phase: "proposal", status: "working",
+            summary: streamSummary(team.id, "runProposal", `正在梳理需求与可验证卖点 · ${update.pulse}`),
+            progress: Math.min(88, 18 + update.pulse * 14), startedAt: proposalStartedAt, streamChars: streamChars(team.id, "runProposal"),
+        });
+      }
+      continue;
+    }
+    const { index, value } = update;
+    proposalResults[index] = value;
+    yield makeActivityEvent(battleId, nextId, now, {
+      teamId: value.team.id, actorId: value.team.actorId, round: "proposal_round", phase: "proposal",
+      status: "complete", summary: `提案已完成：${value.proposal.productName}`, progress: 100, startedAt: proposalStartedAt,
+      streamChars: streamChars(value.team.id, "runProposal"),
+    });
+  }
   checkDeadline();
   const proposals: Record<string, { productName: string; oneLiner: string }> = {};
   for (const { team, proposal } of proposalResults) {
     proposals[team.id] = { productName: proposal.productName, oneLiner: proposal.oneLiner };
-    yield makeEvent(battleId, nextId, now, {
+    const proposalEvent = makeEvent(battleId, nextId, now, {
       round: "proposal_round",
       actorId: team.actorId,
       eventType: "proposal_created",
@@ -199,10 +372,24 @@ export async function* runLiveBattleFromPayload(
       content: proposal.oneLiner,
       rawPayload: proposal,
     });
+    bindEvidence(team.id, proposalEvent.id);
+    yield proposalEvent;
   }
 
   // ── 4. cross_attack_round ──────────────────────────────────────────────────
-  const attackResults = await Promise.all(ATTACK_PAIRS.map(async ([attacker, target]) => {
+  yield makeEvent(battleId, nextId, now, {
+    round: "cross_attack_round", eventType: "commentary_created", title: "交叉攻击开始", content: "三支队伍正在并行检查对手方案中的可验证弱点。",
+  });
+  const attackStartedAt = now();
+  for (const [attacker, target] of ATTACK_PAIRS) {
+    const attackerTeam = DEFAULT_TEAMS.find((team) => team.id === attacker);
+    if (!attackerTeam) continue;
+    yield makeActivityEvent(battleId, nextId, now, {
+      teamId: attacker, actorId: attackerTeam.actorId, targetId: target, round: "cross_attack_round", phase: "attack",
+      status: "working", summary: "正在扫描对手方案与证据缺口", progress: 22, startedAt: attackStartedAt,
+    });
+  }
+  const attackTasks = ATTACK_PAIRS.map(async ([attacker, target]) => {
     const attackerTeam = DEFAULT_TEAMS.find((team) => team.id === attacker);
     const targetProposal = proposals[target];
     if (!attackerTeam || !targetProposal) return null;
@@ -220,7 +407,32 @@ export async function* runLiveBattleFromPayload(
       },
     );
     return { attacker, attackerTeam, target, attack };
-  }));
+  });
+  const attackResults: Awaited<(typeof attackTasks)[number]>[] = [];
+  for await (const update of settleInCompletionOrder(attackTasks)) {
+    if (update.kind === "pulse") {
+      for (const index of update.pendingIndexes) {
+        const [attacker, target] = ATTACK_PAIRS[index];
+        const attackerTeam = DEFAULT_TEAMS.find((team) => team.id === attacker);
+        if (!attackerTeam) continue;
+        yield makeActivityEvent(battleId, nextId, now, {
+          teamId: attacker, actorId: attackerTeam.actorId, targetId: target, round: "cross_attack_round", phase: "attack", status: "working",
+            summary: streamSummary(attacker, "runAttack", `正在扫描薄弱假设并绑定证据 · ${update.pulse}`),
+            progress: Math.min(88, 22 + update.pulse * 14), startedAt: attackStartedAt, streamChars: streamChars(attacker, "runAttack"),
+        });
+      }
+      continue;
+    }
+    const { index, value } = update;
+    attackResults[index] = value;
+    if (!value) continue;
+    yield makeActivityEvent(battleId, nextId, now, {
+      teamId: value.attacker, actorId: value.attackerTeam.actorId, targetId: value.target,
+      round: "cross_attack_round", phase: "attack", status: "complete",
+      summary: `攻击证据已锁定：${value.attack.severity}`, progress: 100, startedAt: attackStartedAt,
+      streamChars: streamChars(value.attacker, "runAttack"),
+    });
+  }
   checkDeadline();
   const attacks: Array<{
     id: string;
@@ -239,7 +451,7 @@ export async function* runLiveBattleFromPayload(
       claim: attack.claim,
       severity: attack.severity,
     });
-    yield makeEvent(battleId, nextId, now, {
+    const attackEvent = makeEvent(battleId, nextId, now, {
       round: "cross_attack_round",
       actorId: attackerTeam.actorId,
       targetId: target,
@@ -248,10 +460,26 @@ export async function* runLiveBattleFromPayload(
       content: attack.claim,
       rawPayload: attack,
     });
+    bindEvidence(attacker, attackEvent.id);
+    bindEvidence(target, attackEvent.id);
+    yield attackEvent;
   }
 
   // ── 5. defense_round ───────────────────────────────────────────────────────
-  const defenseResults = await Promise.all(attacks.map(async (attack) => {
+  yield makeEvent(battleId, nextId, now, {
+    round: "defense_round", eventType: "commentary_created", title: "防守与修订开始", content: "被攻击队伍正在接受或驳回主张，并生成修订方案。",
+  });
+  const defenseStartedAt = now();
+  for (const attack of attacks) {
+    const defenderTeam = DEFAULT_TEAMS.find((team) => team.id === attack.targetTeamId);
+    if (!defenderTeam) continue;
+    yield makeActivityEvent(battleId, nextId, now, {
+      teamId: defenderTeam.id, actorId: defenderTeam.actorId, targetId: attack.attackerTeamId,
+      round: "defense_round", phase: "defense", status: "working",
+      summary: "正在核验攻击主张并准备修订", progress: 24, startedAt: defenseStartedAt,
+    });
+  }
+  const defenseTasks = attacks.map(async (attack) => {
     const defenderTeam = DEFAULT_TEAMS.find((team) => team.id === attack.targetTeamId);
     if (!defenderTeam) return null;
     const defense = await runtime.runDefense(
@@ -267,12 +495,37 @@ export async function* runLiveBattleFromPayload(
       },
     );
     return { attack, defenderTeam, defense };
-  }));
+  });
+  const defenseResults: Awaited<(typeof defenseTasks)[number]>[] = [];
+  for await (const update of settleInCompletionOrder(defenseTasks)) {
+    if (update.kind === "pulse") {
+      for (const index of update.pendingIndexes) {
+        const attack = attacks[index];
+        const defenderTeam = DEFAULT_TEAMS.find((team) => team.id === attack.targetTeamId);
+        if (!defenderTeam) continue;
+        yield makeActivityEvent(battleId, nextId, now, {
+          teamId: defenderTeam.id, actorId: defenderTeam.actorId, targetId: attack.attackerTeamId, round: "defense_round", phase: "defense", status: "working",
+            summary: streamSummary(defenderTeam.id, "runDefense", `正在核验攻击并生成修订决策 · ${update.pulse}`),
+            progress: Math.min(88, 24 + update.pulse * 14), startedAt: defenseStartedAt, streamChars: streamChars(defenderTeam.id, "runDefense"),
+        });
+      }
+      continue;
+    }
+    const { index, value } = update;
+    defenseResults[index] = value;
+    if (!value) continue;
+    yield makeActivityEvent(battleId, nextId, now, {
+      teamId: value.defenderTeam.id, actorId: value.defenderTeam.actorId, targetId: value.attack.attackerTeamId,
+      round: "defense_round", phase: "defense", status: "complete",
+      summary: value.defense.acceptedAttack ? "已接受攻击并生成修订方案" : "已用证据驳回攻击主张",
+      progress: 100, startedAt: defenseStartedAt, streamChars: streamChars(value.defenderTeam.id, "runDefense"),
+    });
+  }
   checkDeadline();
   for (const result of defenseResults) {
     if (!result) continue;
     const { attack, defenderTeam, defense } = result;
-    yield makeEvent(battleId, nextId, now, {
+    const defenseEvent = makeEvent(battleId, nextId, now, {
       round: "defense_round",
       actorId: defenderTeam.actorId,
       targetId: attack.attackerTeamId,
@@ -281,11 +534,27 @@ export async function* runLiveBattleFromPayload(
       content: defense.responseToAttack,
       rawPayload: defense,
     });
+    bindEvidence(defenderTeam.id, defenseEvent.id);
+    yield defenseEvent;
   }
 
   // ── 6. judging_round ───────────────────────────────────────────────────────
-  const scoreResults = await Promise.all(DEFAULT_TEAMS.map(async (team) => {
+  yield makeEvent(battleId, nextId, now, {
+    round: "judging_round", eventType: "commentary_created", title: "裁判正在评分", content: "裁判面板正在基于已产生的提案、攻击与防守证据评分。",
+  });
+  const judgingStartedAt = now();
+  for (const team of DEFAULT_TEAMS) {
+    yield makeActivityEvent(battleId, nextId, now, {
+      teamId: team.id, actorId: team.actorId, round: "judging_round", phase: "judge",
+      status: "working", summary: "裁判正在核验本队证据与评分维度", progress: 25, startedAt: judgingStartedAt,
+    });
+  }
+  const scoreTasks = DEFAULT_TEAMS.map(async (team) => {
     const proposal = proposals[team.id];
+    const relatedAttacks = attacks.filter((attack) => attack.attackerTeamId === team.id || attack.targetTeamId === team.id);
+    const relatedDefenses = defenseResults
+      .filter((result) => result?.defenderTeam.id === team.id)
+      .map((result) => result!.defense);
     const score = await runtime.runJudge(
       { agentId: "judge_panel", role: "judge", teamId: team.id },
       {
@@ -298,17 +567,43 @@ export async function* runLiveBattleFromPayload(
           userValue: 0,
           longTermPotential: 0,
         },
-        judgeComments: [`待评提案：${proposal?.productName ?? team.name} · ${proposal?.oneLiner ?? "未生成提案摘要"}`],
+        judgeComments: [
+          `待评提案：${proposal?.productName ?? team.name} · ${proposal?.oneLiner ?? "未生成提案摘要"}`,
+          `来源事件：${(evidenceEventIdsByTeam.get(team.id) ?? []).join(", ")}`,
+          `攻击证据：${relatedAttacks.map((attack) => `${attack.id}[${attack.severity}] ${attack.claim}`).join("；") || "无"}`,
+          `防御证据：${relatedDefenses.map((defense) => `${defense.id}[${defense.acceptedAttack ? "接受" : "驳回"}] ${defense.revision}`).join("；") || "无"}`,
+        ],
       },
     );
     const totalScore = Object.values(score.scores).reduce<number>((sum, value) => sum + (typeof value === "number" ? value : 0), 0);
     return { team, score, totalScore };
-  }));
+  });
+  const scoreResults: Awaited<(typeof scoreTasks)[number]>[] = [];
+  for await (const update of settleInCompletionOrder(scoreTasks)) {
+    if (update.kind === "pulse") {
+      for (const index of update.pendingIndexes) {
+        const team = DEFAULT_TEAMS[index];
+        yield makeActivityEvent(battleId, nextId, now, {
+          teamId: team.id, actorId: team.actorId, round: "judging_round", phase: "judge", status: "working",
+            summary: streamSummary(team.id, "runJudge", `裁判正在核对攻防证据与六维评分 · ${update.pulse}`),
+            progress: Math.min(88, 25 + update.pulse * 14), startedAt: judgingStartedAt, streamChars: streamChars(team.id, "runJudge"),
+        });
+      }
+      continue;
+    }
+    const { index, value } = update;
+    scoreResults[index] = value;
+    yield makeActivityEvent(battleId, nextId, now, {
+      teamId: value.team.id, actorId: value.team.actorId, round: "judging_round", phase: "judge",
+      status: "complete", summary: `评分证据已封存：${value.totalScore.toFixed(1)}`, progress: 100, startedAt: judgingStartedAt,
+      streamChars: streamChars(value.team.id, "runJudge"),
+    });
+  }
   checkDeadline();
   const scores: Array<{ teamId: string; totalScore: number }> = [];
   for (const { team, score, totalScore } of scoreResults) {
     scores.push({ teamId: team.id, totalScore });
-    yield makeEvent(battleId, nextId, now, {
+    const scoreEvent = makeEvent(battleId, nextId, now, {
       round: "judging_round",
       actorId: "judge_panel",
       targetId: team.id,
@@ -317,13 +612,15 @@ export async function* runLiveBattleFromPayload(
       content: score.judgeComments.join(" "),
       rawPayload: score,
     });
+    bindEvidence(team.id, scoreEvent.id);
+    yield scoreEvent;
   }
 
   // ── 7. champion_selected ───────────────────────────────────────────────────
   const champion = scores.reduce((best, current) => (current.totalScore > best.totalScore ? current : best));
   const championTeam = DEFAULT_TEAMS.find((team) => team.id === champion.teamId);
   const championProposal = proposals[champion.teamId];
-  yield makeEvent(battleId, nextId, now, {
+  const championEvent = makeEvent(battleId, nextId, now, {
     round: "judging_round",
     actorId: "judge_panel",
     targetId: champion.teamId,
@@ -334,6 +631,77 @@ export async function* runLiveBattleFromPayload(
       winnerTeamId: champion.teamId,
       totalScore: champion.totalScore,
       productName: championProposal?.productName,
+    },
+  });
+  bindEvidence(champion.teamId, championEvent.id);
+  yield championEvent;
+
+  checkDeadline();
+  yield makeEvent(battleId, nextId, now, {
+    round: "artifact_generation", eventType: "commentary_created", title: "冠军作品生成中", content: "Artifact Writer 正在把冠军提案和本场证据整理为可交付作品。",
+  });
+  const artifactStartedAt = now();
+  if (championTeam) {
+    yield makeActivityEvent(battleId, nextId, now, {
+      teamId: champion.teamId, actorId: championTeam.actorId, round: "artifact_generation", phase: "artifact",
+      status: "working", summary: "正在整理冠军作品与证据引用", progress: 28, startedAt: artifactStartedAt,
+    });
+  }
+  const artifactTask = runtime.runArtifact(
+    { agentId: "artifact_writer", role: "artifact_writer", teamId: champion.teamId },
+    {
+      id: nextId(),
+      battleId,
+      type: "product_brief",
+      title: `${championProposal?.productName ?? championTeam?.name ?? "冠军"} 产品简报`,
+      content: [
+        `冠军提案：${championProposal?.productName ?? ""}。${championProposal?.oneLiner ?? ""}`,
+        `来源事件：${(evidenceEventIdsByTeam.get(champion.teamId) ?? []).join(", ")}`,
+        `相关攻击：${attacks.filter((attack) => attack.attackerTeamId === champion.teamId || attack.targetTeamId === champion.teamId).map((attack) => `${attack.id}[${attack.severity}] ${attack.claim}`).join("；") || "无"}`,
+        `防御修订：${defenseResults.filter((result) => result?.defenderTeam.id === champion.teamId).map((result) => `${result!.defense.id}[${result!.defense.acceptedAttack ? "接受" : "驳回"}] ${result!.defense.revision}`).join("；") || "无"}`,
+        `裁判总分：${champion.totalScore.toFixed(1)}`,
+      ].join("\n"),
+    },
+  );
+  const artifactCompletion = artifactTask.then((value) => ({ kind: "complete" as const, value }));
+  let artifact: Awaited<ReturnType<ArenaAgentRuntime["runArtifact"]>> | undefined;
+  let artifactPulse = 0;
+  while (!artifact) {
+    const update = await Promise.race([
+      artifactCompletion,
+      new Promise<{ kind: "pulse" }>((resolve) => setTimeout(() => resolve({ kind: "pulse" }), 2500)),
+    ]);
+    if (update.kind === "complete") {
+      artifact = update.value;
+      break;
+    }
+    artifactPulse += 1;
+    if (championTeam) {
+      yield makeActivityEvent(battleId, nextId, now, {
+        teamId: champion.teamId, actorId: championTeam.actorId, round: "artifact_generation", phase: "artifact", status: "working",
+          summary: streamSummary(champion.teamId, "runArtifact", `正在把来源事件编排为可交付作品 · ${artifactPulse}`),
+          progress: Math.min(88, 28 + artifactPulse * 14), startedAt: artifactStartedAt, streamChars: streamChars(champion.teamId, "runArtifact"),
+      });
+    }
+  }
+  checkDeadline();
+  if (championTeam) {
+    yield makeActivityEvent(battleId, nextId, now, {
+      teamId: champion.teamId, actorId: championTeam.actorId, round: "artifact_generation", phase: "artifact",
+      status: "complete", summary: `冠军作品已生成：${artifact.title}`, progress: 100, startedAt: artifactStartedAt,
+      streamChars: streamChars(champion.teamId, "runArtifact"),
+    });
+  }
+  yield makeEvent(battleId, nextId, now, {
+    round: "artifact_generation",
+    actorId: "artifact_writer",
+    targetId: champion.teamId,
+    eventType: "artifact_created",
+    title: artifact.title,
+    content: artifact.content,
+    rawPayload: {
+      ...artifact,
+      sourceEventIds: evidenceEventIdsByTeam.get(champion.teamId) ?? [],
     },
   });
 }

@@ -5,6 +5,8 @@ export type RuntimeMode = "verified_replay" | "live_runtime" | "demo_fallback";
 
 export type RuntimeModeBadgeProps = {
   mode: RuntimeMode;
+  completed?: boolean;
+  replaying?: boolean;
 };
 
 const MODE_LABEL_KEY: Record<RuntimeMode, Parameters<typeof t>[0]> = {
@@ -13,7 +15,12 @@ const MODE_LABEL_KEY: Record<RuntimeMode, Parameters<typeof t>[0]> = {
   demo_fallback: "runtime.badge.demo_fallback",
 };
 
-export function RuntimeModeBadge({ mode }: RuntimeModeBadgeProps) {
+export function RuntimeModeBadge({ mode, completed = false, replaying = false }: RuntimeModeBadgeProps) {
+  const label = mode === "live_runtime" && replaying
+    ? t("runtime.badge.live_replay")
+    : mode === "live_runtime" && completed
+    ? t("runtime.badge.live_complete")
+    : t(MODE_LABEL_KEY[mode]);
   return (
     <span
       className={`${styles.root} ${styles[mode]}`}
@@ -23,7 +30,7 @@ export function RuntimeModeBadge({ mode }: RuntimeModeBadgeProps) {
       aria-live="polite"
     >
       <span className={styles.dot} aria-hidden="true" />
-      {t(MODE_LABEL_KEY[mode])}
+      {label}
     </span>
   );
 }

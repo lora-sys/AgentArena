@@ -12,6 +12,7 @@ export type ChampionPageProps = {
   onBackToArena?: () => void;
   onWatchVerified?: () => void;
   onShare?: () => void;
+  onBackHome?: () => void;
 };
 
 const JOURNEY_LABELS: Record<string, Parameters<typeof t>[0]> = {
@@ -29,6 +30,12 @@ const TEAM_PORTRAITS: Record<string, string> = {
   team_infra_v1: "/assets/agents/infra-hacker.png",
 };
 
+const OTHER_TEAM_PORTRAITS: Record<string, string> = {
+  "稳健构建者": "/assets/agents/safe-builder.png",
+  "传播设计师": "/assets/agents/viral-designer.png",
+  "架构黑客": "/assets/agents/infra-hacker.png",
+};
+
 export function ChampionPage({
   battleId,
   champion,
@@ -37,6 +44,7 @@ export function ChampionPage({
   onBackToArena,
   onWatchVerified,
   onShare,
+  onBackHome,
 }: ChampionPageProps) {
   const [revealed, setRevealed] = useState(false);
 
@@ -67,6 +75,19 @@ export function ChampionPage({
     <div className={styles.root} data-testid="champion-page" data-state="revealed">
       {/* 上半屏：Champion Reveal（1200ms Victory Reveal） */}
       <section className={`${styles.reveal} ${revealed ? styles.revealIn : ""}`}>
+        <div className={styles.stageBeams} aria-hidden="true" />
+        {otherTeams.length > 0 && (
+          <div className={styles.otherTeams}>
+            {otherTeams.map((team) => (
+              <div key={team.name} className={styles.otherTeam} style={{ borderColor: team.accentColor }}>
+                <img src={OTHER_TEAM_PORTRAITS[team.name] ?? "/assets/agents/safe-builder.png"} alt="" />
+                <span className={styles.otherTeamName} style={{ color: team.accentColor }}>{team.name}</span>
+                <span className={styles.otherTeamScore}>{team.score}</span>
+                <small>{t("champion.reveal.challenger")}</small>
+              </div>
+            ))}
+          </div>
+        )}
         <div className={styles.championPortrait}>
           <img src={TEAM_PORTRAITS[champion.teamId] ?? "/assets/agents/viral-designer.png"} alt="" />
           <span aria-hidden="true">★</span>
@@ -84,6 +105,9 @@ export function ChampionPage({
         <p className={styles.battleMeta}>
           {t("arena.header.battle_label")} {battleId}
         </p>
+        <div className={styles.awardChips}>
+          {champion.journey.slice(0, 6).map((step) => <span key={step.eventId}>{step.title}</span>)}
+        </div>
         <div className={styles.revealActions}>
           <button type="button" onClick={onShare} className={styles.primary}>
             {t("champion.reveal.share_evidence")}
@@ -91,24 +115,22 @@ export function ChampionPage({
           <button type="button" onClick={onBackToArena}>
             {t("champion.reveal.view_replay")}
           </button>
+          <button type="button" onClick={onBackHome}>
+            {t("champion.reveal.back_home")}
+          </button>
         </div>
-        {otherTeams.length > 0 && (
-          <div className={styles.otherTeams}>
-            {otherTeams.map((team) => (
-              <div key={team.name} className={styles.otherTeam} style={{ borderColor: team.accentColor }}>
-                <span className={styles.otherTeamName} style={{ color: team.accentColor }}>{team.name}</span>
-                <span className={styles.otherTeamScore}>{team.score}</span>
-              </div>
-            ))}
-          </div>
-        )}
       </section>
 
       {/* 下半屏：Team Passport Snapshot */}
       <section className={styles.passport} data-testid="team-passport">
         <header className={styles.passportHeader}>
-          <span className={styles.eyebrow}>{t("champion.passport.subtitle")}</span>
-          <h2>{t("champion.passport.title")}</h2>
+          <img src={TEAM_PORTRAITS[champion.teamId] ?? "/assets/agents/viral-designer.png"} alt="" />
+          <div>
+            <span className={styles.eyebrow}>{t("champion.passport.subtitle")}</span>
+            <h2>{champion.teamName}</h2>
+            <p>{t("champion.passport.title")} · {t("arena.header.battle_label")} {battleId}</p>
+          </div>
+          <div className={styles.passportSeal}><span>{t("champion.reveal.title")}</span><strong>{champion.totalScore}</strong><small>/100</small></div>
         </header>
 
         <div className={styles.passportGrid}>
@@ -176,6 +198,11 @@ export function ChampionPage({
             </ol>
           </section>
         </div>
+        <footer className={styles.passportActions}>
+          <button type="button" onClick={onBackToArena}>{t("champion.reveal.view_replay")}</button>
+          <button type="button" onClick={onShare}>{t("champion.reveal.share_evidence")}</button>
+          <button type="button" onClick={onBackHome}>{t("champion.reveal.back_home")}</button>
+        </footer>
       </section>
     </div>
   );

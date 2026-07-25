@@ -67,6 +67,17 @@ describe("LiveArenaPage", () => {
     expect(html).toContain("已验证演示");
   });
 
+  it("shows replay controls when replaying a persisted live battle", () => {
+    const html = renderToStaticMarkup(
+      <LiveArenaPage battleId="live_1" idea="x" events={[]} mode="live_runtime" replayPlayback replayProgress={{ current: 0, total: 12 }} />,
+    );
+    expect(html).toContain("实时战斗回放");
+    expect(html).toContain("证据事件正在回放");
+    expect(html).toContain("0/12");
+    expect(html).not.toContain("真实智能体正在运行");
+    expect(html).not.toContain("查看冠军护照");
+  });
+
   it("shows round progress with all 7 stages", () => {
     const html = renderToStaticMarkup(
       <LiveArenaPage battleId="BA-2026-0024" idea="x" events={[]} mode="verified_replay" />,

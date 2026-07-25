@@ -9,11 +9,17 @@ import {
   ArtifactSchema,
 } from "@/arena/schemas/types";
 
-type ChatChoice = { message: { content: string | null } };
+type ChatChoice = { message: { content: string | null }; finish_reason?: string | null };
 
-function makeFakeClient(responses: Array<{ content: string } | Error | { status: number }>) {
+function makeFakeClient(
+  responses: Array<{ content: string; finishReason?: string } | Error | { status: number }>,
+) {
   let callIndex = 0;
-  const create = vi.fn(async (_args: { model: string; messages: Array<{ role: string; content: string }> }) => {
+  const create = vi.fn(async (_args: {
+    model: string;
+    messages: Array<{ role: string; content: string }>;
+    max_tokens?: number;
+  }) => {
     const resp = responses[callIndex++];
     if (!resp) throw new Error("No more fake responses queued");
     if (resp instanceof Error) throw resp;
@@ -24,7 +30,12 @@ function makeFakeClient(responses: Array<{ content: string } | Error | { status:
       throw err;
     }
     return {
-      choices: [{ message: { content: resp.content } } satisfies ChatChoice],
+      choices: [
+        {
+          message: { content: resp.content },
+          finish_reason: resp.finishReason ?? "stop",
+        } satisfies ChatChoice,
+      ],
     };
   });
   return { chat: { completions: { create } } };
@@ -410,6 +421,48 @@ describe("MastraRuntime", () => {
     const runtime = makeRuntime(fakeClient);
 
     await expect(runtime.runProposal(sampleSpec, validProposal)).rejects.toThrow("aborted");
+  });
+
+  it("reports safe cumulative stream progress without exposing partial content", async () => {
+    const json = JSON.stringify(validProposal);
+    const midpoint = Math.floor(json.length / 2);
+    const create = vi.fn(async () => (async function* () {
+      yield { choices: [{ delta: { content: json.slice(0, midpoint) }, finish_reason: null }] };
+      yield { choices: [{ delta: { content: json.slice(midpoint) }, finish_reason: "stop" }] };
+    })());
+    const progress: Array<{ method: string; receivedChars: number }> = [];
+    const runtime = new MastraRuntime({
+      client: { chat: { completions: { create } } } as never,
+      streamResponses: true,
+      onStreamProgress: ({ method, receivedChars }) => progress.push({ method, receivedChars }),
+    });
+
+    await runtime.runProposal(sampleSpec, validProposal);
+
+    expect(progress).toEqual([
+      { method: "runProposal", receivedChars: midpoint },
+      { method: "runProposal", receivedChars: json.length },
+    ]);
+    expect(progress).not.toContainEqual(expect.objectContaining({ content: expect.anything() }));
+  });
+
+  it("retries a max-token truncation and raises the phase token budget", async () => {
+    const fakeClient = makeFakeClient([
+      { content: '{"teamId":', finishReason: "length" },
+      { content: JSON.stringify(validJudge) },
+    ]);
+    const runtime = makeRuntime(fakeClient);
+
+    const result = await runtime.runJudge(sampleSpec, validJudge);
+
+    expect(result.teamId).toBe(validJudge.teamId);
+    expect(fakeClient.chat.completions.create).toHaveBeenCalledTimes(2);
+    const firstRequest = fakeClient.chat.completions.create.mock.calls[0]![0];
+    const secondRequest = fakeClient.chat.completions.create.mock.calls[1]![0];
+    expect(firstRequest.max_tokens).toBe(6_000);
+    expect(secondRequest.max_tokens).toBe(7_000);
+    expect(events.filter((event) => event.type === "schema_repair_started")).toHaveLength(1);
+    expect(events.filter((event) => event.type === "schema_repair_completed")).toHaveLength(1);
   });
 
   it("re-throws provider timeout without fabricating mock output", async () => {

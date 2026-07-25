@@ -26,12 +26,19 @@ const sampleProposal: ProposalInput = {
 const spec: AgentSpec = { agentId: "agent_viral_designer_lead", role: "contestant", teamId: "team_viral_v1" };
 
 function makeMockClient(body: string) {
+  const create = vi.fn().mockImplementation(async (args: { stream?: boolean }) => {
+    if (args.stream) {
+      return (async function* () {
+        yield { choices: [{ delta: { content: body }, finish_reason: null }] };
+        yield { choices: [{ delta: {}, finish_reason: "stop" }] };
+      })();
+    }
+    return { choices: [{ message: { content: body } }] };
+  });
   return {
     chat: {
       completions: {
-        create: vi.fn().mockResolvedValue({
-          choices: [{ message: { content: body } }],
-        }),
+        create,
       },
     },
   } as unknown as import("openai").default;
