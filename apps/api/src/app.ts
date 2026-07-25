@@ -3,15 +3,46 @@ import { streamSSE } from "hono/streaming";
 import type { BattleEvent } from "@agent-arena/contracts";
 import fixture from "../../../examples/fixtures/hackathon-001.json";
 import verifiedShowcase from "../../../examples/fixtures/verified-showcase.json";
-import { runLiveBattleFromPayload, LiveBattleIdeaTooLongError } from "@/lib/runtime/runLiveBattleFromPayload";
-import { StepFunNotConfiguredError } from "@/lib/runtime/providers/stepfun";
+import { runLiveBattleFromPayload } from "@/lib/runtime/runLiveBattleFromPayload";
 import { BattleRateLimiter } from "./middlewares/rate-limit";
 import { isLiveBattleEnabled } from "./middlewares/feature-flag";
+import { LocalLiveBattleStore } from "./live-battle-store";
 
 export const app = new Hono();
 
 const liveBattleRateLimiter = new BattleRateLimiter();
-const liveBattlesInFlight = new Map<string, { idea: string; startedAt: number }>();
+const liveBattleStore = new LocalLiveBattleStore();
+type LiveMessage = { type: "battle"; event: BattleEvent } | { type: "done" } | { type: "error"; error: string };
+const liveSubscribers = new Map<string, Set<(message: LiveMessage) => Promise<void>>>();
+const liveRuns = new Map<string, Promise<void>>();
+
+async function publishLiveMessage(battleId: string, message: LiveMessage): Promise<void> {
+  const subscribers = [...(liveSubscribers.get(battleId) ?? [])];
+  await Promise.allSettled(subscribers.map((subscriber) => subscriber(message)));
+}
+
+function startLiveBattle(battleId: string, idea: string): Promise<void> {
+  const existing = liveRuns.get(battleId);
+  if (existing) return existing;
+  const run = (async () => {
+    try {
+      for await (const event of runLiveBattleFromPayload({ battleId, idea })) {
+        await liveBattleStore.append(battleId, event);
+        await publishLiveMessage(battleId, { type: "battle", event });
+      }
+      await liveBattleStore.finish(battleId, "completed");
+      await publishLiveMessage(battleId, { type: "done" });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "实时战斗异常中断";
+      await liveBattleStore.finish(battleId, "failed", message);
+      await publishLiveMessage(battleId, { type: "error", error: message });
+    } finally {
+      liveRuns.delete(battleId);
+    }
+  })();
+  liveRuns.set(battleId, run);
+  return run;
+}
 
 app.get("/api/health", (context) =>
   context.json({ status: "ok", service: "agent-arena-api" }),
@@ -113,6 +144,18 @@ app.get("/api/battles/:id/events", async (context) => {
     return context.json({ battleId, source: "fixture", events: demoEvents() });
   }
 
+  const localBattle = await liveBattleStore.get(battleId);
+  if (localBattle) {
+    return context.json({ battleId, source: "local-event-store", status: localBattle.status, error: localBattle.error, events: localBattle.events });
+  }
+
+  // Avoid loading the full Postgres adapter when persistence is not configured.
+  // The documented fallback is immediate and must not spend the request budget
+  // compiling database drivers only to discover DATABASE_URL is absent.
+  if (!process.env.DATABASE_URL) {
+    return context.json({ battleId, source: "fallback", events: [] });
+  }
+
   // Postgres/event-store integration is deliberately soft-failing: the replay
   // remains usable and never blocks the battle experience when storage is absent.
   try {
@@ -179,10 +222,10 @@ app.post("/api/battles", async (context) => {
     return context.json({ error: "创意不能为空" }, 400);
   }
 
-  const ip =
-    context.req.header("cf-connecting-ip") ??
-    context.req.header("x-forwarded-for")?.split(",")[0]?.trim() ??
-    "anonymous";
+  const trustProxyHeaders = process.env.TRUST_PROXY_HEADERS === "true";
+  const ip = trustProxyHeaders
+    ? context.req.header("cf-connecting-ip") ?? context.req.header("x-forwarded-for")?.split(",")[0]?.trim() ?? "proxied-client"
+    : "direct-client";
   const decision = liveBattleRateLimiter.check(ip);
   if (!decision.allowed) {
     return context.json(
@@ -193,7 +236,7 @@ app.post("/api/battles", async (context) => {
   }
 
   const battleId = `live_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
-  liveBattlesInFlight.set(battleId, { idea, startedAt: Date.now() });
+  await liveBattleStore.create(battleId, idea);
   return context.json({ battleId, sseUrl: `/api/battles/${battleId}/stream` }, 201);
 });
 
@@ -202,38 +245,73 @@ app.get("/api/battles/:id/stream", async (context) => {
     return context.json({ error: "实时 AI 竞技当前未开启" }, 501);
   }
   const battleId = context.req.param("id");
-  const pending = liveBattlesInFlight.get(battleId);
-  if (!pending) {
+  const stored = await liveBattleStore.get(battleId);
+  if (!stored) {
     return context.json({ error: "找不到该战斗" }, 404);
   }
 
   return streamSSE(context, async (stream) => {
-    const heartbeatMs = Number.parseInt(process.env.SSE_HEARTBEAT_MS ?? "15000", 10);
+    const configuredHeartbeatMs = Number.parseInt(process.env.SSE_HEARTBEAT_MS ?? "2000", 10);
+    const heartbeatMs = Math.min(3000, Math.max(1000, Number.isFinite(configuredHeartbeatMs) ? configuredHeartbeatMs : 2000));
     let closed = false;
     const heartbeat = setInterval(() => {
       if (closed) return;
       void stream.writeSSE({ event: "heartbeat", data: JSON.stringify({ at: Date.now() }) });
     }, heartbeatMs);
 
-    try {
-      for await (const event of runLiveBattleFromPayload({ battleId, idea: pending.idea })) {
-        await stream.writeSSE({ event: "battle", data: JSON.stringify(event) });
+    const sentIds = new Set<string>();
+    let writeQueue = Promise.resolve();
+    const write = (event: string, data: unknown): Promise<void> => {
+      writeQueue = writeQueue.then(() => stream.writeSSE({ event, data: JSON.stringify(data) }));
+      return writeQueue;
+    };
+    let resolveStream: () => void = () => undefined;
+    const completed = new Promise<void>((resolve) => { resolveStream = resolve; });
+    const subscriber = async (message: LiveMessage): Promise<void> => {
+      if (message.type === "battle") {
+        if (sentIds.has(message.event.id)) return;
+        sentIds.add(message.event.id);
+        await write("battle", message.event);
+        return;
       }
-      await stream.writeSSE({ event: "done", data: JSON.stringify({ battleId }) });
-    } catch (err) {
-      const message =
-        err instanceof StepFunNotConfiguredError
-          ? err.message
-          : err instanceof LiveBattleIdeaTooLongError
-            ? err.message
-            : err instanceof Error
-              ? err.message
-              : "实时战斗异常中断";
-      await stream.writeSSE({ event: "error", data: JSON.stringify({ error: message }) });
+      if (message.type === "done") await write("done", { battleId });
+      else await write("error", { error: message.error });
+      liveSubscribers.get(battleId)?.delete(subscriber);
+      resolveStream();
+    };
+
+    try {
+      const subscribers = liveSubscribers.get(battleId) ?? new Set();
+      subscribers.add(subscriber);
+      liveSubscribers.set(battleId, subscribers);
+
+      const latest = await liveBattleStore.get(battleId);
+      if (!latest) return;
+      for (const event of latest.events) {
+        if (sentIds.has(event.id)) continue;
+        sentIds.add(event.id);
+        await write("battle", event);
+      }
+      if (latest.status === "completed") {
+        await write("done", { battleId });
+        return;
+      }
+      if (latest.status === "failed") {
+        await write("error", { error: latest.error ?? "实时战斗异常中断" });
+        return;
+      }
+      if (latest.status === "running" && !liveRuns.has(battleId)) {
+        const interruption = "服务恢复后检测到未完成战斗；已保留现有证据，请重新发起以避免重复运行智能体。";
+        await liveBattleStore.finish(battleId, "failed", interruption);
+        await write("error", { error: interruption });
+        return;
+      }
+      void startLiveBattle(battleId, latest.idea);
+      await completed;
     } finally {
+      liveSubscribers.get(battleId)?.delete(subscriber);
       closed = true;
       clearInterval(heartbeat);
-      liveBattlesInFlight.delete(battleId);
     }
   });
 });

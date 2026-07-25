@@ -2,7 +2,8 @@ import type { BattleEvent } from "@agent-arena/contracts";
 import { demoEvents } from "./demo";
 
 export type BattleEventsResult = {
-  source: "event-store" | "fixture" | "fallback";
+  source: "event-store" | "local-event-store" | "fixture" | "fallback";
+  status?: string;
   events: BattleEvent[];
 };
 
@@ -16,6 +17,7 @@ export async function loadBattleEvents(battleId: string, fetcher: FetchLike = fe
     if (!Array.isArray(result.events) || result.events.length === 0) throw new Error("No replayable events");
     return result;
   } catch {
+    if (battleId.startsWith("live_")) return { source: "fallback", events: [] };
     return { source: "fallback", events: demoEvents };
   }
 }

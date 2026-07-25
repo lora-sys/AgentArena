@@ -9,36 +9,40 @@ export type MiniAppDemoState = {
 };
 
 const DIFFICULTY_LABEL: Record<MiniAppDemoState["difficulty"], string> = {
-  easy: "简单",
-  medium: "中等",
-  hard: "难",
+  easy: t("artifact.mini.difficulty.easy"),
+  medium: t("artifact.mini.difficulty.medium"),
+  hard: t("artifact.mini.difficulty.hard"),
 };
 
 const SAMPLE_QUESTIONS: Record<MiniAppDemoState["difficulty"], string[]> = {
-  easy: ["1 + 1 = ?", "中国的首都是？", "水的化学式？"],
-  medium: ["导数 d/dx (x²) = ?", "HTTP 与 HTTPS 区别？", "快速排序平均复杂度？"],
-  hard: ["证明根号 2 是无理数", "分布式 CAP 定理含义？", "推导贝叶斯公式"],
+  easy: [t("artifact.mini.question.easy_1"), t("artifact.mini.question.easy_2"), t("artifact.mini.question.easy_3")],
+  medium: [t("artifact.mini.question.medium_1"), t("artifact.mini.question.medium_2"), t("artifact.mini.question.medium_3")],
+  hard: [t("artifact.mini.question.hard_1"), t("artifact.mini.question.hard_2"), t("artifact.mini.question.hard_3")],
 };
 
-export function MiniAppDemo() {
+function StudyMiniAppDemo() {
   const [state, setState] = useState<MiniAppDemoState>({
     difficulty: "medium",
     questionCount: 10,
-    generated: [],
+    generated: SAMPLE_QUESTIONS.medium,
   });
 
   const handleGenerate = () => {
     const pool = SAMPLE_QUESTIONS[state.difficulty];
-    const count = Math.min(state.questionCount, pool.length * 3);
-    const generated = Array.from({ length: count }, (_, i) => pool[i % pool.length]);
+    const generated = Array.from({ length: state.questionCount }, (_, i) => pool[i % pool.length]);
     setState((prev) => ({ ...prev, generated }));
   };
 
   return (
     <div className={styles.miniApp} data-testid="mini-app-demo">
+      <header className={styles.miniAppHero}>
+        <span>{t("artifact.mini.badge")}</span>
+        <h4>{t("artifact.mini.title")}</h4>
+        <p>{t("artifact.mini.body")}</p>
+      </header>
       <div className={styles.miniAppControls}>
         <label>
-          难度
+          {t("artifact.mini.difficulty")}
           <select
             value={state.difficulty}
             onChange={(e) => setState((prev) => ({ ...prev, difficulty: e.target.value as MiniAppDemoState["difficulty"] }))}
@@ -49,7 +53,7 @@ export function MiniAppDemo() {
           </select>
         </label>
         <label>
-          题目数量 {state.questionCount}
+          {t("artifact.mini.question_count")} {state.questionCount}
           <input
             type="range"
             min={5}
@@ -59,7 +63,7 @@ export function MiniAppDemo() {
           />
         </label>
         <button type="button" onClick={handleGenerate} className={styles.generateButton}>
-          生成 {state.questionCount} 道题目
+          {t("artifact.mini.generate")} {state.questionCount} {t("artifact.mini.unit")}
         </button>
       </div>
       {state.generated.length > 0 && (
@@ -69,6 +73,89 @@ export function MiniAppDemo() {
           ))}
         </ol>
       )}
+    </div>
+  );
+}
+
+function LiveArtifactMiniAppDemo({ artifactTitle, artifactSummary, artifactBadge }: { artifactTitle?: string; artifactSummary?: string; artifactBadge?: string }) {
+  const [stepCount, setStepCount] = useState(8);
+  const [generatedCount, setGeneratedCount] = useState(0);
+  const title = artifactTitle ?? t("artifact.live_mini.default_title");
+  const checks = [
+    `${t("artifact.live_mini.check_claim")}：${title}`,
+    t("artifact.live_mini.check_source"),
+    t("artifact.live_mini.check_revision"),
+    t("artifact.live_mini.check_alignment"),
+  ];
+
+  return (
+    <div className={styles.miniApp} data-testid="mini-app-demo" data-variant="live-artifact">
+      <header className={styles.miniAppHero}>
+        <span>{artifactBadge ?? t("artifact.live_mini.badge")}</span>
+        <h4>{title}</h4>
+        <p>{artifactSummary ?? t("artifact.live_mini.body")}</p>
+      </header>
+      <div className={styles.miniAppControls}>
+        <label>
+          {t("artifact.live_mini.step_count")} {stepCount}
+          <input
+            type="range"
+            min={4}
+            max={12}
+            value={stepCount}
+            onChange={(event) => setStepCount(Number(event.target.value))}
+          />
+        </label>
+        <button type="button" className={styles.generateButton} onClick={() => setGeneratedCount(stepCount)}>
+          {t("artifact.live_mini.generate")} {stepCount} {t("artifact.live_mini.unit")}
+        </button>
+      </div>
+      {generatedCount > 0 && (
+        <ol className={styles.questionList} aria-label={t("artifact.live_mini.generated_label")}>
+          {Array.from({ length: generatedCount }, (_, index) => (
+            <li key={index}>{checks[index % checks.length]}</li>
+          ))}
+        </ol>
+      )}
+    </div>
+  );
+}
+
+export function MiniAppDemo({ artifactTitle, artifactSummary, artifactBadge }: { artifactTitle?: string; artifactSummary?: string; artifactBadge?: string } = {}) {
+  if (artifactTitle || artifactSummary) {
+    return <LiveArtifactMiniAppDemo artifactTitle={artifactTitle} artifactSummary={artifactSummary} artifactBadge={artifactBadge} />;
+  }
+  return <StudyMiniAppDemo />;
+}
+
+export function ArtifactWorkspace({ v1Content, v2Content }: { v1Content: string; v2Content: string }) {
+  const timeline = [
+    ["v1", t("artifact.workspace.v1")],
+    ["attack_031", t("artifact.workspace.attack")],
+    ["defense_041", t("artifact.workspace.defense")],
+    ["patch_049", t("artifact.workspace.patch")],
+    ["v2", t("artifact.workspace.v2")],
+    ["test_052", t("artifact.workspace.test")],
+  ] as const;
+  return (
+    <div className={styles.artifactWorkspace} data-testid="artifact-workspace">
+      <aside className={styles.artifactTimeline}>
+        <h3>{t("artifact.workspace.timeline")}</h3>
+        <ol>{timeline.map(([id, label], index) => <li key={id} data-status={index === 1 ? "fail" : index >= 4 ? "pass" : "recorded"}><code>{id}</code><span>{label}</span></li>)}</ol>
+      </aside>
+      <section className={styles.workspacePreview}>
+        <header><span>{t("artifact.workspace.preview")}</span><b>{t("artifact.workspace.interactive")}</b></header>
+        <MiniAppDemo />
+      </section>
+      <aside className={styles.recoverySummary}>
+        <h3>{t("artifact.workspace.recovery")}</h3>
+        <p>{t("artifact.workspace.recovery_body")}</p>
+        <dl>
+          <div><dt>v1</dt><dd><code>{v1Content.split("\n")[0]}</code></dd></div>
+          <div><dt>v2</dt><dd><code>{v2Content.split("\n")[1] ?? v2Content.split("\n")[0]}</code></dd></div>
+        </dl>
+        <div className={styles.recoveryBadges}><span>{t("artifact.workspace.patch_ready")}</span><span>{t("artifact.workspace.test_pass")}</span></div>
+      </aside>
     </div>
   );
 }

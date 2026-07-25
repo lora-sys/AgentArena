@@ -46,6 +46,13 @@ export type SchemaRepairEvent = {
   issues?: z.ZodIssue[];
 };
 
+export type ModelStreamProgressEvent = {
+  spec: AgentSpec;
+  method: string;
+  attempt: number;
+  receivedChars: number;
+};
+
 export type MastraRuntimeOptions = {
   client?: OpenAI;
   model?: string;
@@ -53,6 +60,14 @@ export type MastraRuntimeOptions = {
   onEvent?: (event: SchemaRepairEvent) => void;
   /** AbortSignal for cancelling in-flight OpenAI requests (e.g. user pressed cancel). */
   signal?: AbortSignal;
+  /** Stream provider output and assemble the final JSON, reducing time-to-first-byte stalls. */
+  streamResponses?: boolean;
+  /** Safe stream telemetry: reports byte progress without exposing partial model reasoning/content. */
+  onStreamProgress?: (event: ModelStreamProgressEvent) => void;
+  /** Optional provider-wide admission control, used for RPM-limited APIs. */
+  beforeRequest?: () => Promise<void>;
+  /** Disable deterministic mock substitution when the UI promises real AI. */
+  fallbackOnError?: boolean;
 };
 
 type ChatMessage = { role: "system" | "user"; content: string };
@@ -85,12 +100,14 @@ function isAbortError(err: unknown): boolean {
 
 function isInfrastructureError(err: unknown): boolean {
   if (!err || typeof err !== "object") return false;
-  const e = err as { status?: unknown; error?: { code?: unknown }; code?: unknown };
+  const e = err as { name?: unknown; message?: unknown; status?: unknown; error?: { code?: unknown }; code?: unknown };
   if (typeof e.status === "number" && e.status >= 400 && e.status < 600) {
     return true;
   }
   const errCode = e.error?.code ?? e.code;
-  return errCode === "ECONNREFUSED" || errCode === "ENOTFOUND" || errCode === "ETIMEDOUT";
+  return e.name === "APIConnectionTimeoutError" ||
+    (typeof e.message === "string" && /request timed out/i.test(e.message)) ||
+    errCode === "ECONNREFUSED" || errCode === "ENOTFOUND" || errCode === "ETIMEDOUT";
 }
 
 function isModelOutputError(err: unknown): boolean {
@@ -106,6 +123,10 @@ export class MastraRuntime implements ArenaAgentRuntime {
   private readonly maxRetries: number;
   private readonly onEvent?: (event: SchemaRepairEvent) => void;
   private readonly signal?: AbortSignal;
+  private readonly streamResponses: boolean;
+  private readonly onStreamProgress?: (event: ModelStreamProgressEvent) => void;
+  private readonly beforeRequest?: () => Promise<void>;
+  private readonly fallbackOnError: boolean;
 
   constructor(options: MastraRuntimeOptions = {}) {
     this.client =
@@ -114,6 +135,10 @@ export class MastraRuntime implements ArenaAgentRuntime {
     this.maxRetries = options.maxRetries ?? DEFAULT_MAX_RETRIES;
     this.onEvent = options.onEvent;
     this.signal = options.signal;
+    this.streamResponses = options.streamResponses ?? false;
+    this.onStreamProgress = options.onStreamProgress;
+    this.beforeRequest = options.beforeRequest;
+    this.fallbackOnError = options.fallbackOnError ?? true;
   }
 
   async runProposal(spec: AgentSpec, input: ProposalInput): Promise<ProposalOutput> {
@@ -202,6 +227,7 @@ export class MastraRuntime implements ArenaAgentRuntime {
     try {
       return await primary();
     } catch (err) {
+      if (!this.fallbackOnError) throw err;
       // AbortError: user cancelled — do not fall back, just propagate.
       if (isAbortError(err)) {
         throw err;
@@ -248,7 +274,22 @@ export class MastraRuntime implements ArenaAgentRuntime {
 
     for (let attempt = 1; attempt <= retryBudget; attempt++) {
       const messages = buildMessages(attempt - 1);
-      const raw = await this.callOpenAI(spec, messages);
+      let raw: string;
+      try {
+        raw = await this.callOpenAI(spec, messages, method, attempt);
+      } catch (error) {
+        if (error instanceof ModelOutputTruncatedError && attempt < retryBudget) {
+          this.onEvent?.({
+            type: "schema_repair_started",
+            spec,
+            method,
+            attempt,
+            issues: [],
+          });
+          continue;
+        }
+        throw error;
+      }
       const parsed = this.tryParseJson(raw);
       const result = schema.safeParse(parsed);
 
@@ -299,15 +340,65 @@ export class MastraRuntime implements ArenaAgentRuntime {
     );
   }
 
-  private async callOpenAI(spec: AgentSpec, messages: ChatMessage[]): Promise<string> {
+  private async callOpenAI(
+    spec: AgentSpec,
+    messages: ChatMessage[],
+    method: string,
+    attempt: number,
+  ): Promise<string> {
+    // Leave enough room for hidden reasoning plus the required JSON keys. The
+    // prompt enforces compact field lengths; a lower hard cap caused valid
+    // StepFun JSON to be cut mid-object (`finish_reason=length`).
+    // StepFun counts hidden reasoning against max_tokens. A generous ceiling
+    // prevents otherwise-valid compact JSON from ending with `length`; the
+    // prompt still constrains every visible field to short demo copy.
+    const phaseBudget = method === "runJudge" || method === "runArtifact" ? 6_000 : 3_500;
+    const maxTokens = Math.min(8_000, phaseBudget + (attempt - 1) * 1_000);
+    await this.beforeRequest?.();
+    if (this.streamResponses) {
+      const response = await this.client.chat.completions.create(
+        {
+          model: spec?.model ?? this.model,
+          messages,
+          response_format: { type: "json_object" },
+          reasoning_effort: "low",
+          max_tokens: maxTokens,
+          stream: true,
+        },
+        { signal: this.signal, maxRetries: 0 },
+      );
+      let content = "";
+      let finishReason: string | null = null;
+      for await (const chunk of response) {
+        content += chunk.choices[0]?.delta?.content ?? "";
+        finishReason = chunk.choices[0]?.finish_reason ?? finishReason;
+        this.onStreamProgress?.({ spec, method, attempt, receivedChars: content.length });
+      }
+      if (finishReason && finishReason !== "stop") {
+        if (finishReason === "length") {
+          throw new ModelOutputTruncatedError(finishReason);
+        }
+        throw new Error(`模型输出未完整结束：${finishReason}`);
+      }
+      if (!content) throw new Error("OpenAI returned empty content");
+      return content;
+    }
     const response = await this.client.chat.completions.create(
       {
         model: spec?.model ?? this.model,
         messages,
         response_format: { type: "json_object" },
+        max_tokens: maxTokens,
       },
       { signal: this.signal, maxRetries: 0 },
     );
+    const finishReason = response.choices[0]?.finish_reason;
+    if (finishReason && finishReason !== "stop") {
+      if (finishReason === "length") {
+        throw new ModelOutputTruncatedError(finishReason);
+      }
+      throw new Error(`模型输出未完整结束：${finishReason}`);
+    }
     const content = response.choices[0]?.message?.content;
     if (!content) {
       throw new Error("OpenAI returned empty content");
@@ -328,6 +419,13 @@ export class MastraRuntime implements ArenaAgentRuntime {
     }
 
     throw new Error("Model output is not valid JSON");
+  }
+}
+
+class ModelOutputTruncatedError extends Error {
+  constructor(readonly finishReason: string) {
+    super(`模型输出未完整结束：${finishReason}`);
+    this.name = "ModelOutputTruncatedError";
   }
 }
 

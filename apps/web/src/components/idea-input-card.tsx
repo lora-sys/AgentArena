@@ -3,6 +3,8 @@ import { t } from "../i18n";
 import styles from "./idea-input-card.module.css";
 
 export type IdeaInputCardProps = {
+  /** Template-selected initial brief. The card remains the only editable idea input on Home. */
+  initialIdea?: string;
   /** called after successful POST /api/battles; falls back to verified_replay on error */
   onBattleCreated?: (battleId: string) => void;
   /** navigation injection for tests; defaults to window.location */
@@ -17,8 +19,8 @@ function defaultNavigate(url: string): void {
   }
 }
 
-export function IdeaInputCard({ onBattleCreated, navigateTo = defaultNavigate }: IdeaInputCardProps) {
-  const [idea, setIdea] = useState("");
+export function IdeaInputCard({ initialIdea = "", onBattleCreated, navigateTo = defaultNavigate }: IdeaInputCardProps) {
+  const [idea, setIdea] = useState(initialIdea);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -54,6 +56,11 @@ export function IdeaInputCard({ onBattleCreated, navigateTo = defaultNavigate }:
       if (!body.battleId) {
         setError(t("error.generic"));
         return;
+      }
+      try {
+        window.sessionStorage.setItem(`agent-arena:idea:${body.battleId}`, trimmed);
+      } catch {
+        // Session storage is an optional presentation aid; SSE remains authoritative.
       }
       onBattleCreated?.(body.battleId);
       navigateTo(`/battle/${body.battleId}?mode=live_runtime`);

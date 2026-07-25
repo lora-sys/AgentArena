@@ -11,7 +11,7 @@
 }
 
 .dialog {
-  width: min(1100px, 100%);
+  width: min(1280px, 100%);
   max-height: 90vh;
   background: var(--bg-panel);
   border: 1px solid var(--bg-hairline);
@@ -87,8 +87,10 @@
 
 .tabActive {
   color: var(--ink-1);
-  border-bottom-color: var(--team-safe);
+  border-bottom-color: var(--ink-1);
 }
+
+.closeButton:focus-visible, .tabButton:focus-visible { outline: 2px solid var(--ink-1); outline-offset: 2px; }
 
 .content {
   flex: 1;

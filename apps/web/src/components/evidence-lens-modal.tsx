@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { SixDimensionScore, EvidenceCompleteness } from "@agent-arena/contracts";
 import { t } from "../i18n";
 import styles from "./evidence-lens-modal.module.css";
@@ -11,7 +11,8 @@ export type EvidenceLensModalProps = {
   completeness: EvidenceCompleteness;
   scores?: SixDimensionScore;
   /** ordered evidence event IDs forming the chain */
-  evidenceChain?: readonly string[];
+  evidenceChain?: readonly (string | { eventId: string; label: string })[];
+  onOpenArtifact?: () => void;
 };
 
 const DIMENSION_LABEL: Record<keyof SixDimensionScore, Parameters<typeof t>[0]> = {
@@ -31,9 +32,19 @@ export function EvidenceLensModal({
   completeness,
   scores,
   evidenceChain = [],
+  onOpenArtifact,
 }: EvidenceLensModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const normalizedChain = useMemo(() => evidenceChain.map((item) => typeof item === "string" ? { eventId: item, label: item } : item), [evidenceChain]);
+  const preferredEvidence = normalizedChain.find((item) => item.label.includes("attack_031")) ?? normalizedChain[0];
+  const [selectedEvidenceId, setSelectedEvidenceId] = useState<string | undefined>(preferredEvidence?.eventId);
+  const selectedEvidence = normalizedChain.find((item) => item.eventId === selectedEvidenceId) ?? preferredEvidence;
+  const totalScore = scores ? Object.values(scores).reduce((sum, dimension) => sum + dimension.score, 0) : 0;
+
+  useEffect(() => {
+    if (open) setSelectedEvidenceId(preferredEvidence?.eventId);
+  }, [open, preferredEvidence?.eventId]);
 
   useEffect(() => {
     if (!open) return;
@@ -43,6 +54,21 @@ export function EvidenceLensModal({
       if (e.key === "Escape") {
         e.preventDefault();
         onClose();
+      }
+      if (e.key === "Tab" && dialogRef.current) {
+        const focusables = dialogRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        );
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
       }
     };
     window.addEventListener("keydown", onKey);
@@ -67,7 +93,7 @@ export function EvidenceLensModal({
         >
           <header className={styles.header}>
             <h2>{t("evidence.title")} · {teamName}</h2>
-            <button ref={closeButtonRef} type="button" onClick={onClose} aria-label={t("common.close")}>ESC</button>
+            <button ref={closeButtonRef} type="button" onClick={onClose} aria-label={t("common.close")}>{t("common.close_shortcut")}</button>
           </header>
           <div className={styles.insufficientBody}>
             <p>{t("evidence.state.insufficient")}</p>
@@ -93,15 +119,17 @@ export function EvidenceLensModal({
             <span className={styles.eyebrow}>{t("evidence.subtitle")}</span>
             <h2>{t("evidence.title")} · {teamName}</h2>
           </div>
-          <button ref={closeButtonRef} type="button" onClick={onClose} aria-label={t("common.close")}>ESC</button>
+          <button ref={closeButtonRef} type="button" onClick={onClose} aria-label={t("common.close")}>{t("common.close_shortcut")}</button>
         </header>
 
         {completeness === "linked_evidence" && (
           <div className={styles.linkedBanner}>{t("evidence.state.linked")}</div>
         )}
 
+        <div className={styles.auditGrid}>
         {scores && (
           <section className={styles.scoresSection}>
+            <div className={styles.totalScore}><span>{t("evidence.total_score")}</span><strong>{totalScore}</strong><small>/100</small><b>{completeness === "full_breakdown" ? t("evidence.completeness.full") : t("evidence.completeness.linked")}</b></div>
             {(Object.entries(scores) as Array<[keyof SixDimensionScore, typeof scores[keyof SixDimensionScore]]>).map(([key, dim]) => (
               <div key={key} className={styles.dimensionRow}>
                 <header className={styles.dimensionHeader}>
@@ -128,16 +156,33 @@ export function EvidenceLensModal({
           </section>
         )}
 
-        {evidenceChain.length > 0 && (
+        {normalizedChain.length > 0 && (
           <section className={styles.chainSection}>
             <h3>{t("evidence.chain_title")}</h3>
             <ol className={styles.chainList}>
-              {evidenceChain.map((eventId) => (
-                <li key={eventId}><code>{eventId}</code></li>
+              {normalizedChain.map((item, index) => (
+                <li key={item.eventId} data-selected={item.eventId === selectedEvidence?.eventId}>
+                  <button type="button" onClick={() => setSelectedEvidenceId(item.eventId)}>
+                    <span>{String(index + 1).padStart(2, "0")}</span>
+                    <code>{item.label}</code>
+                  </button>
+                </li>
               ))}
             </ol>
           </section>
         )}
+        <section className={styles.eventDetail}>
+          <span className={styles.detailEyebrow}>{t("evidence.selected_event")}</span>
+          <h3>{selectedEvidence?.label ?? t("evidence.waiting")}</h3>
+          <dl>
+            <div><dt>{t("evidence.source_event")}</dt><dd><code>{selectedEvidence?.eventId ?? "—"}</code></dd></div>
+            <div><dt>{t("evidence.type")}</dt><dd>{selectedEvidence?.label.includes("attack") ? t("evidence.type.attack") : selectedEvidence?.label.includes("defense") ? t("evidence.type.defense") : selectedEvidence?.label.includes("test") ? t("evidence.type.test") : t("evidence.type.patch")}</dd></div>
+            <div><dt>{t("evidence.impact")}</dt><dd>{selectedEvidence?.label.includes("attack_031") ? t("evidence.impact.golden") : t("evidence.impact.live")}</dd></div>
+            <div><dt>{t("evidence.result")}</dt><dd>{selectedEvidence?.label.includes("test_052") ? t("evidence.result.golden") : t("evidence.result.live")}</dd></div>
+          </dl>
+          <button type="button" onClick={onOpenArtifact} disabled={!onOpenArtifact}>{t("evidence.open_artifact")}</button>
+        </section>
+        </div>
       </div>
     </div>
   );

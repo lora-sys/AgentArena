@@ -85,4 +85,12 @@ describe("MiniAppDemo", () => {
     expect(html).toContain("难度");
     expect(html).toContain("题目数量");
   });
+
+  it("binds a live artifact to an interactive acceptance flow", () => {
+    const html = renderToStaticMarkup(<MiniAppDemo artifactTitle="动卡周末 产品简报" artifactSummary="真实运动数据与凭证核验" />);
+    expect(html).toContain("动卡周末 产品简报");
+    expect(html).toContain("交互验收");
+    expect(html).toContain("生成 8 个验收步骤");
+    expect(html).not.toContain("今日学习挑战");
+  });
 });

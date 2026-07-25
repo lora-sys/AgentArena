@@ -14,4 +14,10 @@ describe("IdeaInputCard", () => {
     const html = renderToStaticMarkup(<IdeaInputCard />);
     expect(html).toContain("disabled");
   });
+
+  it("uses the selected template brief as the only editable idea", () => {
+    const html = renderToStaticMarkup(<IdeaInputCard initialIdea="48 小时演示型学习助手" />);
+    expect(html).toContain("48 小时演示型学习助手");
+    expect(html).not.toContain("disabled");
+  });
 });

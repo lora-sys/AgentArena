@@ -11,7 +11,7 @@
 }
 
 .dialog {
-  width: min(900px, 100%);
+  width: min(1220px, 100%);
   max-height: 90vh;
   background: var(--bg-panel);
   border: 1px solid var(--bg-hairline);
@@ -70,19 +70,27 @@
 .linkedBanner {
   margin: var(--sp-4) var(--sp-6) 0;
   padding: var(--sp-3);
-  background: rgba(233, 196, 104, 0.1);
-  border-left: 3px solid var(--champion);
-  color: var(--champion);
+  background: var(--bg-panel-2);
+  border-left: 3px solid var(--ink-2);
+  color: var(--ink-2);
   font-size: var(--fs-body);
   border-radius: var(--radius-sm);
 }
 
 .scoresSection {
-  padding: var(--sp-6);
+  padding: var(--sp-4);
   display: flex;
   flex-direction: column;
-  gap: var(--sp-4);
+  gap: var(--sp-3);
+  border-right: 1px solid var(--bg-hairline);
 }
+
+.auditGrid { display: grid; grid-template-columns: .9fr .95fr 1.15fr; min-height: 560px; }
+.totalScore { display: grid; grid-template-columns: 1fr auto auto; align-items: baseline; padding: var(--sp-4); border: 1px solid var(--bg-hairline); background: var(--bg-void); }
+.totalScore span { grid-column: 1 / -1; color: var(--ink-3); font: var(--fs-caption) var(--font-mono); }
+.totalScore strong { color: var(--ink-1); font: 52px var(--font-heading); }
+.totalScore small { color: var(--ink-3); font: var(--fs-caption) var(--font-mono); }
+.totalScore b { justify-self: end; padding: 4px 7px; border: 1px solid var(--ink-2); color: var(--ink-2); font: var(--fs-caption) var(--font-mono); }
 
 .dimensionRow {
   border-bottom: 1px solid var(--bg-hairline);
@@ -151,8 +159,8 @@
 }
 
 .chainSection {
-  padding: var(--sp-6);
-  border-top: 1px solid var(--bg-hairline);
+  padding: var(--sp-4);
+  border-right: 1px solid var(--bg-hairline);
 }
 
 .chainSection h3 {
@@ -166,24 +174,42 @@
 
 .chainList {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-2);
+  flex-direction: column;
+  gap: 0;
   list-style: none;
   padding: 0;
   margin: 0;
 }
 
 .chainList li {
-  padding: var(--sp-1) var(--sp-2);
-  background: var(--bg-panel-2);
-  border-radius: var(--radius-sm);
+  position: relative;
+  padding-left: var(--sp-4);
 }
+
+.chainList li::before { content: ""; position: absolute; left: 4px; top: 0; bottom: 0; width: 1px; background: var(--bg-hairline); }
+.chainList li::after { content: ""; position: absolute; left: 0; top: 22px; width: 9px; height: 9px; border: 2px solid var(--ink-3); border-radius: var(--radius-full); background: var(--bg-panel); }
+.chainList li[data-selected="true"]::after { border-color: var(--danger); box-shadow: 0 0 12px var(--danger); }
+.chainList button { display: grid; grid-template-columns: 28px minmax(0,1fr); gap: var(--sp-2); width: 100%; padding: var(--sp-3); border: 0; border-bottom: 1px solid var(--bg-hairline); background: transparent; color: var(--ink-2); text-align: left; cursor: pointer; }
+.chainList li[data-selected="true"] button { background: var(--danger-dim); }
+.chainList button > span { color: var(--ink-4); font: var(--fs-caption) var(--font-mono); }
 
 .chainList code {
   font-family: var(--font-mono);
   font-size: var(--fs-caption);
-  color: var(--team-safe);
+  color: var(--ink-2);
 }
+
+.eventDetail { padding: var(--sp-6); background: radial-gradient(circle at 80% 0%, var(--danger-dim), transparent 42%); }
+.detailEyebrow { color: var(--ink-3); font: var(--fs-caption) var(--font-mono); letter-spacing: .1em; }
+.eventDetail h3 { margin: var(--sp-3) 0 var(--sp-6); color: var(--ink-1); font: var(--fs-title) var(--font-heading); }
+.eventDetail dl { display: grid; gap: var(--sp-3); margin: 0; }
+.eventDetail dl > div { padding-bottom: var(--sp-3); border-bottom: 1px solid var(--bg-hairline); }
+.eventDetail dt { margin-bottom: 5px; color: var(--ink-3); font: var(--fs-caption) var(--font-mono); }
+.eventDetail dd { margin: 0; color: var(--ink-2); font-size: var(--fs-body); line-height: 1.6; }
+.eventDetail code { color: var(--danger); font-family: var(--font-mono); }
+.eventDetail > button { width: 100%; margin-top: var(--sp-6); padding: var(--sp-3); border: 1px solid var(--ink-2); border-radius: var(--radius-sm); background: var(--bg-panel-2); color: var(--ink-1); cursor: pointer; font: var(--fs-caption) var(--font-mono); }
+.eventDetail > button:disabled { opacity: .45; cursor: default; }
+.header button:focus-visible, .chainList button:focus-visible, .eventDetail > button:focus-visible { outline: 2px solid var(--ink-1); outline-offset: 2px; }
 
 @keyframes fadeIn {
   from { opacity: 0; }
@@ -206,4 +232,9 @@
   .dialog {
     animation: none;
   }
+}
+
+@media (max-width: 900px) {
+  .auditGrid { grid-template-columns: 1fr; }
+  .scoresSection, .chainSection { border-right: 0; border-bottom: 1px solid var(--bg-hairline); }
 }

@@ -8,7 +8,7 @@
 
 export function isLiveBattleEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
   const value = env.AGENT_ARENA_LIVE_BATTLE_ENABLED;
-  if (typeof value !== "string") return false;
+  if (typeof value !== "string") return typeof env.STEPFUN_API_KEY === "string" && env.STEPFUN_API_KEY.trim().length > 0;
   const normalized = value.trim().toLowerCase();
   return normalized === "true" || normalized === "1" || normalized === "yes";
 }

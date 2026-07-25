@@ -80,4 +80,11 @@ describe("ChampionPage", () => {
     const html = renderToStaticMarkup(<ChampionPage battleId="x" champion={mockPassport} />);
     expect(html).toContain('data-state="revealed"');
   });
+
+  it("uses the portrait that belongs to the champion team", () => {
+    const safeChampion = { ...mockPassport, teamId: "team_safe_v1", teamName: "稳健构建者" };
+    const html = renderToStaticMarkup(<ChampionPage battleId="x" champion={safeChampion} />);
+    expect(html).toContain('/assets/agents/safe-builder.png');
+    expect(html).not.toContain('/assets/agents/viral-designer.png');
+  });
 });

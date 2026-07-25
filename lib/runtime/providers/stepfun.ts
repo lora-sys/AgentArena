@@ -12,8 +12,8 @@ import type { ArenaAgentRuntime } from "../contract";
  *
  * Configuration (server-only; never shipped to the web bundle):
  *   STEPFUN_API_KEY    — required for live_runtime
- *   STEPFUN_BASE_URL   — default https://api.stepfun.com/step_plan/v1
- *   STEPFUN_MODEL_ID   — default step-3.7-flash
+ *   STEPFUN_BASE_URL   — default https://api.stepfun.com/v1
+ *   STEPFUN_MODEL_ID   — default step-3.5-flash-2603 for the low-latency live path
  *
  * Write-lock (docs/DEV-STANDARDS.md §7):
  *   - Secret is read from process.env only inside this file.
@@ -23,8 +23,35 @@ import type { ArenaAgentRuntime } from "../contract";
  *     Chinese-facing message so POST /api/battles can return 501.
  */
 
-export const STEPFUN_DEFAULT_BASE_URL = "https://api.stepfun.com/step_plan/v1";
-export const STEPFUN_DEFAULT_MODEL = "step-3.7-flash";
+export const STEPFUN_DEFAULT_BASE_URL = "https://api.stepfun.com/v1";
+export const STEPFUN_DEFAULT_MODEL = "step-3.5-flash-2603";
+
+const STEPFUN_RPM_WINDOW_MS = 60_000;
+const STEPFUN_SAFE_RPM = 9;
+const stepFunRequestTimes: number[] = [];
+let stepFunAdmissionQueue: Promise<void> = Promise.resolve();
+
+async function admitStepFunRequest(): Promise<void> {
+  let release!: () => void;
+  const previous = stepFunAdmissionQueue;
+  stepFunAdmissionQueue = new Promise<void>((resolve) => { release = resolve; });
+  await previous;
+  try {
+    while (true) {
+      const now = Date.now();
+      while (stepFunRequestTimes.length > 0 && now - stepFunRequestTimes[0] >= STEPFUN_RPM_WINDOW_MS) {
+        stepFunRequestTimes.shift();
+      }
+      if (stepFunRequestTimes.length < STEPFUN_SAFE_RPM) {
+        stepFunRequestTimes.push(now);
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, Math.max(25, STEPFUN_RPM_WINDOW_MS - (now - stepFunRequestTimes[0]))));
+    }
+  } finally {
+    release();
+  }
+}
 
 export type StepFunRuntimeOptions = Omit<MastraRuntimeOptions, "client" | "model"> & {
   apiKey?: string;
@@ -58,7 +85,7 @@ export function createStepFunRuntime(options: StepFunRuntimeOptions = {}): Arena
   if (!apiKey) {
     throw new StepFunNotConfiguredError();
   }
-  const baseURL = options.baseURL ?? readEnv("STEPFUN_BASE_URL") ?? STEPFUN_DEFAULT_BASE_URL;
+  const baseURL = normalizeBaseURL(options.baseURL ?? readEnv("STEPFUN_BASE_URL") ?? STEPFUN_DEFAULT_BASE_URL);
   const model = options.model ?? readEnv("STEPFUN_MODEL_ID") ?? STEPFUN_DEFAULT_MODEL;
 
   const client =
@@ -69,7 +96,7 @@ export function createStepFunRuntime(options: StepFunRuntimeOptions = {}): Arena
       // Live mode budget: P95 total ≤ 90s, first event ≤ 10s. A single call
       // must never eat the whole budget; cap per-request at 30s and let the
       // orchestrator abort on its own deadline.
-      timeout: 30_000,
+      timeout: 75_000,
       maxRetries: 0,
     });
 
@@ -79,7 +106,15 @@ export function createStepFunRuntime(options: StepFunRuntimeOptions = {}): Arena
     maxRetries: options.maxRetries,
     onEvent: options.onEvent,
     signal: options.signal,
+    streamResponses: true,
+    onStreamProgress: options.onStreamProgress,
+    beforeRequest: options.client ? undefined : admitStepFunRequest,
+    fallbackOnError: false,
   });
+}
+
+function normalizeBaseURL(value: string): string {
+  return value.replace(/\/step_plan\/v1\/?$/i, "/v1");
 }
 
 /**

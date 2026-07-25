@@ -113,7 +113,7 @@ export function ArtifactModal({
             className={styles.closeButton}
             aria-label={t("common.close")}
           >
-            ESC
+            {t("common.close_shortcut")}
           </button>
         </header>
         <nav className={styles.tabs} role="tablist">

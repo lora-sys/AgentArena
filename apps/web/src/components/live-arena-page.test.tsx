@@ -35,6 +35,20 @@ const withDefense: BattleEvent[] = [
   },
 ];
 
+const withRecovery: BattleEvent[] = [
+  ...withDefense,
+  {
+    ...base,
+    id: "e5",
+    round: "verify_round",
+    actorId: "team_viral_v1",
+    eventType: "artifact_created",
+    title: "test_052 通过",
+    content: "SVG 降级通过",
+    rawPayload: { id: "test_052", teamId: "team_viral_v1", passed: true },
+  },
+];
+
 describe("LiveArenaPage", () => {
   it("renders all three v0.5.2 teams with Chinese names", () => {
     const html = renderToStaticMarkup(
@@ -53,6 +67,17 @@ describe("LiveArenaPage", () => {
     expect(html).toContain("已验证演示");
   });
 
+  it("shows replay controls when replaying a persisted live battle", () => {
+    const html = renderToStaticMarkup(
+      <LiveArenaPage battleId="live_1" idea="x" events={[]} mode="live_runtime" replayPlayback replayProgress={{ current: 0, total: 12 }} />,
+    );
+    expect(html).toContain("实时战斗回放");
+    expect(html).toContain("证据事件正在回放");
+    expect(html).toContain("0/12");
+    expect(html).not.toContain("真实智能体正在运行");
+    expect(html).not.toContain("查看冠军护照");
+  });
+
   it("shows round progress with all 7 stages", () => {
     const html = renderToStaticMarkup(
       <LiveArenaPage battleId="BA-2026-0024" idea="x" events={[]} mode="verified_replay" />,
@@ -62,13 +87,12 @@ describe("LiveArenaPage", () => {
     }
   });
 
-  it("drops viral HP to 50 after fatal attack accepted", () => {
+  it("drops viral Proof HP from 88 to 38 after fatal attack accepted", () => {
     const html = renderToStaticMarkup(
       <LiveArenaPage battleId="BA-2026-0024" idea="x" events={withDefense} mode="verified_replay" />,
     );
     // The HpBar renders hp-number element with the final value
-    expect(html).toContain('data-low="false"'); // 50 is above 35 threshold
-    // Note: floating damage "-50" is rendered
+    expect(html).toContain('aria-label="传播设计师 证明值 38/100"');
     expect(html).toContain("-50");
   });
 
@@ -78,6 +102,13 @@ describe("LiveArenaPage", () => {
     );
     // SSR: useEffect does not fire → no fatal overlay
     expect(html).not.toContain("fatal-takeover");
+  });
+
+  it("recovers viral Proof HP from 38 to 68 after test_052 passes", () => {
+    const html = renderToStaticMarkup(
+      <LiveArenaPage battleId="BA-2026-0024" idea="x" events={withRecovery} mode="verified_replay" />,
+    );
+    expect(html).toContain('aria-label="传播设计师 证明值 68/100"');
   });
 
   it("renders current attack focus with attacker/target names", () => {
