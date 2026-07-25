@@ -90,6 +90,46 @@ button, input { font: inherit; }
 .hp-bar.fatal .hp-flash { animation-duration: var(--motion-fatal-shake, 450ms); }
 .hp-damage-pop { position: absolute; z-index: 3; top: -4px; right: 4px; color: var(--danger); font: 400 20px/1 var(--font-heading, "Archivo Black"), sans-serif; text-shadow: 0 0 15px rgba(var(--danger-rgb, 255,77,77),.8); pointer-events: none; animation: damage-rise var(--motion-damage-float, 1100ms) ease-out both; }
 .hp-bar.fatal .hp-damage-pop { font-size: 28px; text-shadow: 0 0 22px rgba(var(--danger-rgb, 255,77,77),.95); }
+
+/* ── FatalTakeover 致命攻击全屏接管（#34 · 设计稿画面 03）─────────────────── */
+.fatal-takeover { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 24px; background: radial-gradient(120% 90% at 50% 12%, rgba(var(--danger-rgb),.28), rgba(var(--bg-void-rgb),.86) 62%); backdrop-filter: blur(3px); animation: fatal-in var(--motion-fatal-shake) var(--ease-out) both; }
+.fatal-panel { width: min(980px, 100%); overflow: hidden; border: 1px solid rgba(var(--danger-rgb),.55); border-radius: var(--radius-lg); background: linear-gradient(180deg, rgba(var(--danger-rgb),.10), var(--surface-1) 46%); box-shadow: 0 0 60px rgba(var(--danger-rgb),.35), inset 0 0 40px rgba(var(--danger-rgb),.06); }
+.fatal-banner { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: linear-gradient(90deg, rgba(var(--danger-rgb),.9), rgba(var(--danger-rgb),.55)); color: var(--ink-1); animation: fatal-banner-pulse 1s var(--ease-out) infinite alternate; }
+.fatal-banner-icon { font-size: 18px; }
+.fatal-banner b { font: 700 15px/1 var(--font-heading); letter-spacing: .04em; }
+.fatal-banner small { color: color-mix(in srgb, var(--ink-1) 85%, transparent); font: 600 10px/1 var(--font-mono); letter-spacing: var(--ls-mono); text-transform: uppercase; }
+.fatal-dismiss { width: 24px; height: 24px; margin-left: auto; border: 1px solid color-mix(in srgb, var(--ink-1) 50%, transparent); border-radius: var(--radius-sm); background: transparent; color: var(--ink-1); cursor: pointer; font-size: 11px; }
+.fatal-dismiss:hover { background: color-mix(in srgb, var(--ink-1) 15%, transparent); }
+.fatal-dismiss:focus-visible, .fatal-view-evidence:focus-visible { outline: 2px solid var(--ink-1); outline-offset: 3px; }
+.fatal-duel { display: grid; grid-template-columns: 1fr auto 1fr; gap: 18px; align-items: center; padding: 26px 22px; }
+.fatal-side { min-width: 0; padding: 14px; border: 1px solid var(--ink-5); border-radius: var(--radius-md); background: color-mix(in srgb, var(--surface-2) 60%, transparent); }
+.fatal-side.attacker { border-color: rgba(var(--ih-rgb),.4); }
+.fatal-side.target { border-color: rgba(var(--vd-rgb),.55); animation: hit-shake var(--motion-fatal-shake) cubic-bezier(.36,.07,.19,.97) both; }
+.fatal-side-label { color: var(--ink-3); font: 600 9px/1 var(--font-mono); letter-spacing: var(--ls-mono); text-transform: uppercase; }
+.fatal-side strong { display: block; margin: 8px 0; color: var(--ink-1); font: 700 16px/1.1 var(--font-heading); }
+.fatal-side.attacker strong { color: var(--ih); }
+.fatal-side.target strong { color: var(--vd); }
+.fatal-attack-event { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--ink-5); }
+.fatal-attack-event span { color: var(--danger); font: 600 8px/1 var(--font-mono); letter-spacing: var(--ls-mono); text-transform: uppercase; }
+.fatal-attack-event b { display: block; margin: 5px 0; color: var(--ink-1); font: 600 13px/1 var(--font-mono); }
+.fatal-attack-event p { margin: 0; color: var(--ink-3); font-size: 11px; line-height: 1.5; }
+.fatal-view-evidence { margin-top: 10px; padding: 6px 12px; border: 1px solid rgba(var(--vd-rgb),.6); border-radius: var(--radius-sm); background: rgba(var(--vd-rgb),.12); color: var(--vd); font: 600 10px/1 var(--font-mono); cursor: pointer; }
+.fatal-view-evidence:hover { background: rgba(var(--vd-rgb),.24); }
+/* 证明值骤降大字过渡：88 → -50 → 38 */
+.fatal-proof { display: flex; align-items: center; gap: 12px; }
+.fatal-proof-cell { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.fatal-proof-cell b { font: 400 var(--fs-mega)/0.9 var(--font-heading); letter-spacing: var(--ls-heading); }
+.fatal-proof-cell i { color: var(--ink-3); font: 500 12px/1 var(--font-mono); font-style: normal; }
+.fatal-proof-cell span { margin-top: 6px; color: var(--ink-3); font: 600 8px/1 var(--font-mono); letter-spacing: var(--ls-mono); text-transform: uppercase; }
+.fatal-proof-cell.before b { color: var(--ink-2); }
+.fatal-proof-cell.damage b { color: var(--danger); text-shadow: 0 0 20px rgba(var(--danger-rgb),.7); animation: fatal-damage-emph var(--motion-fatal-shake) var(--ease-out) both; }
+.fatal-proof-cell.after b { color: var(--danger); }
+.fatal-proof-arrow { color: var(--ink-4); font-size: 22px; }
+.fatal-evidence-slot { padding: 0 22px 22px; }
+@keyframes fatal-in { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: scale(1); } }
+@keyframes fatal-damage-emph { from { opacity: 0; transform: scale(.55); } 60% { opacity: 1; transform: scale(1.18); } to { opacity: 1; transform: scale(1); } }
+@keyframes fatal-banner-pulse { from { box-shadow: inset 0 0 0 rgba(255,255,255,0); } to { box-shadow: inset 0 0 24px rgba(255,255,255,.2); } }
+@media (max-width: 720px) { .fatal-duel { grid-template-columns: 1fr; } .fatal-proof { justify-content: center; } }
 .event-copy { min-height: 108px; padding-top: 12px; border-top: 1px dashed var(--arena-hair); }
 .event-copy > span { color: var(--team); font: 600 8px/1 IBM Plex Mono, monospace; }
 .verdict { float: right; padding: 3px 5px; border: 1px solid currentColor; border-radius: 3px; font: 600 6px/1 IBM Plex Mono,monospace; }.verdict.accepted { color: var(--danger); }.verdict.rejected { color: var(--arena-faint); }
@@ -118,6 +158,8 @@ button, input { font: inherit; }
 @media (prefers-reduced-motion: reduce) {
   .arena-host.speaking .arena-host-ring, .arena-host.speaking .arena-host-wave i { animation: none; }
   .arena-host-wave i { height: 8px; }
+  .fatal-banner { animation: none; }
+  .fatal-proof-cell.damage b { animation: none; }
 }
 .replay-controls { position: relative; display: grid; grid-template-columns: auto 1fr auto auto; gap: 12px; align-items: center; margin-top: 12px; }
 .replay-controls button { border: 0; padding: 0; color: var(--arena-dim); background: none; font: 600 8px/1 IBM Plex Mono, monospace; cursor: pointer; }

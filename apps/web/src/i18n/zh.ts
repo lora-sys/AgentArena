@@ -79,6 +79,26 @@ export const zh = {
     attack: (title: string) => `${title}。目标方现在必须正面回应这条证据。`,
     champion: (title: string) => `${title}。声誉已依据本场证据更新。`,
   },
+
+  /**
+   * 致命攻击全屏接管态（#34 · 设计稿画面 03）
+   * A 线负责视觉：红色警示条 + 攻击方/目标双面板 + 证明值骤降大字过渡。
+   * Evidence Lens 展开内容由 C 线（#39）负责，本处仅提供接管外壳文案。
+   */
+  fatal: {
+    critical: "致命攻击",
+    criticalEn: "Critical Attack Detected",
+    attacker: "攻击方",
+    target: "目标",
+    attackEvent: "致命载荷",
+    before: "改前",
+    after: "改后",
+    proofDamage: "证明值掉血",
+    viewEvidence: "查看证据",
+    dismiss: "关闭接管",
+    /** 主持人在致命时刻的解说 */
+    commentary: (target: string) => `${target} 被致命命中，证明值骤降。守得住才是真冠军。`,
+  },
 } as const;
 
 export type Zh = typeof zh;

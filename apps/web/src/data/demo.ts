@@ -8,6 +8,21 @@ export const teams = [
 
 const common = { battleId: "demo", createdAt: "2026-07-04T12:04:00Z" };
 
+/**
+ * 致命攻击接管演示数据（#34 · 设计稿画面 03 / 金色剧情 BA-2026-0024）
+ * 场景数据（非 UI 文案），供 `?fatal=1` 演示触发器合成致命时刻。
+ * 等 #23 真实 fixture 落地后，此常量由真实致命事件替代。
+ */
+export const goldenFatalDemo = {
+  attacker: "架构黑客队",
+  target: "传播设计师队",
+  attackTitle: "attack_031",
+  attackSummary: "空状态恢复失败：当输入为空时演示崩溃，暴露潜在问题。",
+  hpBefore: 88,
+  damage: 50,
+  hpAfter: 38,
+} as const;
+
 export const demoEvents: BattleEvent[] = [
   { ...common, id: "p1", round: "proposal_round", actorId: "safe_builder", eventType: "proposal_created", title: "Safe proposal", content: "Scope the build to one reliable workflow and make the demo impossible to break." },
   { ...common, id: "p2", round: "proposal_round", actorId: "viral_designer", eventType: "proposal_created", title: "Viral proposal", content: "Turn every agent result into a shareable battle card built for screenshots." },
