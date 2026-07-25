@@ -24,6 +24,8 @@ Artifact detail tabs preserve evidence semantics: patch rows align deleted and a
 
 Live-runtime Artifact degradation borrows the centered warning hierarchy and restrained cyan recovery CTA from the Live AI Degraded frame. It removes unavailable tabs, explicitly labels the missing payload, and never presents verified fixture content until mode has changed back to `verified_replay`.
 
+Evidence Lens uses a two-column audit surface: six dimension cards on the left and a numbered event chain on the right. `linked_evidence` exposes only the first attributable line per dimension; `insufficient_evidence` removes all score detail and desaturates the surface so fixed replay evidence cannot masquerade as live evidence.
+
 ## Visual QA
 
 Check 1440×900 and 390×844, compare against the reference, exercise all primary controls, inspect console errors, and run the Example Battle three times before a demo release.

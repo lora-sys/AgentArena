@@ -138,6 +138,14 @@ export const zh = {
   "evidence.verified_payload": "已验证载荷",
   "evidence.recorded": "证据已记录在本场战斗链中。",
   "evidence.no_payload": "没有附加载荷。",
+  "evidence.close": "关闭证据镜",
+  "evidence.score_breakdown": "六维评分明细",
+  "evidence.chain_verified": "从测试失败到修复验证",
+  "evidence.insufficient_note": "本场尚未产出可验证的评分分解与事件链。",
+  "evidence.chain.test": "测试结果",
+  "evidence.chain.attack": "攻击信号",
+  "evidence.chain.defense": "防守裁决",
+  "evidence.chain.patch": "修复补丁",
 
   // -------------------------------------------------------------------------
   // Artifact Viewer Modal（设计稿 05）

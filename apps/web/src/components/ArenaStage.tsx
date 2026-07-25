@@ -1,4 +1,4 @@
-import { type BattleEvent, type Severity } from "@agent-arena/contracts";
+import { type BattleEvent, type Severity, type SixDimensionScore } from "@agent-arena/contracts";
 import { demoEvents, teams, goldenFatalDemo } from "../data/demo";
 import { useArenaState, useBattleReplay } from "./BattleReplayPlayer";
 import { TypewriterText } from "./typewriter-text";
@@ -13,8 +13,19 @@ import { ArtifactModal } from "./artifact-modal";
 import { AgentCardArtifactTrigger } from "./agent-card-artifact-trigger";
 import { VERIFIED_SHOWCASE_ID, verifiedShowcaseArtifactBundle } from "../data/verified-showcase";
 import type { RuntimeMode } from "./runtime-mode-badge";
+import { EvidenceLensModal } from "./evidence-lens-modal";
 
 type FatalState = Omit<FatalTakeoverProps, "open" | "onDismiss">;
+
+const verifiedScores: SixDimensionScore = {
+  feasibility_zh: { score: 21, max: 25, completeness: "full_breakdown", breakdown: [{ label: "48 小时范围可落地", delta: 23 }, { label: "社交渠道收窄", delta: -2 }] },
+  originality: { score: 20, max: 25, completeness: "full_breakdown", breakdown: [{ label: "游戏化传播路径", delta: 22 }, { label: "玩法参考较多", delta: -2 }] },
+  demoPower: { score: 22, max: 25, completeness: "full_breakdown", breakdown: [{ label: "演示流畅性", delta: 24 }, { label: "覆盖偏窄", delta: -2 }] },
+  technicalDepth: { score: 12, max: 15, completeness: "linked_evidence", breakdown: [{ label: "SVG 降级修复", delta: 13 }, { label: "架构深度有限", delta: -1 }] },
+  clarity: { score: 8, max: 10, completeness: "linked_evidence", breakdown: [{ label: "叙事清晰", delta: 9 }, { label: "边界说明不足", delta: -1 }] },
+  riskControl: { score: 4, max: 5, completeness: "linked_evidence", breakdown: [{ label: "致命攻击后恢复", delta: 5 }, { label: "初始兼容风险", delta: -1 }] },
+};
+const verifiedEvidenceChain = ["test_022", "attack_031", "defense_041", "patch_048", "test_052"];
 
 export function ArenaStage({ compact = false, battleId = "demo", events = demoEvents, runtimeMode = "verified_replay", onProgress, onFatalEvidence, onReturnVerified }: { compact?: boolean; battleId?: string; events?: readonly BattleEvent[]; runtimeMode?: RuntimeMode; onProgress?: (events: readonly BattleEvent[]) => void; onFatalEvidence?: (event: BattleEvent) => void; onReturnVerified?: () => void }) {
   const replay = useBattleReplay(events);
@@ -25,13 +36,16 @@ export function ArenaStage({ compact = false, battleId = "demo", events = demoEv
   const [fatal, setFatal] = useState<FatalState | null>(null);
   const [fatalEvent, setFatalEvent] = useState<BattleEvent | null>(null);
   const [artifactTeamId, setArtifactTeamId] = useState<string | null>(null);
+  const [evidenceTeamId, setEvidenceTeamId] = useState<string | null>(null);
   const [focusedEvidenceId, setFocusedEvidenceId] = useState<string | null>(null);
   const closeArtifact = useCallback(() => setArtifactTeamId(null), []);
+  const closeEvidence = useCallback(() => setEvidenceTeamId(null), []);
   const selectArtifactEvidence = useCallback((eventId: string) => {
     setArtifactTeamId(null);
     setFocusedEvidenceId(eventId);
   }, []);
   const shownFatalRef = useRef<string | null>(null);
+  const evidenceTimerRef = useRef<number | null>(null);
   const [searchParams] = useSearchParams();
   // 演示触发器：?fatal=1 合成金色剧情致命时刻（pitch 手动唤起 + 取证用）；真实 fixture 落地后由 onFatal 路径驱动
   useEffect(() => {
@@ -39,7 +53,10 @@ export function ArenaStage({ compact = false, battleId = "demo", events = demoEv
   }, [searchParams]);
   const teamName = (id?: string) => teams.find((team) => team.id === id)?.name ?? id ?? "";
   useEffect(() => {
-    if (replay.batchIndex === 0) shownFatalRef.current = null;
+    if (replay.batchIndex === 0) {
+      shownFatalRef.current = null;
+      setFatalEvent(null);
+    }
     const attack = replay.batch?.events.find((event) =>
       event.eventType === "attack_created"
       && (event.rawPayload as { severity?: Severity } | undefined)?.severity === "fatal",
@@ -61,6 +78,19 @@ export function ArenaStage({ compact = false, battleId = "demo", events = demoEv
     });
     onFatalEvidence?.(attack);
   }, [onFatalEvidence, replay.batch, replay.batchIndex]);
+  useEffect(() => {
+    if (!fatalEvent) return;
+    const payload = fatalEvent.rawPayload as { targetTeamId?: string } | undefined;
+    evidenceTimerRef.current = window.setTimeout(() => {
+      setFatal(null);
+      setEvidenceTeamId(fatalEvent.targetId ?? payload?.targetTeamId ?? "viral_designer");
+      evidenceTimerRef.current = null;
+    }, 4500);
+    return () => {
+      if (evidenceTimerRef.current !== null) window.clearTimeout(evidenceTimerRef.current);
+      evidenceTimerRef.current = null;
+    };
+  }, [fatalEvent]);
   useEffect(() => {
     if (!fatal) return;
     const timer = window.setTimeout(() => setFatal(null), 5000);
@@ -128,6 +158,7 @@ export function ArenaStage({ compact = false, battleId = "demo", events = demoEv
             <div className="agent-portrait"><img src={team.portrait} alt="" /></div>
             <div className="fighter-name"><span>{team.name}</span><small>{team.role}</small></div>
             <HpBar teamId={team.id} hp={proofHp[team.id]} prevHp={prevProof[team.id]} severity={hit ? severity : undefined} onFatal={() => setFatal({ attacker: teamName(linkedAttack?.actorId), attackerPortrait: teams.find((item) => item.id === linkedAttack?.actorId)?.portrait, target: team.name, targetPortrait: team.portrait, attackTitle: linkedAttack?.title ?? currentAttackId ?? "attack", attackSummary: linkedAttack?.content, hpBefore: prevProof[team.id] ?? 100, damage: Math.max(0, (prevProof[team.id] ?? 100) - (proofHp[team.id] ?? 0)), hpAfter: proofHp[team.id] ?? 0 })} />
+            {!compact && <button type="button" className="evidence-lens-trigger" onClick={() => setEvidenceTeamId(team.id)}>{zh.arena.hp} {proofHp[team.id]}/100</button>}
             <svg className="proof-sparkline" viewBox="0 0 180 28" role="img" aria-label={`${team.name} ${zh.arena.hp}趋势`}><polyline points={sparkline} /></svg>
             <div className="fighter-roles">{zh.arena.roles.map((role) => <span key={role}>{role}</span>)}</div>
             {!compact && <AgentCardArtifactTrigger onOpen={() => setArtifactTeamId(team.id)} />}
@@ -143,7 +174,8 @@ export function ArenaStage({ compact = false, battleId = "demo", events = demoEv
       <div className="arena-lower"><section className="event-stream"><header>{zh.arena.eventStream}</header>{eventStreamItems.map((item) => <div id={`event-${item.id}`} tabIndex={-1} className={item.id === focusedEvidenceId ? "focused" : ""} key={item.id}><time>{new Date(item.createdAt).toLocaleTimeString("zh-CN", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" })}</time><span>{item.title}</span></div>)}</section><div className="arena-host-slot"><ArenaHost events={replay.batch?.events ?? []} active={replay.playing} /></div></div>
       <div className="replay-controls"><button type="button" onClick={replay.toggle}>{replay.playing ? zh.common.pause : zh.common.resume}</button><div><i style={{ width: `${((replay.batchIndex + 1) / replay.batchCount) * 100}%` }} /></div><button type="button" onClick={replay.cycleSpeed}>{replay.speed}×</button><button type="button" onClick={replay.replay}>{zh.common.replay}</button></div>
       {!compact && <div className="round-jump" aria-label="跳转到回合">{Array.from({length: replay.batchCount},(_,index) => <button className={index === replay.batchIndex ? "active" : ""} key={index} onClick={() => replay.seek(index)}>{index + 1}</button>)}</div>}
-      <FatalTakeover open={fatal !== null} {...(fatal ?? { attacker: "", target: "", attackTitle: "", hpBefore: 0, damage: 0, hpAfter: 0 })} onViewEvidence={onFatalEvidence && fatalEvent ? () => onFatalEvidence(fatalEvent) : undefined} onDismiss={() => setFatal(null)} />
+      <FatalTakeover open={fatal !== null} {...(fatal ?? { attacker: "", target: "", attackTitle: "", hpBefore: 0, damage: 0, hpAfter: 0 })} onViewEvidence={() => { if (evidenceTimerRef.current !== null) window.clearTimeout(evidenceTimerRef.current); evidenceTimerRef.current = null; setFatal(null); setEvidenceTeamId(fatalEvent?.targetId ?? "viral_designer"); }} onDismiss={() => { if (evidenceTimerRef.current !== null) window.clearTimeout(evidenceTimerRef.current); evidenceTimerRef.current = null; setFatal(null); }} />
+      <EvidenceLensModal open={evidenceTeamId !== null} teamName={teamName(evidenceTeamId ?? undefined)} totalScore={runtimeMode === "verified_replay" && battleId === VERIFIED_SHOWCASE_ID ? 87 : proofHp[evidenceTeamId ?? ""] ?? 0} completeness={runtimeMode === "verified_replay" && battleId === VERIFIED_SHOWCASE_ID ? "full_breakdown" : "insufficient_evidence"} scores={runtimeMode === "verified_replay" && battleId === VERIFIED_SHOWCASE_ID ? verifiedScores : undefined} evidenceChain={verifiedEvidenceChain} onClose={closeEvidence} />
       <ArtifactModal open={artifactTeamId !== null} teamName={teamName(artifactTeamId ?? undefined)} artifact={runtimeMode === "verified_replay" && battleId === VERIFIED_SHOWCASE_ID ? verifiedShowcaseArtifactBundle(artifactTeamId ?? undefined) : undefined} mode={runtimeMode} onEvidenceSelect={selectArtifactEvidence} onReturnVerified={onReturnVerified} onClose={closeArtifact} />
     </section>
   );

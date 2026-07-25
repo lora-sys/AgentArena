@@ -130,3 +130,27 @@ None.
 - Critical: 0
 - High: 1, fixed
 - Medium: 3, integration constraints documented
+# Adversarial Review — #39 Evidence Lens
+
+Date: 2026-07-25
+Reviewer: Codex
+
+## CRITICAL
+None.
+
+## HIGH
+1. `apps/web/src/components/ArenaStage.tsx` — 致命接管与证据镜曾同时保持打开，两个 overlay 的 body scroll lock 清理会互相覆盖；自动展开前先关闭 FatalTakeover，已修复。
+2. `apps/web/src/components/ArenaStage.tsx` — 自动展开使用未清理的 timeout，组件卸载或回放批次切换后仍会写状态；effect 现在返回 clearTimeout，已修复。
+3. `apps/web/src/components/ArenaStage.tsx` — 内联 `onClose` 会让 Modal 焦点 effect 每次父组件渲染都重跑并抢焦点；改为稳定 callback，已修复。
+4. `apps/web/src/components/ArenaStage.tsx` — 自动展开在接管关闭按钮可操作期间抢占指针，破坏三次回放；延后到接管展示末段，并在主动关闭/查看时取消 timer，已由 E2E 复现后修复。
+5. `apps/web/src/components/ArenaStage.tsx` — timer 原先依附回放 batch effect，播放器推进下一批次会在 4.5 秒前清理它，导致“自动展开”永远不发生；生命周期改绑 `fatalEvent`，已由 agent-browser 复现后修复。
+6. `apps/web/src/components/ArenaStage.tsx` — Modal 标题总分曾复用实时 Proof HP（自动展开时为 68），与六维明细合计 87 矛盾；黄金证据镜总分固定读取已验证裁决 87，已修复。
+
+## MEDIUM
+1. `apps/web/src/components/ArenaStage.tsx` — 黄金六维明细目前是 v0.5.2 的前端展示适配，底层 fixture 仍是旧六维字段；合并前不伪称为实时数据，后续应由 fixture contract 原生提供。
+2. `apps/web/src/components/evidence-lens-modal.test.tsx` — 三态与 Escape 已覆盖，但焦点循环/恢复暂由 Artifact Modal 的同构实现间接兜底；可在后续回归补专门用例。
+
+## Summary
+- Critical: 0
+- High: 6 (fixed)
+- Medium: 2
