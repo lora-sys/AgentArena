@@ -176,3 +176,24 @@ None.
 - Critical: 0
 - High: 3 (fixed)
 - Medium: 3 (1 fixed, 2 documented)
+# Adversarial Review — #41 Mini Passport
+
+Date: 2026-07-25
+Reviewer: Codex
+
+## CRITICAL
+None.
+
+## HIGH
+1. `apps/web/src/components/champion-page.tsx` — Mini Passport 最初等待事件 API 完成后才出现，慢接口会让“未完成态”本身无限停在 loading；现在立即展示诚实占位，并在真实完成裁决后异步跳 result，已修复。
+2. `apps/web/src/components/mini-passport-card.tsx` — fallback/未知战斗曾无条件宣称“事件已记录”；现在只有 `event-store` 返回实际事件才标记已记录，否则显示“等待事件记录”，已修复。
+
+## MEDIUM
+1. `apps/web/src/components/mini-passport-card.tsx` — battle id 曾直接插入路径；现在对返回 Arena 的 path segment 使用 `encodeURIComponent`，已修复。
+2. `apps/web/src/components/champion-page.tsx` — 共享契约没有 `judging_completed` event type，因此以事件存储中的 `champion_selected` 作为裁决完成的最强现有信号；这是适配层代理条件，不修改公共契约。
+3. `apps/web/src/components/mini-passport-card.test.tsx` — 单测锁定无假冠军与两个 CTA，真实 completed event-store 分支由现有 loader/route 行为间接覆盖。
+
+## Summary
+- Critical: 0
+- High: 2 (fixed)
+- Medium: 3 (1 fixed, 2 documented)

@@ -33,3 +33,7 @@
 - 2026-07-25 · #40 · Evidence Lens 与 Passport 必须消费同一个六维对象，否则同名维度会在两个截图点漂移 · 适用于所有评分展示 · 见 `verifiedShowcasePassport`
 - 2026-07-25 · #40 · 移动端隐藏非冠军队能保留冠军视觉主次，同时把首屏控制在一个完整叙事单位内 · 适用于 390px Reveal · 见视觉基线
 - 2026-07-25 · #40 · 黄金 Champion 路由必须校验 battle id 与裁决事件，不能用 fallback 时间戳掩盖 fixture 损坏 · 适用于模式隔离 · 见对抗审查
+- 2026-07-25 · #41 · 未完成态应立即渲染再异步核对裁决，不能让错误恢复页面依赖同一个慢接口 · 适用于 live partial · 见 `LiveChampionGate`
+- 2026-07-25 · #41 · fallback 数据不能支撑“事件已记录”声明，状态文案必须区分未知与 event-store 实证 · 适用于模式隔离 · 见 Mini Passport 状态条
+- 2026-07-25 · #41 · Mini Passport 必须完全移除冠军头像、分数和 Verified Win，而不是仅降低透明度 · 适用于中断 Battle · 见组件测试
+- 2026-07-25 · #41 · CTA 同时提供回到当前 live 场次和观看黄金闭环，能在失败恢复时保留 Demo 节奏 · 适用于 StepFun 中断 · 见浏览器取证

@@ -241,6 +241,14 @@ export const zh = {
   "champion.mini.body": "实时演示未完成到裁决阶段，请继续观看或返回观看已验证演示的完整护照。",
   "champion.mini.back_to_arena": "返回 Live Arena",
   "champion.mini.watch_verified": "观看已验证演示",
+  "champion.mini.banner": "实时战斗 · 护照生成中",
+  "champion.mini.eyebrow": "MINI PASSPORT · LIVE PARTIAL",
+  "champion.mini.status_label": "本场护照生成进度",
+  "champion.mini.recorded": "事件已记录",
+  "champion.mini.awaiting_events": "等待事件记录",
+  "champion.mini.judging_pending": "裁决未完成",
+  "champion.mini.passport_pending": "护照待生成",
+  "champion.mini.honesty_note": "未完成的实时战斗不会生成虚假冠军、分数或已验证护照。",
 
   // -------------------------------------------------------------------------
   // 错误 & 边界
