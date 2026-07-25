@@ -49,3 +49,30 @@ None.
 - Critical: 0
 - High: 1, fixed
 - Medium: 2, tracked follow-up/evidence dependencies
+
+---
+
+# Adversarial Review — #36 Artifact Versions + Mini App
+
+Date: 2026-07-25
+Reviewer: Codex
+
+## CRITICAL
+
+None.
+
+## HIGH
+
+1. `apps/web/src/components/artifact-modal.tsx:24` — `activeTab` survived close/reopen. Repro: open any artifact, select “补丁差异”, close, then open the verified viral artifact; the modal reopened on the empty patch panel and hid the #36 version comparison. Fixed by resetting on close, with a regression test.
+
+## MEDIUM
+
+1. `apps/web/src/data/verified-showcase.ts:42` — the unified-diff restoration intentionally reconstructs only the recorded hunk, not an unrecorded full source file. The UI must continue presenting it as verified fixture content and must not imply missing lines were recovered.
+2. `apps/web/src/components/mini-app-demo.tsx:35` — the generated count can be 5–20 while only three static sample questions are rendered. This meets the placeholder-demo scope, but the presentation should remain clearly understood as a sample rather than a complete generated set.
+3. Required agent-browser video remains blocked by host execution policy; screenshots and semantic interaction evidence exist, but no WebM was created.
+
+## Summary
+
+- Critical: 0
+- High: 1, fixed
+- Medium: 3, tracked scope/evidence constraints

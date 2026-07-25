@@ -1,0 +1,19 @@
+.shell { overflow: hidden; border: 1px solid rgba(var(--vd-rgb), .35); border-radius: var(--radius-md); background: linear-gradient(145deg, rgba(var(--vd-rgb), .07), var(--surface-2) 46%); text-align: left; box-shadow: inset 0 1px rgba(var(--vd-rgb), .08); }
+.shell > header { display: grid; grid-template-columns: auto 1fr; gap: 5px 9px; align-items: center; padding: 14px; border-bottom: 1px solid var(--ink-5); }
+.shell > header span { grid-row: span 2; display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid rgba(var(--vd-rgb), .42); border-radius: 50%; color: var(--vd); font: 700 10px/1 var(--font-mono); }
+.shell > header strong { color: var(--ink-1); font: 400 16px/1 var(--font-heading); }
+.shell > header small { color: var(--ink-3); font-size: 10px; }
+.controls { display: grid; gap: 12px; padding: 14px; }
+.controls label { display: grid; grid-template-columns: 1fr auto; gap: 7px; color: var(--ink-2); font: 600 10px/1 var(--font-mono); }
+.controls select { grid-column: 1 / -1; border: 1px solid var(--ink-5); border-radius: var(--radius-sm); padding: 8px 10px; background: var(--surface-3); color: var(--ink-1); font: 500 11px/1 var(--font-body); }
+.controls input { grid-column: 1 / -1; width: 100%; accent-color: var(--vd); }
+.controls output { color: var(--vd); }
+.controls button { border: 1px solid rgba(var(--vd-rgb), .52); border-radius: var(--radius-sm); padding: 9px 12px; background: rgba(var(--vd-rgb), .15); color: var(--ink-1); cursor: pointer; font: 700 11px/1 var(--font-mono); }
+.result { margin: 0 14px 14px; padding: 12px; border: 1px solid var(--ink-5); border-radius: var(--radius-sm); background: rgba(var(--bg-void-rgb), .32); }
+.result > div { display: flex; justify-content: space-between; gap: 8px; color: var(--ink-3); font: 500 9px/1 var(--font-mono); }
+.result b { color: var(--success); }
+.result ul { display: grid; gap: 7px; margin: 12px 0 0; padding: 0; list-style: none; }
+.result li { display: flex; gap: 8px; align-items: center; color: var(--ink-2); font-size: 10px; }
+.result li i { display: grid; flex: 0 0 20px; height: 20px; place-items: center; border-radius: 50%; background: rgba(var(--vd-rgb), .12); color: var(--vd); font: 600 9px/1 var(--font-mono); }
+.shell > footer { padding: 10px 14px; border-top: 1px solid var(--ink-5); color: var(--ink-3); font: 500 9px/1 var(--font-mono); }
+.controls select:focus-visible, .controls input:focus-visible, .controls button:focus-visible { outline: 2px solid var(--ink-1); outline-offset: 3px; }

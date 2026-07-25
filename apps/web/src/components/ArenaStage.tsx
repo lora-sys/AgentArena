@@ -11,6 +11,7 @@ import { useSearchParams } from "react-router-dom";
 import { liveArenaZh as zh } from "../i18n/zh";
 import { ArtifactModal } from "./artifact-modal";
 import { AgentCardArtifactTrigger } from "./agent-card-artifact-trigger";
+import { verifiedShowcaseArtifactBundle } from "../data/verified-showcase";
 
 type FatalState = Omit<FatalTakeoverProps, "open" | "onDismiss">;
 
@@ -121,7 +122,7 @@ export function ArenaStage({ compact = false, battleId = "demo", events = demoEv
       <div className="replay-controls"><button type="button" onClick={replay.toggle}>{replay.playing ? zh.common.pause : zh.common.resume}</button><div><i style={{ width: `${((replay.batchIndex + 1) / replay.batchCount) * 100}%` }} /></div><button type="button" onClick={replay.cycleSpeed}>{replay.speed}×</button><button type="button" onClick={replay.replay}>{zh.common.replay}</button></div>
       {!compact && <div className="round-jump" aria-label="跳转到回合">{Array.from({length: replay.batchCount},(_,index) => <button className={index === replay.batchIndex ? "active" : ""} key={index} onClick={() => replay.seek(index)}>{index + 1}</button>)}</div>}
       <FatalTakeover open={fatal !== null} {...(fatal ?? { attacker: "", target: "", attackTitle: "", hpBefore: 0, damage: 0, hpAfter: 0 })} onViewEvidence={onFatalEvidence && fatalEvent ? () => onFatalEvidence(fatalEvent) : undefined} onDismiss={() => setFatal(null)} />
-      <ArtifactModal open={artifactTeamId !== null} teamName={teamName(artifactTeamId ?? undefined)} onClose={closeArtifact} />
+      <ArtifactModal open={artifactTeamId !== null} teamName={teamName(artifactTeamId ?? undefined)} artifact={verifiedShowcaseArtifactBundle(artifactTeamId ?? undefined)} onClose={closeArtifact} />
     </section>
   );
 }

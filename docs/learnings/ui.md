@@ -1,5 +1,10 @@
 # UI Learnings
 
+- 2026-07-25 · #36 · 黄金 fixture 只提供 unified diff 时，可机械拆分上下文/删除/新增行还原两个已验证片段，不能补写未记录源码 · 适用于版本对比 · 参见 `verified-showcase.ts`
+- 2026-07-25 · #36 · Modal 标签状态必须在关闭时重置，否则跨 Agent 重开会隐藏默认版本页 · 适用于所有复用弹窗 · 参见 `artifact-modal.test.tsx`
+- 2026-07-25 · #36 · 版本双栏 + Mini App 在 900px 先拆主列、600px 再拆版本列，可保持桌面展示密度并避免移动端横向溢出 · 适用于 Artifact Viewer · 参见 `artifact-tab-versions.module.css`
+- 2026-07-25 · #36 · 纯前端演示应把“本地交互、不发外部请求”直接显示并用 fetch spy 固化 · 适用于黑客松可交互样机 · 参见 `mini-app-demo.test.tsx`
+
 - 2026-07-25 · #35 · 回放页面中的 Modal 副作用依赖必须稳定；内联关闭函数会在每批事件重渲染时触发焦点恢复 · 证据：父组件重渲染焦点回归测试 · 来源：`artifact-modal.test.tsx`
 - 2026-07-25 · #35 · 桌面居中面板与 375px 底部面板可以共用同一 DOM，只通过断点改变对齐、圆角和标签网格 · 证据：桌面与移动端基线截图 · 来源：`artifact-modal.module.css`
 - 2026-07-25 · #35 · 遮罩透明度与 350ms fade-scale 进入动画应进入全局 token，后续 Evidence Lens 可直接复用 · 证据：视觉对照图 · 来源：`tokens.css`

@@ -1,5 +1,6 @@
-import type { BattleEvent } from "@agent-arena/contracts";
+import type { ArtifactBundle, BattleEvent } from "@agent-arena/contracts";
 import fixture from "../../../../examples/fixtures/verified-showcase.json";
+import { t } from "../i18n/zh";
 
 export const VERIFIED_SHOWCASE_ID = "BA-2026-0024";
 
@@ -38,4 +39,38 @@ export function verifiedShowcaseEvents(): BattleEvent[] {
       sequence: index + 1,
     };
   });
+}
+
+function restoreVersionsFromUnifiedDiff(diffText: string) {
+  const before: string[] = [];
+  const after: string[] = [];
+  for (const line of diffText.split("\n")) {
+    if (line.startsWith("---") || line.startsWith("+++") || line.startsWith("@@")) continue;
+    if (!line.startsWith("+")) before.push(line.startsWith("-") || line.startsWith(" ") ? line.slice(1) : line);
+    if (!line.startsWith("-")) after.push(line.startsWith("+") || line.startsWith(" ") ? line.slice(1) : line);
+  }
+  return { before: before.join("\n").trim(), after: after.join("\n").trim() };
+}
+
+/** Artifact Viewer 的已验证作品包，仅从黄金 fixture 的 patch_048 事件还原。 */
+export function verifiedShowcaseArtifactBundle(teamId?: string): ArtifactBundle | undefined {
+  if (teamId !== "viral_designer") return undefined;
+  const initialEvent = fixture.events.find((event) => event.id === "evt_006");
+  const patchEvent = fixture.events.find((event) => event.id === "evt_013");
+  const payload = patchEvent?.rawPayload as { artifactId?: string; diffText?: string } | undefined;
+  if (!initialEvent || !patchEvent || !payload?.artifactId || !payload.diffText) return undefined;
+  const restored = restoreVersionsFromUnifiedDiff(payload.diffText);
+  return {
+    artifactId: payload.artifactId,
+    teamId,
+    title: payload.artifactId,
+    currentVersion: 2,
+    versions: [
+      { version: 1, label: t("artifact.version.v1"), contentText: restored.before, createdAt: initialEvent.createdAt, linkedEventId: initialEvent.id },
+      { version: 2, label: t("artifact.version.v2"), contentText: restored.after, createdAt: patchEvent.createdAt, linkedEventId: patchEvent.id },
+    ],
+    patchDiffText: payload.diffText,
+    testResults: [],
+    linkedEvidenceEventIds: [initialEvent.id, patchEvent.id],
+  };
 }

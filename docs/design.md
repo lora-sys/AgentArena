@@ -18,6 +18,8 @@ Runtime tokens and responsive rules live in `apps/web/src/styles.css` and `apps/
 
 Do not introduce Storybook or a second UI kit without a concrete reuse need. Prefer existing components and contracts in `apps/web/src/components`.
 
+Artifact version presentation uses a two-column verified-code comparison beside a self-contained Mini App preview. Below 900px the preview stacks after the comparison; below 600px the two versions also stack, while the modal itself owns vertical scrolling.
+
 ## Visual QA
 
 Check 1440×900 and 390×844, compare against the reference, exercise all primary controls, inspect console errors, and run the Example Battle three times before a demo release.

@@ -54,4 +54,16 @@ describe("ArtifactModal", () => {
     rerender(<ArtifactModal open teamName="传播设计师 · 已更新" onClose={onClose} />);
     expect(document.activeElement).toBe(close);
   });
+
+  it("returns to version comparison after close and reopen", async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    const { rerender } = render(<ArtifactModal open teamName="传播设计师" onClose={onClose} />);
+    await user.click(screen.getByRole("tab", { name: "补丁差异" }));
+
+    rerender(<ArtifactModal open={false} teamName="传播设计师" onClose={onClose} />);
+    rerender(<ArtifactModal open teamName="传播设计师" onClose={onClose} />);
+
+    expect(screen.getByRole("tab", { name: "版本对比" }).getAttribute("aria-selected")).toBe("true");
+  });
 });

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ArtifactBundle } from "@agent-arena/contracts";
 import { t } from "../i18n/zh";
 import styles from "./artifact-modal.module.css";
+import { ArtifactTabVersions } from "./artifact-tab-versions";
 
 const tabs = [
   { id: "versions", label: t("artifact.tab.versions"), empty: t("artifact.empty.versions") },
@@ -23,6 +24,10 @@ export function ArtifactModal({ open, teamName, artifact, onClose }: ArtifactMod
   const [activeTab, setActiveTab] = useState<ArtifactTab>("versions");
   const panelRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!open) setActiveTab("versions");
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -73,10 +78,12 @@ export function ArtifactModal({ open, teamName, artifact, onClose }: ArtifactMod
       <div className={styles.tabs} role="tablist" aria-label={t("artifact.title")}>
         {tabs.map((tab) => <button key={tab.id} id={`artifact-tab-${tab.id}`} type="button" role="tab" aria-selected={activeTab === tab.id} aria-controls="artifact-tabpanel" tabIndex={activeTab === tab.id ? 0 : -1} onClick={() => setActiveTab(tab.id)}>{tab.label}</button>)}
       </div>
-      <section id="artifact-tabpanel" role="tabpanel" aria-labelledby={`artifact-tab-${active.id}`} className={styles.panel}>
-        <div className={styles.emptyIcon} aria-hidden="true">◇</div>
-        <strong>{active.label}</strong>
-        <p>{active.empty}</p>
+      <section id="artifact-tabpanel" role="tabpanel" aria-labelledby={`artifact-tab-${active.id}`} className={`${styles.panel} ${artifact && active.id === "versions" ? styles.panelPopulated : ""}`}>
+        {artifact && active.id === "versions" ? <ArtifactTabVersions artifact={artifact} /> : <>
+          <div className={styles.emptyIcon} aria-hidden="true">◇</div>
+          <strong>{active.label}</strong>
+          <p>{active.empty}</p>
+        </>}
       </section>
     </div>
   </div>;
